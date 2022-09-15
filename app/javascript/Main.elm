@@ -85,13 +85,8 @@ lineListToSvg y_index linelist =
 view : Model -> Html Message
 view model =
    let
-      --line0 = screenLine model 0 |> Screen.rawToLines
-      --y = debug_log "line0" (Debug.toString line0) Nothing
       rawlines = List.map (screenLine model) (List.range 0 255)
-      -- just bottom 2 lines to help debug
-      --rawlines = List.map (screenLine model) (List.range 240 255)
       lines = List.map Screen.rawToLines rawlines
-      --display = time_display model
    in
      -- The inline style is being used for example purposes in order to keep this example simple and
      -- avoid loading additional resources. Use a proper stylesheet when building your own app.
@@ -106,20 +101,20 @@ view model =
         ,svg [style "height" "192px", style "width" "256px"] (List.indexedMap lineListToSvg lines |> List.concat)
      ]
 
-posixToString: Maybe Time.Posix -> String
-posixToString maybe_time =
-   case maybe_time of
-      Just time ->
-         digitToString 2 (toHour utc time)
-           ++ ":" ++
-           digitToString 2 (toMinute utc time)
-           ++ ":" ++
-           digitToString 2 (toSecond utc time)
-           ++ "." ++
-           digitToString 3 (toMillis utc time)
-           ++ " (UTC)"
-      Nothing ->
-         "Time N/A"
+--posixToString: Maybe Time.Posix -> String
+--posixToString maybe_time =
+--   case maybe_time of
+--      Just time ->
+--         digitToString 2 (toHour utc time)
+--           ++ ":" ++
+--           digitToString 2 (toMinute utc time)
+--           ++ ":" ++
+--           digitToString 2 (toSecond utc time)
+--           ++ "." ++
+--           digitToString 3 (toMillis utc time)
+--           ++ " (UTC)"
+--      Nothing ->
+--         "Time N/A"
 
 gotRom: Qaop -> Result (Http.Detailed.Error Bytes) (Http.Metadata, Array Int) -> (Qaop, Cmd Message)
 gotRom qaop result =

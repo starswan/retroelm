@@ -2,20 +2,6 @@
 -- $Id$
 --
 module Qaop exposing (..)
---/*
--- *	Qaop.java
--- *
--- *	Copyright 2004-2009 Jan Bobrowski <jb@wizard.ae.krakow.pl>
--- *
--- *	This program is free software; you can redistribute it and/or
--- *	modify it under the terms of the GNU General Public License
--- *	version 2 as published by the Free Software Foundation.
--- */
---
---
---public class Qaop extends Applet
---	implements Runnable, KeyListener, FocusListener,
---		ComponentListener, WindowListener
 import Array exposing (Array)
 import Bitwise exposing (complement)
 import Bytes exposing (Bytes)
