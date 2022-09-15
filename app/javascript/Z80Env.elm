@@ -5,7 +5,7 @@ module Z80Env exposing (..)
 
 import Array exposing (Array)
 import Bitwise exposing (shiftRightBy, and, or)
-import Utils exposing (debug_log, listToDict, shiftLeftBy8, shiftRightBy8, toHexString, toHexString2)
+import Utils exposing (listToDict, shiftLeftBy8, shiftRightBy8)
 import Z80Memory exposing (Z80Memory, getValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
 type alias Keyboard =

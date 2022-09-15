@@ -43,9 +43,9 @@ toHexString: Int -> String
 toHexString value =
    "0x" ++ (Hex.toString value |> String.toUpper |> (String.padLeft 4 '0'))
 
-toHexString2: Int -> String
-toHexString2 value =
-   "0x" ++ (Hex.toString value |> String.toUpper |> (String.padLeft 2 '0'))
+--toHexString2: Int -> String
+--toHexString2 value =
+--   "0x" ++ (Hex.toString value |> String.toUpper |> (String.padLeft 2 '0'))
 
 debug_log msg thingToLog thingToReturn =
    --Debug.log msg thingToLog |> (\_ -> thingToReturn)

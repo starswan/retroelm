@@ -3,26 +3,12 @@
 --
 module Z80 exposing (..)
 
---/*
--- *	Z80.java
--- *
--- *	Copyright 2004-2010 Jan Bobrowski <jb@wizard.ae.krakow.pl>
--- *
--- *	This program is free software; you can redistribute it and/or
--- *	modify it under the terms of the GNU General Public License
--- *	version 2 as published by the Free Software Foundation.
--- */
---
---/*
--- *	Based on "The Undocumented Z80 Documented" by Sean Young
--- */
-
-import Bitwise exposing (and, complement, or, shiftLeftBy, shiftRightBy, shiftRightZfBy)
-import Dict
+import Bitwise exposing (and, complement, or, shiftLeftBy, shiftRightBy)
 import Loop
-import Utils exposing (byte, char, debug_log, debug_todo, shiftLeftBy8, shiftRightBy8, toHexString, toHexString2)
+import Utils exposing (byte, char, debug_log, debug_todo, shiftLeftBy8, shiftRightBy8, toHexString)
 import Z80Env exposing (Z80Env, c_FRSTART, m1, mem, mem16, out, set_mem, set_mem16, z80_in, z80env_constructor)
 import Z80Rom exposing (subName)
+
 type alias MainRegisters =
    {
       b:   Int,

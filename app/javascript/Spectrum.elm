@@ -2,20 +2,7 @@
 -- $Id$
 --
 module Spectrum exposing (..)
---/*
--- *	Spectrum.java
--- *
--- *	Copyright 2004-2009 Jan Bobrowski <jb@wizard.ae.krakow.pl>
--- *
--- *	This program is free software; you can redistribute it and/or
--- *	modify it under the terms of the GNU General Public License
--- *	version 2 as published by the Free Software Foundation.
--- */
---
---public class Spectrum extends Thread implements Z80.Env, ImageProducer
---{
---
---	final Z80 cpu = new Z80(this);
+
 import Array exposing (Array)
 import Bitwise exposing (complement, shiftRightBy)
 import Utils exposing (debug_log)
