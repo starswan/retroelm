@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jnlp spec="1.0+" codebase="<%= @homepage %>" href="games/<%= @game.id %>.jnlp">
+    <information>
+        <title>Qaop Testing</title>
+        <vendor>Starswan Systems Ltd</vendor>
+        <homepage href="<%= @homepage %>" />
+        <description>QAOP JNLP Launcher</description>
+    </information>
+    <security>
+        <sandbox />
+    </security>
+    <resources>
+        <j2se version="1.8+" />
+        <jar href="qaop.jar" main="true"/>
+    </resources>
+    <application-desc name="Qaop" main-class="Qaop">
+      <argument><%= @game.tapfile %></argument>
+    </application-desc>
+</jnlp>

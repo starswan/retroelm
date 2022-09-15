@@ -1,0 +1,29 @@
+<!-- $Id$ -->
+<div align="center">
+  <div class="page-header">
+    <b><%= t '.title', :default => @game.name %></b>(<%= @game.tapfile %>)
+  </div>
+
+  <dl class="dl-horizontal">
+    <dd><%= link_to 'Play Java Version', game_path(@game, format: :jnlp) %></dd>
+  </dl>
+  <div>
+    <%= content_tag :canvas, 'Game', width: 512, height: 384, id: 'applet',
+                    class: 'applet', style: "border:1px solid #000000;",
+                    data: { load: @game.tapfile, rom: "http://#{request.host_with_port}/spectrum.rom" } %>
+  </div>
+  <!--<canvas id="myCanvas" width="200" height="100"></canvas>-->
+  <!--<applet name="qaop" archive="/qaop.jar" code="Qaop" width="320" height="256" alt="Oh dear no applet">-->
+  <!--  <param name="load" value="/<%#= @game.tapfile %>"/>-->
+  <!--</applet>-->
+
+  <%= link_to t('.back', :default => t("helpers.links.back")),
+              games_path, :class => 'btn btn-default'  %>
+  <%= link_to t('.edit', :default => t("helpers.links.edit")),
+              edit_game_path(@game), :class => 'btn btn-default' %>
+  <%= link_to t('.destroy', :default => t("helpers.links.destroy")),
+              game_path(@game),
+              :method => 'delete',
+              :data => { :confirm => t('.confirm', :default => t("helpers.links.confirm", :default => 'Are you sure?')) },
+              :class => 'btn btn-danger' %>
+</div>
