@@ -6,7 +6,7 @@ executors:
   small-executor:
     resource_class: small
     docker:
-      - image: cimg/ruby:2.6-node
+      - image: cimg/ruby:2.6-browsers
 
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
@@ -16,9 +16,6 @@ jobs:
     # Add steps to the job
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
-      - run:
-          name: 'Install Python 2.x for Node'
-          command: 'sudo apt install python'
       - checkout
       - run:
           name: 'Bundle'
