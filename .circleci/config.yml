@@ -18,7 +18,7 @@ jobs:
     steps:
       - run:
           name: 'Install Python 2.x for Node'
-          command: 'sudo apt install python2'
+          command: 'sudo apt install python'
       - checkout
       - run:
           name: 'Bundle'
