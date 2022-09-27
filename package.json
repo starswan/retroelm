@@ -4,7 +4,7 @@
   "dependencies": {
     "@rails/activestorage": "^6.0.0",
     "@rails/ujs": "^6.0.0",
-    "@rails/webpacker": "4.3.0",
+    "@rails/webpacker": "5.4.3",
     "elm": "^0.19.1",
     "elm-webpack-loader": "^8.0.0"
   },
