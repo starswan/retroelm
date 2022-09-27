@@ -14,20 +14,25 @@ import Json.Decode as Decode
 import Screen exposing (RawScreenData, ScreenLine)
 import Spectrum exposing (set_rom)
 import Svg exposing (Svg, line, svg)
-import Svg.Attributes exposing (cx, cy, fill, r, stroke, x1, x2, y1, y2)
+import Svg.Attributes exposing (cx, cy, fill, height, r, stroke, viewBox, width, x1, x2, y1, y2)
 import Time exposing (posixToMillis, toHour, toMillis, toMinute, toSecond, utc)
 import Html exposing (Html, button, div, h1, h2, text)
-import Html.Attributes exposing (style, width)
+import Html.Attributes exposing (style)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Message(..), Qaop, pause)
 import Utils exposing (debug_log, digitToString)
 import Z80Memory exposing (getScreenLine)
 
--- meant to be run every 20 msec
--- in debug mode Chromium does a loop in 170.1ms on arthur
--- now sadly Chromium takes 208ms (56ms in release mode)
--- firefox takes 380ms FF 456ms
+-- meant to be run every 20 msec(50Hz)
+-- arthur timings:
+-- Chromium debug 67.4ms(14.8Hz) live 50.4ms(19.8Hz)
+-- firefox debug 310ms (3.2Hz) live 124ms(8.0Hz)
 c_TICKTIME = 50
+
+-- I'm currently unsure whether scaling the display results in a significant slowdown or not
+-- what it does show is that changing the screen makes everything slower, which probably means in practice
+-- that the display code will need some optimisation
+c_SCALEFACTOR = 4
 
 type alias Model =
   {
@@ -94,11 +99,12 @@ view model =
      [
         div [style "display" "flex", style "justify-content" "center"]
         [
-            h2 [] [text ("Interval " ++ (model.tickInterval |> String.fromInt) ++ " ")]
+            h2 [] [text ("Refresh Interval " ++ (model.tickInterval |> String.fromInt) ++ "ms ")]
             ,text ((String.fromInt model.count) ++ " in " ++ (model |> time_display))
            ,button [ onClick Pause ] [ text (if model.qaop.spectrum.paused then "Unpause" else "Pause") ]
         ]
-        ,svg [style "height" "192px", style "width" "256px"] (List.indexedMap lineListToSvg lines |> List.concat)
+        ,svg [height (192 * c_SCALEFACTOR |> String.fromInt), width (256 * c_SCALEFACTOR |> String.fromInt), viewBox "0 0 256 192"] (List.indexedMap lineListToSvg lines |> List.concat)
+        --,svg [style "height" "192px", style "width" "256px"] (List.indexedMap lineListToSvg lines |> List.concat)
      ]
 
 --posixToString: Maybe Time.Posix -> String
