@@ -86,6 +86,7 @@ GEM
     concurrent-ruby (1.1.10)
     crass (1.0.6)
     diff-lcs (1.4.4)
+    digest (3.1.0)
     docile (1.3.2)
     ed25519 (1.2.4)
     erubi (1.11.0)
@@ -107,16 +108,23 @@ GEM
     mail (2.7.1)
       mini_mime (>= 0.1.1)
     marcel (1.0.2)
+    matrix (0.4.2)
     method_source (1.0.0)
     mini_mime (1.1.2)
     mini_portile2 (2.8.0)
     minitest (5.16.3)
     msgpack (1.4.2)
     mysql2 (0.5.3)
+    net-protocol (0.1.3)
+      timeout
     net-scp (3.0.0)
       net-ssh (>= 2.6.5, < 7.0.0)
     net-sftp (3.0.0)
       net-ssh (>= 5.0.0, < 7.0.0)
+    net-smtp (0.3.1)
+      digest
+      net-protocol
+      timeout
     net-ssh (6.1.0)
     net-ssh-gateway (2.0.0)
       net-ssh (>= 4.0.0)
@@ -149,10 +157,10 @@ GEM
       bundler (>= 1.3.0)
       railties (= 6.0.6)
       sprockets-rails (>= 2.0.0)
-    rails-controller-testing (1.0.4)
-      actionpack (>= 5.0.1.x)
-      actionview (>= 5.0.1.x)
-      activesupport (>= 5.0.1.x)
+    rails-controller-testing (1.0.5)
+      actionpack (>= 5.0.1.rc1)
+      actionview (>= 5.0.1.rc1)
+      activesupport (>= 5.0.1.rc1)
     rails-dom-testing (2.0.3)
       activesupport (>= 4.2.0)
       nokogiri (>= 1.6)
@@ -169,6 +177,7 @@ GEM
     rb-inotify (0.10.1)
       ffi (~> 1.0)
     regexp_parser (2.0.3)
+    rexml (3.2.5)
     rspec-core (3.10.1)
       rspec-support (~> 3.10.0)
     rspec-expectations (3.10.1)
@@ -223,6 +232,7 @@ GEM
     thor (1.2.1)
     thread_safe (0.3.6)
     tilt (2.0.10)
+    timeout (0.3.0)
     tzinfo (1.2.10)
       thread_safe (~> 0.1)
     web-console (4.1.0)
@@ -260,10 +270,13 @@ DEPENDENCIES
   ed25519
   jbuilder (~> 2.7)
   listen (~> 3.2)
+  matrix
   mysql2
+  net-smtp
   passenger (~> 5.0)
   rails (~> 6.0.3, >= 6.0.3.4)
   rails-controller-testing
+  rexml
   rspec-rails
   rvm-capistrano
   sass-rails (>= 6)
@@ -278,4 +291,4 @@ DEPENDENCIES
   webpacker (~> 5.0, < 6)
 
 BUNDLED WITH
-   1.17.3
+   2.3.11
