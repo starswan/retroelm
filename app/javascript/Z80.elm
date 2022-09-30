@@ -4,8 +4,9 @@
 module Z80 exposing (..)
 
 import Bitwise exposing (and, complement, or, shiftLeftBy, shiftRightBy)
+import Dict
 import Loop
-import Utils exposing (byte, char, debug_log, debug_todo, shiftLeftBy8, shiftRightBy8, toHexString)
+import Utils exposing (byte, char, debug_log, debug_todo, shiftLeftBy1, shiftLeftBy8, shiftRightBy1, shiftRightBy8, toHexString, toHexString2)
 import Z80Env exposing (Z80Env, c_FRSTART, m1, mem, mem16, out, set_mem, set_mem16, z80_in, z80env_constructor)
 import Z80Rom exposing (subName)
 
@@ -323,45 +324,20 @@ set_i v z80 =
 set_iff: Int -> Z80 -> Z80
 set_iff value z80 =
    let
-      y = debug_log "set_iff" (String.fromInt value) Nothing
+      --y = debug_log "set_iff" value Nothing
       interrupts = z80.interrupts
    in
       { z80 | interrupts = { interrupts | iff = value } }
 --	void ei(boolean v) {IFF = v ? 3 : 0;}
 --
---	int time;
---	int time_limit;
---
---	void exx() {
---		int tmp;
---		tmp = B_; B_ = B; B = tmp;
---		tmp = C_; C_ = C; C = tmp;
---		tmp = D_; D_ = D; D = tmp;
---		tmp = E_; E_ = E; E = tmp;
---		tmp = HL_; HL_ = HL; HL = tmp;
---	}
 exx: Z80 -> Z80
 exx z80 =
    { z80 | main = z80.alt_main, alt_main = z80.main }
---
---	void ex_af() {
---		int tmp = A_; A_ = A; A = tmp;
---		tmp = Ff_; Ff_ = Ff; Ff = tmp;
---		tmp = Fr_; Fr_ = Fr; Fr = tmp;
---		tmp = Fa_; Fa_ = Fa; Fa = tmp;
---		tmp = Fb_; Fb_ = Fb; Fb = tmp;
---	}
+
 ex_af: Z80 -> Z80
 ex_af z80 =
     { z80 | flags = z80.alt_flags, alt_flags = z80.flags }
---	public void push(int v) {
---		int sp;
---		time++;
---		env.mem((char)((sp=SP)-1), v>>>8);
---		time += 3;
---		env.mem(SP = (char)(sp-2), v&0xFF);
---		time += 3;
---	}
+
 push: Int -> Z80 -> Z80
 push v z80 =
    let
@@ -372,24 +348,14 @@ push v z80 =
       new_sp = char (z80.sp - 2)
    in
       { z80_2 | env = z80_2.env |> set_mem new_sp (and v 0xFF) } |> set_sp new_sp |> add_cpu_time 3
---
---	int pop() {
---		int sp, v = env.mem16(sp=SP);
---		SP = (char)(sp+2);
---		time += 6;
---		return v;
---	}
+
 pop: Z80 -> IntWithZ80
 pop z80 =
    let
       v = z80.env |> mem16 z80.sp
    in
       IntWithZ80 v.value ({ z80 | env = v.env } |> set_sp (z80.sp + 2) |> add_cpu_time 6)
---
---	private void add(int b)
---	{
---		A = Fr = (Ff = (Fa = A) + (Fb = b)) & 0xFF;
---	}
+
 z80_add: Int -> FlagRegisters -> FlagRegisters
 z80_add b flags =
    let
@@ -399,11 +365,7 @@ z80_add b flags =
       fr = and ff 0xFF
    in
       { flags | fa = fa, fb = fb, ff = ff, fr = fr, a = fr }
---
---	private void adc(int b)
---	{
---		A = Fr = (Ff = (Fa = A) + (Fb = b) + (Ff>>>8 & FC)) & 0xFF;
---	}
+
 adc: Int -> FlagRegisters -> FlagRegisters
 adc b flags =
    let
@@ -413,12 +375,7 @@ adc b flags =
       fr = and ff 0xFF
    in
       { flags | fa = fa, fb = fb, ff = ff, fr = fr, a = fr }
---
---	private void sub(int b)
---	{
---		Fb = ~b;
---		A = Fr = (Ff = (Fa = A) - b) & 0xFF;
---	}
+
 z80_sub: Int -> FlagRegisters -> FlagRegisters
 z80_sub b flags =
    let
@@ -428,12 +385,7 @@ z80_sub b flags =
       fr = and ff 0xFF
    in
       { flags | fa = fa, fb = fb, ff = ff, fr = fr, a = fr }
---
---	private void sbc(int b)
---	{
---		Fb = ~b;
---		A = Fr = (Ff = (Fa = A) - b - (Ff>>>8 & FC)) & 0xFF;
---	}
+
 sbc: Int -> FlagRegisters -> FlagRegisters
 sbc b flags =
    let
@@ -443,14 +395,7 @@ sbc b flags =
       fr = and ff 0xFF
    in
       { flags | fa = fa, fb = fb, ff = ff, fr = fr, a = fr }
---
---	private void cp(int b)
---	{
---		int r = (Fa = A) - b;
---		Fb = ~b;
---		Ff = r&~F53 | b&F53;
---		Fr = r&0xFF;
---	}
+
 cp: Int -> FlagRegisters -> FlagRegisters
 cp b flags =
    let
@@ -461,8 +406,7 @@ cp b flags =
       fr = and r 0xFF
    in
      { flags | fr = fr, ff = ff, fb = fb, fa = fa }
---
---	private void and(int b) {Fa = ~(A = Ff = Fr = A & b); Fb = 0;}
+
 z80_and: Int -> FlagRegisters -> FlagRegisters
 z80_and b flags =
    let
@@ -472,7 +416,7 @@ z80_and b flags =
       fa = complement a
    in
       { flags | fa = fa, fb = 0, ff = ff, fr = fr, a = a }
---	private void or(int b) {Fa = (A = Ff = Fr = A | b) | 0x100; Fb = 0;}
+
 z80_or: Int -> FlagRegisters -> FlagRegisters
 z80_or b flags =
    let
@@ -482,7 +426,7 @@ z80_or b flags =
       fa = or a 0x100
    in
       { flags | fa = fa, fb = 0, ff = ff, fr = fr, a = a }
---	private void xor(int b) {Fa = (A = Ff = Fr = A ^ b) | 0x100; Fb = 0;}
+
 z80_xor: Int -> FlagRegisters -> FlagRegisters
 z80_xor b flags =
    let
@@ -492,11 +436,7 @@ z80_xor b flags =
       fa = or a 0x100
    in
       { flags | fa = fa, fb = 0, ff = ff, fr = fr, a = a }
---	private void cpl()
---	{
---		Ff = Ff&~F53 | (A ^= 0xFF)&F53;
---		Fb |= ~0x80; Fa = Fa&~FH | ~Fr&FH; // set H, N
---	}
+
 cpl: FlagRegisters -> FlagRegisters
 cpl flags =
    let
@@ -506,12 +446,7 @@ cpl flags =
       fa = or (and flags.fa (complement c_FH)) (and (complement flags.fr) c_FH)
    in
      { flags | a = new_a, ff= ff, fb = fb, fa = fa }
---
---	private int inc(int v)
---	{
---		Ff = Ff&0x100 | (Fr = v = (Fa=v)+(Fb=1) & 0xFF);
---		return v;
---	}
+
 inc: Int -> FlagRegisters -> IntWithFlags
 inc v flags =
    let
@@ -520,12 +455,7 @@ inc v flags =
       new_flags = { flags | ff = (Bitwise.or ff vv), fb = 1, fa = v, fr = vv }
    in
       IntWithFlags vv new_flags
---
---	private int dec(int v)
---	{
---		Ff = Ff&0x100 | (Fr = v = (Fa=v)+(Fb=-1) & 0xFF);
---		return v;
---	}
+
 dec: Int -> FlagRegisters -> IntWithFlags
 dec v flags =
    let
@@ -533,13 +463,7 @@ dec v flags =
       vv = Bitwise.and (v - 1) 0xFF
    in
       IntWithFlags vv { flags | ff = (Bitwise.or ff vv), fb = -1, fa = v, fr = vv }
---
---	private void bit(int n, int v)
---	{
---		int m = v & 1<<n;
---		Ff = Ff&~0xFF | v&F53 | m;
---		Fa = ~(Fr = m); Fb = 0;
---	}
+
 bit: Int -> Int -> FlagRegisters -> FlagRegisters
 bit n v flags =
    let
@@ -548,14 +472,7 @@ bit n v flags =
      fr = m
    in
      { flags | ff = ff, fr = fr, fa = complement fr, fb = 0 }
---
---	private void f_szh0n0p(int r)
---	{
---		// SZ5H3PNC
---		// xxx0xP0.
---		Ff = Ff&~0xFF | (Fr = r);
---		Fa = r|0x100; Fb = 0;
---	}
+
 f_szh0n0p: Int -> Z80 -> Z80
 f_szh0n0p r z80 =
    let
@@ -565,13 +482,7 @@ f_szh0n0p r z80 =
       flags = z80.flags
    in
       { z80 | flags = { flags | fr = fr, ff = ff, fa = fa, fb = 0 } }
---
---	private void rot(int a)
---	{
---		Ff = Ff&0xD7 | a&0x128;
---		Fb &= 0x80; Fa = Fa&~FH | Fr&FH; // reset H, N
---		A = a&0xFF;
---	}
+
 rot: Int -> FlagRegisters -> FlagRegisters
 rot a flags =
    let
@@ -580,49 +491,23 @@ rot a flags =
       fa = Bitwise.or (Bitwise.and flags.fa (Bitwise.complement c_FH)) (Bitwise.and flags.fr c_FH)
    in
       { flags | ff = ff, fb = fb, fa = fa, a = (Bitwise.and a 0xFF) }
---
---	private int shifter(int o, int v)
---	{
---		switch(o&7) {
---		case 0: v = v*0x101>>>7; break;
---		case 1: v = v*0x80800000>>24; break;
---		case 2: v = v<<1|Ff>>>8&1; break;
---		case 3: v = (v*0x201|Ff&0x100)>>>1; break;
---		case 4: v <<= 1; break;
---		case 5: v = v>>>1|v&0x80|v<<8; break;
---		case 6: v = v<<1|1; break;
---		case 7: v = v*0x201>>>1; break;
---		}
---		Fa = 0x100 | (Fr = v = 0xFF&(Ff = v));
---		Fb = 0;
---		return v;
---	}
+
 shifter: Int -> Int -> FlagRegisters -> IntWithFlags
 shifter o v flags =
    let
       ff = case (and o 7) of
                0 -> shiftRightBy 7 (v * 0x101)
                1 -> shiftRightBy 24 (v * 0x80800000)
-               2 -> or (shiftLeftBy 1 v) (and (shiftRightBy8 flags.ff) 1)
-               3 -> shiftRightBy 1 (or (v * 0x201) (and flags.ff 0x100))
-               4 -> shiftLeftBy 1 v
-               5 -> or (or (shiftRightBy 1 v) (and v 0x80)) (shiftLeftBy8 v)
-               6 -> or (shiftLeftBy 1 v) 1
-               _ -> shiftRightBy 1 (v * 0x201)
+               2 -> or (shiftLeftBy1 v) (and (shiftRightBy8 flags.ff) 1)
+               3 -> shiftRightBy1 (or (v * 0x201) (and flags.ff 0x100))
+               4 -> shiftLeftBy1 v
+               5 -> or (or (shiftRightBy1 v) (and v 0x80)) (shiftLeftBy8 v)
+               6 -> or (shiftLeftBy1 v) 1
+               _ -> shiftRightBy1 (v * 0x201)
       fr = and 0xFF ff
    in
       IntWithFlags fr { flags | fr = fr, fb = 0, fa = (or 0x100 fr) }
---
---	private int add16(int a, int b)
---	{
---		int r = a + b;
---		Ff = Ff & FS | r>>>8 & 0x128;
---		Fa &= ~FH;
---		Fb = Fb&0x80 | ((r ^ a ^ b)>>>8 ^ Fr) & FH;
---		MP = a+1;
---		time += 7;
---		return (char)r;
---	}
+
 add16: Int -> Int -> FlagRegisters -> IntWithFlagsAndTime
 add16 a b main_flags =
     let
@@ -1548,10 +1433,7 @@ execute_lt40 c ixiyhl z80 =
          { z80 | flags = cpl z80.flags }
       -- case 0x37: scf_ccf(0); break;
       0x37 ->
-         let
-            x = debug_log "scf" "1" Nothing
-         in
-            { z80 | flags = scf_ccf 0 z80.flags }
+         { z80 | flags = scf_ccf 0 z80.flags }
       -- case 0x3F: scf_ccf(Ff&0x100); break;
       0x3F ->
          { z80 | flags = scf_ccf (and z80.flags.ff 0x100) z80.flags }
@@ -1938,7 +1820,7 @@ execute_gtc0 c ixiyhl z80 =
                  if (and z80.flags.ff 0x100) == 0 then
                    let
                      popped = z80_1 |> pop
-                     x = debug_log "ret nc" (popped.value |> subName) Nothing
+                     --x = debug_log "ret nc" (popped.value |> subName) Nothing
                    in
                      popped.z80 |> set_pc popped.value
                  else
@@ -2062,8 +1944,10 @@ execute_gtc0 c ixiyhl z80 =
                  z80_2 = if and z80_1.flags.ff 0x100 /= 0 then
                            let
                               v = z80_1 |> pop
+                              ret = v.z80 |> set_pc v.value
                            in
-                              debug_log "ret c" (v.value |> subName) (v.z80 |> set_pc v.value)
+                              --debug_log "ret c" (v.value |> subName) ret
+                              ret
                          else
                            z80_1
               in
@@ -2318,6 +2202,13 @@ group_ed z80_0 =
       case c.value of
       -- case 0x47: i(A); time++; break;
       0x47 -> z80 |> set_i z80.flags.a |> add_cpu_time 1
+      --  case 0x78: MP=(v=B<<8|C)+1; f_szh0n0p(A=env.in(v)); time+=4; break;
+      0x78 -> let
+                    v = z80 |> get_bc
+                    new_a = z80.env |> z80_in v
+                    flags = z80.flags
+               in
+                    { z80 | env = new_a.env, flags = { flags | a = new_a.value } } |> f_szh0n0p new_a.value |> add_cpu_time 4
       -- case 0x52: sbc_hl(D<<8|E); break;
       0x52 -> z80 |> sbc_hl (or (shiftLeftBy8 z80.main.d) z80.main.e)
       -- case 0x43: MP=(v=imm16())+1; env.mem16(v,B<<8|C); time+=6; break;
@@ -2603,36 +2494,17 @@ group_xy_cb ixiyhl z80 =
          set408bit caseval v2.value HL z80_4
       else
          z80_4
---	}
---
---	/* interrupts */
---
---	private int IFF, IM;
---	private boolean halted;
---
---	boolean interrupt(int bus)
---	{
---		if((IFF&1)==0)
---			return false;
---		IFF = 0;
---		halted = false;
---		time += 6;
---		push(PC);
---		switch(IM) {
---		case 0:	// IM 0
---		case 1:	// IM 0
---			if((bus|0x38)==0xFF) {PC=bus-199; break;}
---			/* not emulated */
---		case 2:	// IM 1
---			PC = 0x38; break;
---		case 3:	// IM 2
---			PC = env.mem16(IR&0xFF00 | bus);
---			time += 6;
---			break;
---		}
---		MP=PC;
---		return true;
---	}
+
+im0: Int -> Z80 -> Z80
+im0 bus z80 =
+    if and bus 0x38 == 0xFF then
+        let
+            new_pc = bus - 199
+        in
+            z80 |> set_pc new_pc
+    else
+        z80
+
 interrupt: Int -> Z80 -> Z80
 interrupt bus z80 =
    let
@@ -2641,12 +2513,27 @@ interrupt bus z80 =
       if (and ints.iff 1) == 0 then
          z80
       else
-         { z80 | interrupts = { ints | halted = False } }
+        let
+            --z81 = debug_log "inturrupt" "on" z80
+            new_ints = { ints | iff = 0, halted = False }
+            new_z80 = { z80 | interrupts = new_ints } |> push z80.pc |> add_cpu_time 6
+        in
+            case ints.iM of
+                0 -> new_z80 |> im0 bus
+                1 -> new_z80 |> im0 bus
+                2 -> new_z80 |> set_pc 0x38
+                3 -> let
+                        new_ir = Bitwise.and ints.ir 0xFF00
+                        addr = Bitwise.or new_ir bus
+                        env_and_pc = z80.env |> mem16 addr
+                      in
+                        { new_z80 | env = env_and_pc.env } |> set_pc env_and_pc.value |> add_cpu_time 6
+                _ -> new_z80
 
 set_im_direct: Int -> Z80 -> Z80
 set_im_direct value z80 =
    let
-      ints = debug_log "set_im" (String.fromInt value) z80.interrupts
+      ints = debug_log "set_im" value z80.interrupts
    in
       { z80 | interrupts = { ints | iM = value } }
 

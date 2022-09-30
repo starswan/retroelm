@@ -4,16 +4,12 @@
 module Z80Env exposing (..)
 
 import Array exposing (Array)
-import Bitwise exposing (shiftRightBy, and, or)
+import Bitwise exposing (and, or, shiftLeftBy, shiftRightBy)
+import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (listToDict, shiftLeftBy8, shiftRightBy8)
 import Z80Memory exposing (Z80Memory, getValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
-type alias Keyboard =
-    {
-        keyboard: List Int,
-        kempston: Int,
-        keys: List Int
-    }
+
 -- changing this to an array results in a recursion error in the browser :-(
 type alias Z80Env =
     {
@@ -52,7 +48,8 @@ z80env_constructor =
 
         ram = List.concat [startrange, whiterange, endrange]
 
-        keyboard = Keyboard [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF] 0 [0,0,0,0,0,0,0,0]
+        --keyboard = Keyboard [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF] 0 [0,0,0,0,0,0,0,0]
+        keyboard = Keyboard [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF] 0
     in
         Z80Env Z80Rom.constructor (Z80Memory.constructor ram) keyboard 0 c_FRSTART
 
@@ -63,33 +60,6 @@ set_rom romdata z80env =
    in
       { z80env | rom48k = romDict }
 
-add_cpu_time: Int -> Z80Env -> Z80Env
-add_cpu_time t env =
-   { env | cpu_time = env.cpu_time + t }
---	/* Z80.Env */
---
---	public final int m1(int addr, int ir) {
---		int n = cpu.time - ctime;
---		if(n>0) cont(n);
---
---		addr -= 0x4000;
---		if((addr&0xC000) == 0)
---			cont1(0);
---		ctime = NOCONT;
---		if((ir&0xC000) == 0x4000)
---			ctime = cpu.time + 4;
---		if(addr >= 0)
---			return ram[addr];
---		n = rom[addr+=0x4000];
---		if(if1rom!=null && (addr&0xE8F7)==0) {
---			if(addr==0x0008 || addr==0x1708) {
---				if(rom==rom48k) rom = if1rom;
---			} else if(addr==0x0700) {
---				if(rom==if1rom) rom = rom48k;
---			}
---		}
---		return n;
---	}
 m1: Int -> Int -> Z80Env -> Z80EnvWithValue
 m1 tmp_addr ir z80env_ =
     let
@@ -114,22 +84,7 @@ m1 tmp_addr ir z80env_ =
                   z80env_1.rom48k |> getROMValue tmp_addr
     in
         Z80EnvWithValue { z80env_1 | ctime = ctime } value
---
---	public final int mem(int addr) {
---		int n = cpu.time - ctime;
---		if(n>0) cont(n);
---		ctime = NOCONT;
---
---		addr -= 0x4000;
---		if(addr>=0) {
---			if(addr<0x4000) {
---				cont1(0);
---				ctime = cpu.time + 3;
---			}
---			return ram[addr];
---		}
---		return rom[addr+0x4000];
---	}
+
 mem: Int -> Z80Env -> Z80EnvWithValue
 mem base_addr z80env_ctime =
     let
@@ -448,6 +403,47 @@ cont tmp_n z80env =
                 else
                     contimpl z80env tmp_n tmp_s
 
+--private void cont_port(int port)
+--{
+--	int n = cpu.time - ctime;
+--	if(n>0) cont(n);
+--
+--	if((port&0xC000) != 0x4000) {
+--		if((port&0x0001)==0)
+--			cont1(1);
+--		ctime = NOCONT;
+--	} else {
+--		ctime = cpu.time;
+--		cont(2 + ((port&1)<<1));
+--		ctime = cpu.time+4;
+--	}
+--}
+cont_port: Int -> Z80Env -> Z80Env
+cont_port portn z80env =
+   let
+      n = z80env.cpu_time - z80env.ctime
+      env1 = if n > 0 then
+                z80env |> cont n
+             else
+                z80env
+      env2 = if and portn 0xC000 /= 0x4000 then
+               let
+                  env3 = if and portn 0x0001 == 0 then
+                            env1 |> cont1 1
+                         else
+                            env1
+               in
+                  { env3 | ctime = c_NOCONT }
+             else
+               let
+                   env3 = { env1 | ctime = env1.cpu_time }
+                   contval = and portn 1 |> shiftLeftBy 1
+                   env4 = env3 |> cont (2 + contval)
+               in
+                  { env4 | ctime = env4.cpu_time + 4 }
+   in
+      env2
+
 --private final void refresh_screen() {
 --	int ft = cpu.time;
 --	if(ft < refrs_t)
@@ -527,52 +523,16 @@ refresh_screen z80env =
 --		}
 --	}
 out: Int -> Int -> Z80Env -> Z80Env
-out portnum value env =
-   env
+out portnum value env_in =
+   let
+      env = env_in |> cont_port portnum
+   in
+      env
 
---	private int ear = 0x1BBA4; // EAR noise
---
---	public int in(int port)
---	{
---		cont_port(port);
---
---		if((port&0x00E0)==0)
---			return kempston;
---		if((port&0xC002)==0xC000 && ay_enabled) {
---			if(ay_idx>=14 && (ay_reg[7]>>ay_idx-8 & 1) == 0)
---				return 0xFF;
---			return ay_reg[ay_idx];
---		}
---		int v = 0xFF;
---		if((port&0x0001)==0) {
---			for(int i=0; i<8; i++)
---				if((port&0x100<<i) == 0)
---					v &= keyboard[i];
---			int e = 0;
---			// Apply tape noise only when SPK==0 and MIC==1.
---			// thanks Jose Luis for bug report
---			if((ula28&0x18)==8) {
---				e = ear - 0x100000;
---				if((e&0xFFF00000)==0)
---					e = e<<2 | e>>18;
---				ear = e;
---			}
---			v &= ula28<<2 | e | 0xBF;
---		} else if(cpu.time>=0) {
---			int t = cpu.time;
---			int y = t/224;
---			t %= 224;
---			if(y<192 && t<124 && (t&4)==0) {
---				int x = t>>1 & 1 | t>>2;
---				if((t&1)==0)
---					x += y & 0x1800 | y<<2 & 0xE0 | y<<8 & 0x700;
---				else
---					x += 6144 | y<<2 & 0x3E0;
---				v = ram[x];
---			}
---		}
---		return v;
---	}
 z80_in: Int -> Z80Env -> Z80EnvWithValue
-z80_in portnum env =
-   Z80EnvWithValue env 0xFF
+z80_in portnum env_in =
+   let
+      env = env_in |> cont_port portnum
+      value = env.keyboard |> z80_keyboard_input portnum
+   in
+      Z80EnvWithValue env value
