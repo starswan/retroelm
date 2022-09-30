@@ -6,20 +6,75 @@ import Array exposing (Array)
 import Bitwise exposing (complement)
 import Bytes exposing (Bytes)
 import Bytes.Decode exposing (Decoder, Step(..), loop, map, succeed, unsignedInt8)
+import Char exposing (toUpper)
 import Http exposing (Error, Expect, Metadata, Response)
 import Http.Detailed
 import Loader exposing (LoadAction(..), Loader, trimActionList)
 import Params exposing (StringPair)
 import Spectrum exposing (Spectrum, frames, new_tape)
+import String exposing (fromChar)
 import Time
 import Utils exposing (compact, debug_log)
+
+type KeyEvent
+   = KeyDown Char
+   | ControlKeyDown String
 
 type alias Qaop =
     {
         spectrum: Spectrum,
         loader: Loader,
-        state: Int
+        state: Int,
+        keys: List KeyEvent
     }
+
+-- need to do case-insensitive check as keyboard
+-- can come in as Z and leave as z - but also , -> < and ? -> /(oh dear)
+keyNotEqual: KeyEvent -> Char -> Bool
+keyNotEqual event character =
+   case event of
+      KeyDown char -> (char |> toUpper) /= (character |> toUpper)
+      ControlKeyDown _ -> True
+
+ctrlKeyNotEqual: KeyEvent -> String -> Bool
+ctrlKeyNotEqual event str =
+   case event of
+      KeyDown _ -> True
+      ControlKeyDown string -> str /= string
+
+keyDownEvent: Char -> Qaop -> Qaop
+keyDownEvent character qaop =
+   let
+      event = KeyDown character
+      newkeys = event :: qaop.keys
+      o = debug_log ("key down " ++ (character |> fromChar) ++ " keys ") (newkeys |> List.length) Nothing
+   in
+      { qaop | keys = event :: qaop.keys }
+
+ctrlKeyDownEvent: String -> Qaop -> Qaop
+ctrlKeyDownEvent str qaop =
+   let
+      event = ControlKeyDown str
+      newkeys = event :: qaop.keys
+      o = debug_log ("control key down " ++ str ++ " keys ") (newkeys |> List.length) Nothing
+   in
+      { qaop | keys = newkeys }
+
+ctrlKeyUpEvent: String -> Qaop -> Qaop
+ctrlKeyUpEvent str qaop =
+   let
+      newkeys = qaop.keys |> List.filter (\item -> ctrlKeyNotEqual item str)
+      o = debug_log ("control key up " ++ str ++ " keys ") (newkeys |> List.length) Nothing
+   in
+      { qaop | keys = newkeys }
+
+keyUpEvent: Char -> Qaop -> Qaop
+keyUpEvent character qaop =
+   let
+      newkeys = qaop.keys |> List.filter (\item -> keyNotEqual item character)
+      o = debug_log ("key up " ++ (character |> fromChar) ++ " keys ") (newkeys |> List.length) Nothing
+   in
+      { qaop | keys = newkeys }
 
 paramHandler: StringPair -> Maybe(LoadAction)
 paramHandler item =
@@ -38,7 +93,7 @@ init params =
         loader = Loader compacted_params
         spectrum = Spectrum.constructor
     in
-        Qaop spectrum loader 0
+        Qaop spectrum loader 0 []
 
 type Message
   = GotTAP (Result Http.Error (List Int))
