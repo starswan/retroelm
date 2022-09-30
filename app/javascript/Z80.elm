@@ -2603,45 +2603,41 @@ group_xy_cb ixiyhl z80 =
          set408bit caseval v2.value HL z80_4
       else
          z80_4
---	}
---
---	/* interrupts */
---
---	private int IFF, IM;
---	private boolean halted;
---
---	boolean interrupt(int bus)
---	{
---		if((IFF&1)==0)
---			return false;
---		IFF = 0;
---		halted = false;
---		time += 6;
---		push(PC);
---		switch(IM) {
---		case 0:	// IM 0
---		case 1:	// IM 0
---			if((bus|0x38)==0xFF) {PC=bus-199; break;}
---			/* not emulated */
---		case 2:	// IM 1
---			PC = 0x38; break;
---		case 3:	// IM 2
---			PC = env.mem16(IR&0xFF00 | bus);
---			time += 6;
---			break;
---		}
---		MP=PC;
---		return true;
---	}
+
+im0: Int -> Z80 -> Z80
+im0 bus z80 =
+    if and bus 0x38 == 0xFF then
+        let
+            new_pc = bus - 199
+        in
+            z80 |> set_pc new_pc
+    else
+        z80
+
 interrupt: Int -> Z80 -> Z80
 interrupt bus z80 =
    let
       ints = z80.interrupts
+      env = z80.env
    in
-      if (and ints.iff 1) == 0 then
+      if (Bitwise.and ints.iff 1) == 0 then
          z80
       else
-         { z80 | interrupts = { ints | halted = False } }
+        let
+            new_ints = { ints | iff = 0, halted = False }
+            new_z80 = { z80 | interrupts = new_ints } |> push z80.pc |> add_cpu_time 6
+        in
+            case ints.iM of
+                0 -> new_z80 |> im0 bus
+                1 -> new_z80 |> im0 bus
+                2 -> new_z80 |> set_pc 0x38
+                3 -> let
+                        new_ir = Bitwise.and ints.ir 0xFF00
+                        addr = Bitwise.or new_ir bus
+                        env_and_pc = env |> mem16 addr
+                      in
+                        { new_z80 | env = env_and_pc.env } |> set_pc env_and_pc.value |> add_cpu_time 6
+                _ -> new_z80
 
 set_im_direct: Int -> Z80 -> Z80
 set_im_direct value z80 =
