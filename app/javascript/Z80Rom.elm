@@ -8,9 +8,9 @@ constructor: Z80ROM
 constructor =
    let
      rom48k = List.range 0 16384
-     romlist = List.indexedMap Tuple.pair rom48k
+     rom_list = List.indexedMap Tuple.pair rom48k
    in
-     Dict.fromList romlist
+     Dict.fromList rom_list
 
 getROMValue: Int -> Z80ROM -> Int
 getROMValue addr z80dict  =
@@ -34,6 +34,8 @@ c_NAMES = Dict.fromList [(0xE9B, "CL-ADDR"), (0xEDF, "CLEAR-PRB"), (0x046C, "REP
                          (0x0DD9, "CL-SET"), (0xDEE, "CL-SET-1"), (0x11EF, "RAM-DONE"), (0x0C0A, "PO-MSG"),
                          (0x0F0C, "COPY-L-2"), (0x03B5, "BEEPER"), (0x1F05, "TEST-ROOM"), (0x110D, "KEY-NEXT"),
                          (0x167F, "PTR-DONE"), (0x1664, "POINTERS"), (0x1F54, "BREAK-KEY"),
+                         (0x02BF, "KEYBOARD"), (0x02A1, "KEY-BITS"), (0x02AB, "KEY-DONE"), (0x028E, "KEY-SCAN"),
+                         (0x029F, "KEY-3KEYS"),
                          (0x162C, "CALL-JUMP"), (0x15F2, "PRINT-A-2"), (0x0AD9, "PO-ABLE"), (0x0B24, "PO-ANY"),
                          (0x0B65, "PO-CHAR"), (0x12AC, "MAIN-2"), (0x187D, "OUT-LINE2"), (0x1937, "OUT-CHAR"),
                          (0x0F2C, "EDITOR"), (0x15D4, "WAIT-KEY"), (0x15E6, "INPUT-AD"), (0x12A9, "MAIN-1"),
