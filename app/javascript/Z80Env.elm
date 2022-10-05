@@ -48,8 +48,7 @@ z80env_constructor =
 
         ram = List.concat [startrange, whiterange, endrange]
 
-        --keyboard = Keyboard [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF] 0 [0,0,0,0,0,0,0,0]
-        keyboard = Keyboard [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF] 0
+        keyboard = Keyboard (List.repeat 8 0xFF) []
     in
         Z80Env Z80Rom.constructor (Z80Memory.constructor ram) keyboard 0 c_FRSTART
 
