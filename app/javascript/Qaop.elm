@@ -7,18 +7,16 @@ import Bitwise exposing (complement)
 import Bytes exposing (Bytes)
 import Bytes.Decode exposing (Decoder, Step(..), loop, map, succeed, unsignedInt8)
 import Char exposing (toUpper)
+import Dict
 import Http exposing (Error, Expect, Metadata, Response)
 import Http.Detailed
+import Keyboard exposing (ControlKey(..), KeyEvent(..), c_CONTROL_KEY_MAP)
 import Loader exposing (LoadAction(..), Loader, trimActionList)
 import Params exposing (StringPair)
 import Spectrum exposing (Spectrum, frames, new_tape)
 import String exposing (fromChar)
 import Time
 import Utils exposing (compact, debug_log)
-
-type KeyEvent
-   = KeyDown Char
-   | ControlKeyDown String
 
 type alias Qaop =
     {
@@ -30,49 +28,57 @@ type alias Qaop =
 
 -- need to do case-insensitive check as keyboard
 -- can come in as Z and leave as z - but also , -> < and ? -> /(oh dear)
+-- convert to upper case on way in - really want physical key (ish)
 keyNotEqual: KeyEvent -> Char -> Bool
 keyNotEqual event character =
    case event of
-      KeyDown char -> (char |> toUpper) /= (character |> toUpper)
-      ControlKeyDown _ -> True
+      KeyDownEvent char -> char /= character
+      ControlKeyDownEvent _ -> True
 
-ctrlKeyNotEqual: KeyEvent -> String -> Bool
+ctrlKeyNotEqual: KeyEvent -> ControlKey -> Bool
 ctrlKeyNotEqual event str =
    case event of
-      KeyDown _ -> True
-      ControlKeyDown string -> str /= string
+      KeyDownEvent _ -> True
+      ControlKeyDownEvent string -> str /= string
 
 keyDownEvent: Char -> Qaop -> Qaop
 keyDownEvent character qaop =
    let
-      event = KeyDown character
+      upperchar = character |> toUpper
+      event = KeyDownEvent upperchar
       newkeys = event :: qaop.keys
-      o = debug_log ("key down " ++ (character |> fromChar) ++ " keys ") (newkeys |> List.length) Nothing
+      o = debug_log ("key down " ++ (character |> fromChar) ++ " keys ") newkeys Nothing
    in
       { qaop | keys = event :: qaop.keys }
-
-ctrlKeyDownEvent: String -> Qaop -> Qaop
-ctrlKeyDownEvent str qaop =
-   let
-      event = ControlKeyDown str
-      newkeys = event :: qaop.keys
-      o = debug_log ("control key down " ++ str ++ " keys ") (newkeys |> List.length) Nothing
-   in
-      { qaop | keys = newkeys }
-
-ctrlKeyUpEvent: String -> Qaop -> Qaop
-ctrlKeyUpEvent str qaop =
-   let
-      newkeys = qaop.keys |> List.filter (\item -> ctrlKeyNotEqual item str)
-      o = debug_log ("control key up " ++ str ++ " keys ") (newkeys |> List.length) Nothing
-   in
-      { qaop | keys = newkeys }
 
 keyUpEvent: Char -> Qaop -> Qaop
 keyUpEvent character qaop =
    let
-      newkeys = qaop.keys |> List.filter (\item -> keyNotEqual item character)
-      o = debug_log ("key up " ++ (character |> fromChar) ++ " keys ") (newkeys |> List.length) Nothing
+      upperchar = character |> toUpper
+      newkeys = qaop.keys |> List.filter (\item -> keyNotEqual item upperchar)
+      o = debug_log ("key up " ++ (character |> fromChar) ++ " keys ") newkeys Nothing
+   in
+      { qaop | keys = newkeys }
+
+ctrlKeyDownEvent: String -> Qaop -> Qaop
+ctrlKeyDownEvent string qaop =
+   let
+      control_key = c_CONTROL_KEY_MAP |> Dict.get string
+      newkeys = case control_key of
+         Just a -> ControlKeyDownEvent a :: qaop.keys
+         Nothing -> qaop.keys
+      o = debug_log ("control key down " ++ string ++ " keys ") newkeys Nothing
+   in
+      { qaop | keys = newkeys }
+
+ctrlKeyUpEvent: String -> Qaop -> Qaop
+ctrlKeyUpEvent string qaop =
+   let
+      maybe_control_key = c_CONTROL_KEY_MAP |> Dict.get string
+      newkeys = case maybe_control_key of
+         Just control_key -> qaop.keys |> List.filter (\item -> ctrlKeyNotEqual item control_key)
+         Nothing -> qaop.keys
+      o = debug_log ("control key up " ++ string ++ " keys ") newkeys Nothing
    in
       { qaop | keys = newkeys }
 
@@ -102,7 +108,7 @@ type Message
   | Pause
   | CharacterKey Char
   | CharacterUnKey Char
-  | ControlKey String
+  | ControlKeyDown String
   | ControlUnKey String
   | KeyRepeat
 
@@ -680,7 +686,7 @@ run qaop =
       in
          (newQaop, (maybeActionToCmd nextAction))
    else
-      ({ qaop | spectrum = qaop.spectrum |> frames }, Cmd.none)
+      ({ qaop | spectrum = qaop.spectrum |> frames qaop.keys}, Cmd.none)
 --
 --	protected int dl_length, dl_loaded;
 --	protected String dl_text, dl_msg;

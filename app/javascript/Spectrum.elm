@@ -5,7 +5,7 @@ module Spectrum exposing (..)
 
 import Array exposing (Array)
 import Bitwise exposing (complement, shiftRightBy)
-import Keyboard exposing (Keyboard, update_keyboard)
+import Keyboard exposing (KeyEvent, Keyboard, update_keyboard)
 import Utils exposing (debug_log)
 import Z80 exposing (Z80, execute, interrupt)
 import Z80Env exposing (c_FRSTART, c_FRTIME)
@@ -203,17 +203,16 @@ constructor =
 --			}
 --		} while(!interrupted());
 --	}
-frames: Spectrum -> Spectrum
-frames speccy =
+frames: List KeyEvent -> Spectrum -> Spectrum
+frames keys speccy =
     let
       --tap = 0
       --tend = False
       sz80 = speccy.cpu
       env = sz80.env
-      keyboard = env.keyboard
       cpu = { sz80 | time_limit = c_FRSTART + c_FRTIME,
                      env = { env | cpu_time = c_FRSTART,
-                                   keyboard = keyboard |> update_keyboard } } |> interrupt 0xFF |> execute
+                                   keyboard = keys |> update_keyboard } } |> interrupt 0xFF |> execute
       spectrum = { speccy | cpu = cpu }
       --x = if spectrum.paused then
       --       1
