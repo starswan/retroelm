@@ -14,13 +14,13 @@ import Json.Decode as Decode
 import Screen exposing (RawScreenData, ScreenLine)
 import Spectrum exposing (set_rom)
 import Svg exposing (Svg, line, svg)
-import Svg.Attributes exposing (cx, cy, fill, height, r, stroke, viewBox, width, x1, x2, y1, y2)
+import Svg.Attributes exposing (height, stroke, viewBox, width, x1, x2, y1, y2)
 import Time exposing (posixToMillis, toHour, toMillis, toMinute, toSecond, utc)
 import Html exposing (Html, button, div, h1, h2, text)
 import Html.Attributes exposing (style)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Message(..), Qaop, ctrlKeyDownEvent, ctrlKeyUpEvent, keyDownEvent, keyUpEvent, pause)
-import Utils exposing (debug_log, digitToString)
+import Utils exposing (digitToString)
 import Z80Memory exposing (getScreenLine)
 
 -- meant to be run every 20 msec(50Hz)
@@ -163,7 +163,7 @@ update message model =
           ({ model | time = Nothing, qaop = (model.qaop |> pause (not model.qaop.spectrum.paused))}, Cmd.none)
        CharacterKey char ->
           ({ model | qaop = (model.qaop |> keyDownEvent char) }, Cmd.none)
-       ControlKey str ->
+       ControlKeyDown str ->
            ({model | qaop = (model.qaop |> ctrlKeyDownEvent str) }, Cmd.none)
        CharacterUnKey char ->
            ({model | qaop = (model.qaop |> keyUpEvent char) }, Cmd.none)
@@ -201,7 +201,7 @@ toKey keyValue repeat =
         Just ( char, "" ) ->
             CharacterKey char
         _ ->
-            ControlKey keyValue
+            ControlKeyDown keyValue
 
 keyUpDecoder : Decode.Decoder Message
 keyUpDecoder =

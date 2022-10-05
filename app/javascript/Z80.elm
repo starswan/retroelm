@@ -2370,8 +2370,9 @@ group_cb tmp_z80 =
       ir_or_r = or tmp_z80.interrupts.ir new_r
       c = m1 tmp_z80.pc (or tmp_z80.interrupts.ir ir_or_r) tmp_z80.env
       z80 = { tmp_z80 | env = c.env } |> inc_pc |> add_cpu_time 4
-      o = and (shiftRightBy 3 c.value) 7
-      caseval = and c.value 0xC7
+      o = Bitwise.and (c.value |> shiftRightBy 3) 7
+      caseval = Bitwise.and c.value 0xC7
+      --y = debug_log "group_cb caseval" (caseval |> toHexString2) Nothing
    in
       -- case 0x00: B=shifter(o,B); break;
       -- case 0x01: C=shifter(o,C); break;
@@ -2384,9 +2385,11 @@ group_cb tmp_z80 =
       if caseval < 0x08 then
          let
            raw = z80 |> load408bit caseval HL
+           --z = debug_log "group_cb raw" (raw.value |> toHexString2) Nothing
            value = shifter o raw.value raw.z80.flags
+           --w = debug_log "group_cb value" (value.value |> toHexString2) Nothing
          in
-           raw.z80 |> set408bit caseval value.value HL
+           raw.z80 |> set_flag_regs value.flags |> set408bit caseval value.value HL
       else if caseval >= 0x40 && caseval <= 0x47 then
          -- case 0x40: bit(o,B); break;
          -- case 0x41: bit(o,C); break;
@@ -2514,7 +2517,7 @@ interrupt bus z80 =
          z80
       else
         let
-            --z81 = debug_log "inturrupt" "on" z80
+            --z81 = debug_log "interrupt" "keyboard scan" z80
             new_ints = { ints | iff = 0, halted = False }
             new_z80 = { z80 | interrupts = new_ints } |> push z80.pc |> add_cpu_time 6
         in
