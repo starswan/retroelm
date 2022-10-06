@@ -97,16 +97,16 @@ z80_keyboard_input portnum keyboard =
          let
             list1 = keyboard.keyboard |> List.indexedMap Tuple.pair
             debug_flag = (keyboard.keyboard |> List.sum) /= 255 * 8
-            --x = if debug_flag then
-            --      debug_log ("keyboard poll " ++ (portnum |> toHexString)) keyboard.keyboard Nothing
-            --    else
-            --      Nothing
+            x = if debug_flag then
+                  debug_log ("keyboard poll " ++ (portnum |> toHexString)) keyboard.keyboard Nothing
+                else
+                  Nothing
             list2 = list1 |> List.filter (\(index, value_) -> Bitwise.and portnum (0x100 |> shiftLeftBy index) == 0)
             list3 = list2 |> List.map (\(bitmask, listval) -> listval)
-            --y = if debug_flag then
-            --      debug_log "list3" list3 Nothing
-            --    else
-            --      Nothing
+            y = if debug_flag then
+                  debug_log "list3" list3 Nothing
+                else
+                  Nothing
             v = List.foldl (\num total ->  Bitwise.and num total) 0xFF list3
          in
             if v /= 0xFF then

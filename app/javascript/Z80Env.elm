@@ -6,7 +6,7 @@ module Z80Env exposing (..)
 import Array exposing (Array)
 import Bitwise exposing (and, or, shiftLeftBy, shiftRightBy)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
-import Utils exposing (listToDict, shiftLeftBy8, shiftRightBy8)
+import Utils exposing (debug_log, listToDict, shiftLeftBy8, shiftRightBy8, toHexString)
 import Z80Memory exposing (Z80Memory, getValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
 
@@ -532,6 +532,7 @@ z80_in: Int -> Z80Env -> Z80EnvWithValue
 z80_in portnum env_in =
    let
       env = env_in |> cont_port portnum
+      --x = debug_log "z80_in" (portnum |> toHexString) Nothing
       value = env.keyboard |> z80_keyboard_input portnum
    in
       Z80EnvWithValue env value
