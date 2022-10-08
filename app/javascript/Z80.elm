@@ -493,20 +493,20 @@ rot a flags =
       { flags | ff = ff, fb = fb, fa = fa, a = (Bitwise.and a 0xFF) }
 
 shifter: Int -> Int -> FlagRegisters -> IntWithFlags
-shifter o v flags =
+shifter o v_in flags =
    let
-      ff = case (and o 7) of
-               0 -> shiftRightBy 7 (v * 0x101)
-               1 -> shiftRightBy 24 (v * 0x80800000)
-               2 -> or (shiftLeftBy1 v) (and (shiftRightBy8 flags.ff) 1)
-               3 -> shiftRightBy1 (or (v * 0x201) (and flags.ff 0x100))
-               4 -> shiftLeftBy1 v
-               5 -> or (or (shiftRightBy1 v) (and v 0x80)) (shiftLeftBy8 v)
-               6 -> or (shiftLeftBy1 v) 1
-               _ -> shiftRightBy1 (v * 0x201)
-      fr = and 0xFF ff
+      v = case (and o 7) of
+               0 -> shiftRightBy 7 (v_in * 0x101)
+               1 -> shiftRightBy 24 (v_in * 0x80800000)
+               2 -> or (shiftLeftBy1 v_in) (and (shiftRightBy8 flags.ff) 1)
+               3 -> shiftRightBy1 (or (v_in * 0x201) (and flags.ff 0x100))
+               4 -> shiftLeftBy1 v_in
+               5 -> or (or (shiftRightBy1 v_in) (and v_in 0x80)) (shiftLeftBy8 v_in)
+               6 -> or (shiftLeftBy1 v_in) 1
+               _ -> shiftRightBy1 (v_in * 0x201)
+      fr = and 0xFF v
    in
-      IntWithFlags fr { flags | fr = fr, fb = 0, fa = (or 0x100 fr) }
+      IntWithFlags fr { flags | ff = v, fr = fr, fb = 0, fa = (or 0x100 fr) }
 
 add16: Int -> Int -> FlagRegisters -> IntWithFlagsAndTime
 add16 a b main_flags =
@@ -691,6 +691,20 @@ daa flags =
 --		MP = HL+1;
 --		time += 3;
 --	}
+rld: Z80 -> Z80
+rld z80 =
+   let
+      memval = z80.env |> mem z80.main.hl
+      v = Bitwise.or (memval.value |> shiftLeftBy 4) (Bitwise.and z80.flags.a 0x0F)
+      z81 = z80 |> add_cpu_time 7
+      new_a = Bitwise.and z81.flags.a 0xF0
+      flags = z81.flags
+      new_flags = { flags | a = new_a }
+      z82 = { z81 | flags = new_flags }
+      z83 = z82 |> f_szh0n0p (Bitwise.or new_a (v |> shiftRightBy8))
+      env = memval.env |> set_mem z83.main.hl (Bitwise.and v 0xFF)
+   in
+      { z83 | env = { env | cpu_time = env.cpu_time + 3 } }
 --
 --	private void ld_a_ir(int v)
 --	{
@@ -1788,7 +1802,7 @@ execute_gtc0 c ixiyhl z80 =
             if z80_1.flags.fr /= 0 then
                let
                   result = z80_1 |> pop
-                  x = debug_log "ret nz" (result.value |> subName) Nothing
+                  --x = debug_log "ret nz" (result.value |> subName) Nothing
                in
                   result.z80 |> set_pc result.value
             else
@@ -2008,15 +2022,17 @@ execute_gtc0 c ixiyhl z80 =
       ---- case 0xDC: call((Ff&0x100)!=0); break;
       --0xDC -> z80 |> call (Bitwise.and z80.flags.ff 0x100 /= 0)
       ---- case 0xF2: jp((Ff&FS)==0); break;
-      --0xF2 -> z80 |> jp (Bitwise.and z80.flags.ff c_FS == 0)
+      0xF2 -> z80 |> jp (Bitwise.and z80.flags.ff c_FS == 0)
       ---- case 0xFA: jp((Ff&FS)!=0); break;
-      --0xFA -> z80 |> jp (Bitwise.and z80.flags.ff c_FS /= 0)
-      ---- case 0xCE: adc(imm8()); break;
-      --0xCE -> let
-      --           v = z80 |> imm8
-      --           flags = v.z80.flags |> adc v.value
-      --        in
-      --           v.z80 |> set_flag_regs flags
+      0xFA -> z80 |> jp (Bitwise.and z80.flags.ff c_FS /= 0)
+      -- case 0xDA: jp((Ff&0x100)!=0); break;
+      0xDA -> z80 |> jp ((Bitwise.and z80.flags.ff 0x100) /= 0)
+      -- case 0xCE: adc(imm8()); break;
+      0xCE -> let
+                 v = z80 |> imm8
+                 flags = v.z80.flags |> adc v.value
+              in
+                 v.z80 |> set_flag_regs flags
       _ -> debug_todo "execute" (c |> toHexString) z80
 
 execute_instruction: Z80 -> Z80
@@ -2041,7 +2057,6 @@ execute_instruction tmp_z80 =
             0xED -> group_ed z80
             _ -> execute_gtc0 c.value HL z80
 -- case 0xD4: call((Ff&0x100)==0); break;
--- case 0xDA: jp((Ff&0x100)!=0); break;
 -- case 0xE0: time++; if((flags()&FP)==0) MP=PC=pop(); break;
 -- case 0xE2: jp((flags()&FP)==0); break;
 -- case 0xE4: call((flags()&FP)==0); break;
@@ -2202,6 +2217,12 @@ group_ed z80_0 =
       case c.value of
       -- case 0x47: i(A); time++; break;
       0x47 -> z80 |> set_i z80.flags.a |> add_cpu_time 1
+      -- case 0x4F: r(A); time++; break;
+      -- case 0x57: ld_a_ir(IR>>>8); break;
+      -- case 0x5F: ld_a_ir(r()); break;
+      -- case 0x67: rrd(); break;
+      -- case 0x6F: rld(); break;
+      0x6F -> z80 |> rld
       --  case 0x78: MP=(v=B<<8|C)+1; f_szh0n0p(A=env.in(v)); time+=4; break;
       0x78 -> let
                     v = z80 |> get_bc
@@ -2311,12 +2332,7 @@ group_ed z80_0 =
          --   in
          --      z80 |> set_flag_regs flags_1
          else
-            debug_todo "group_ed" (c.value |> toHexString) z80
--- case 0x4F: r(A); time++; break;
--- case 0x57: ld_a_ir(IR>>>8); break;
--- case 0x5F: ld_a_ir(r()); break;
--- case 0x67: rrd(); break;
--- case 0x6F: rld(); break;
+            debug_todo "group_ed" (c.value |> toHexString2) z80
 -- case 0x78: MP=(v=B<<8|C)+1; f_szh0n0p(A=env.in(v)); time+=4; break;
 -- case 0x41: env.out(B<<8|C,B); time+=4; break;
 -- case 0x49: env.out(B<<8|C,C); time+=4; break;
