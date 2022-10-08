@@ -1204,6 +1204,16 @@ suite =
                                                         main = { z80main | hl = 0x6545, b = 0x50 }, flags = { flags | a = 0x39 } }
                in
                   Expect.equal ((addr + 2), 0xA0) (new_z80.pc, new_z80.main.b)
+            ,test "0xCB 0x00 RLC B with B = FE" <|
+            \_ ->
+               let
+                  new_env = z80env
+                               |> set_mem addr 0xCB
+                               |> set_mem (addr + 1) 0x00
+                  new_z80 = execute_instruction { z80 | env = new_env, sp = 0x8765,
+                                                        main = { z80main | b = 0xFE }, flags = { flags | ff = 0 } }
+               in
+                  Expect.equal ((addr + 2), 0xFD, 0x1FD) (new_z80.pc, new_z80.main.b, new_z80.flags.ff)
             ,test "0xCB 0x01 RLC C" <|
             \_ ->
                let
