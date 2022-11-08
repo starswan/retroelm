@@ -1053,17 +1053,17 @@
     mkdirp "^1.0.4"
     rimraf "^3.0.2"
 
-"@rails/activestorage@^6.0.0":
-  version "6.1.1"
-  resolved "https://registry.npmjs.org/@rails/activestorage/-/activestorage-6.1.1.tgz"
-  integrity sha512-eSVffvzY0MrC4bGP6RrqvlHM06HZ1kc/4XM3XkoL8pAObDANREfd9Dstm7mYpsgPLyhtJ96QxYLV27IoFiVTbQ==
+"@rails/activestorage@6.1.7":
+  version "6.1.7"
+  resolved "https://registry.yarnpkg.com/@rails/activestorage/-/activestorage-6.1.7.tgz#5aaae9f4d10800fdb4fd6fe26fd8b4218579c6e3"
+  integrity sha512-h++k8LBLns4O8AqzdaFp1TsCLP9VSc2hgWI37bjzJ+4D995X7Rd8kdkRmXRaNAUlHDJgy6RpnbhBJ5oiIgWTDw==
   dependencies:
     spark-md5 "^3.0.0"
 
-"@rails/ujs@^6.0.0":
-  version "6.1.1"
-  resolved "https://registry.npmjs.org/@rails/ujs/-/ujs-6.1.1.tgz"
-  integrity sha512-uF6zEbXpGkNa7Vvxrd9Yqas8xsbc3lsC733V6I7fXgPuj8xXiuZakdE4uIyQSFRVmZKe12qmC6CNJNtIEvt4bA==
+"@rails/ujs@6.1.7":
+  version "6.1.7"
+  resolved "https://registry.yarnpkg.com/@rails/ujs/-/ujs-6.1.7.tgz#b09dc5b2105dd267e8374c47e4490240451dc7f6"
+  integrity sha512-0e7WQ4LE/+LEfW2zfAw9ppsB6A8RmxbdAUPAF++UT80epY+7emuQDkKXmaK0a9lp6An50RvzezI0cIQjp1A58w==
 
 "@rails/webpacker@5.4.3":
   version "5.4.3"
@@ -2925,12 +2925,12 @@ elm-test@0.19.1-revision9:
     which "^2.0.2"
     xmlbuilder "^15.1.1"
 
-elm-webpack-loader@^8.0.0:
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/elm-webpack-loader/-/elm-webpack-loader-8.0.0.tgz#73a6be9315fceff27fdc62d46c89520bdffad20a"
-  integrity sha512-R49j9GOGbZ+PjrktAzYzjUgf6w+RHOIUNWLfOVdc7OoGG52SreEk63l/bLJV31HwLE8PU6KANEnzeZ3238fAUg==
+elm-webpack-loader@^7.0.1:
+  version "7.0.1"
+  resolved "https://registry.yarnpkg.com/elm-webpack-loader/-/elm-webpack-loader-7.0.1.tgz#7266d94466478e2f791fc6233a8c224480d8eab3"
+  integrity sha512-FuRsfEA3WptEhz2VDhtP04d1olR75E7+BYTGNGXYvobGKDah6pbKweApDedcFGo8vps0FKCd++HgHsF7yK1Uog==
   dependencies:
-    loader-utils "^2.0.0"
+    loader-utils "^1.4.0"
     node-elm-compiler "^5.0.0"
 
 elm@^0.19.1:

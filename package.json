@@ -2,11 +2,11 @@
   "name": "retroelm",
   "private": true,
   "dependencies": {
-    "@rails/activestorage": "^6.0.0",
-    "@rails/ujs": "^6.0.0",
+    "@rails/activestorage": "6.1.7",
+    "@rails/ujs": "6.1.7",
     "@rails/webpacker": "5.4.3",
     "elm": "^0.19.1",
-    "elm-webpack-loader": "^8.0.0"
+    "elm-webpack-loader": "^7.0.1"
   },
   "version": "0.1.0",
   "devDependencies": {
