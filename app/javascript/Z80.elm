@@ -7,13 +7,13 @@ import Array exposing (Array)
 import Bitwise exposing (and, complement, or, shiftLeftBy, shiftRightBy)
 import Dict exposing (Dict)
 import Loop
-import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8, toHexString)
+import Utils exposing (byte, char, shiftLeftBy1, shiftLeftBy8, shiftRightBy1, shiftRightBy8, toHexString, toHexString2)
 import Z80Debug exposing (debug_log, debug_todo)
 import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, set_mem, set_mem16, z80_in, z80env_constructor)
-import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
+import Z80Flags exposing (FlagRegisters, IntWithFlags, IntWithFlagsAndTime, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FH, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (subName)
-import Z80Types exposing (IntWithPcAndEnv, InterruptRegisters, MainRegisters, MainWithIndexRegisters, ProgramCounter, Z80, imm16, imm8, pop, push)
+import Z80Types exposing (IntWithPcAndEnv, InterruptRegisters, MainRegisters, Z80, imm16, imm8, pop, push)
 
 --type alias RegisterSet =
 --   {
@@ -234,6 +234,43 @@ f_szh0n0p r z80 =
    in
       { z80 | flags = { flags | fr = fr, ff = ff, fa = fa, fb = 0 } }
 
+rot: Int -> FlagRegisters -> FlagRegisters
+rot a flags =
+   let
+      ff = Bitwise.or (Bitwise.and flags.ff 0x07) (Bitwise.and a 0x128)
+      fb = Bitwise.and flags.fb 0x80
+      fa = Bitwise.or (Bitwise.and flags.fa (Bitwise.complement c_FH)) (Bitwise.and flags.fr c_FH)
+   in
+      { flags | ff = ff, fb = fb, fa = fa, a = (Bitwise.and a 0xFF) }
+
+shifter: Int -> Int -> FlagRegisters -> IntWithFlags
+shifter o v_in flags =
+   let
+      v = case (and o 7) of
+               0 -> shiftRightBy 7 (v_in * 0x101)
+               1 -> shiftRightBy 24 (v_in * 0x80800000)
+               2 -> or (shiftLeftBy1 v_in) (and (shiftRightBy8 flags.ff) 1)
+               3 -> shiftRightBy1 (or (v_in * 0x201) (and flags.ff 0x100))
+               4 -> shiftLeftBy1 v_in
+               5 -> or (or (shiftRightBy1 v_in) (and v_in 0x80)) (shiftLeftBy8 v_in)
+               6 -> or (shiftLeftBy1 v_in) 1
+               _ -> shiftRightBy1 (v_in * 0x201)
+      fr = and 0xFF v
+   in
+      IntWithFlags fr { flags | ff = v, fr = fr, fb = 0, fa = (or 0x100 fr) }
+add16: Int -> Int -> FlagRegisters -> IntWithFlagsAndTime
+add16 a b main_flags =
+    let
+        r = a + b
+        ff = or (and main_flags.ff c_FS) (and (shiftRightBy8 r) 0x128)
+        fa = and main_flags.fa (complement c_FH)
+        shiftright = shiftRightBy8 (Bitwise.xor (Bitwise.xor r a) b)
+        shiftrightxor = Bitwise.xor shiftright main_flags.fr
+        fb_rhs = and shiftrightxor c_FH
+        fb = or (and main_flags.fb 0x80) fb_rhs
+        new_flags = { main_flags | ff = ff, fa = fa, fb = fb }
+    in
+        IntWithFlagsAndTime (and r 0xFFFF) new_flags 7
 --
 --	private void adc_hl(int b)
 --	{
@@ -2425,15 +2462,17 @@ execute_gtc0 c ixiyhl z80 =
       ---- case 0xDC: call((Ff&0x100)!=0); break;
       --0xDC -> z80 |> call (Bitwise.and z80.flags.ff 0x100 /= 0)
       ---- case 0xF2: jp((Ff&FS)==0); break;
-      --0xF2 -> z80 |> jp (Bitwise.and z80.flags.ff c_FS == 0)
+      0xF2 -> z80 |> jp (Bitwise.and z80.flags.ff c_FS == 0)
       ---- case 0xFA: jp((Ff&FS)!=0); break;
-      --0xFA -> z80 |> jp (Bitwise.and z80.flags.ff c_FS /= 0)
-      ---- case 0xCE: adc(imm8()); break;
-      --0xCE -> let
-      --           v = z80 |> imm8
-      --           flags = v.z80.flags |> adc v.value
-      --        in
-      --           v.z80 |> set_flag_regs flags
+      0xFA -> z80 |> jp (Bitwise.and z80.flags.ff c_FS /= 0)
+      -- case 0xDA: jp((Ff&0x100)!=0); break;
+      0xDA -> z80 |> jp ((Bitwise.and z80.flags.ff 0x100) /= 0)
+      -- case 0xCE: adc(imm8()); break;
+      0xCE -> let
+                 v = z80 |> imm8
+                 flags = z80.flags |> adc v.value
+              in
+                 { z80 | env = v.env } |> set_flag_regs flags
       _ -> debug_todo "execute" (c |> toHexString) z80
 
 execute_instruction: Z80 -> Z80
@@ -2455,7 +2494,6 @@ execute_instruction tmp_z80 =
                     0xCB -> group_cb z80
                     _ -> execute_gtc0 c.value HL z80
 -- case 0xD4: call((Ff&0x100)==0); break;
--- case 0xDA: jp((Ff&0x100)!=0); break;
 -- case 0xE0: time++; if((flags()&FP)==0) MP=PC=pop(); break;
 -- case 0xE2: jp((flags()&FP)==0); break;
 -- case 0xE4: call((flags()&FP)==0); break;
@@ -2616,6 +2654,12 @@ group_ed z80_0 =
       case c.value of
       -- case 0x47: i(A); time++; break;
       0x47 -> z80 |> set_i z80.flags.a |> add_cpu_time 1
+      -- case 0x4F: r(A); time++; break;
+      -- case 0x57: ld_a_ir(IR>>>8); break;
+      -- case 0x5F: ld_a_ir(r()); break;
+      -- case 0x67: rrd(); break;
+      -- case 0x6F: rld(); break;
+      0x6F -> z80 |> rld
       --  case 0x78: MP=(v=B<<8|C)+1; f_szh0n0p(A=env.in(v)); time+=4; break;
       0x78 -> let
                     v = z80 |> get_bc
@@ -2680,8 +2724,6 @@ group_ed z80_0 =
                  z80 |> sbc_hl bc
       -- case 0x72: sbc_hl(SP); break;
       0x72 -> z80 |> sbc_hl z80.sp
-      -- case 0x6F: rld(); break;
-      0x6F -> z80 |> rld
       ---- case 0x6A: adc_hl(HL); break;
       --0x6A -> z80 |> adc_hl z80.main.hl
       ---- case 0x5A: adc_hl(D<<8|E); break;
@@ -2728,11 +2770,7 @@ group_ed z80_0 =
          --   in
          --      z80 |> set_flag_regs flags_1
          else
-            debug_todo "group_ed" (c.value |> toHexString) z80
--- case 0x4F: r(A); time++; break;
--- case 0x57: ld_a_ir(IR>>>8); break;
--- case 0x5F: ld_a_ir(r()); break;
--- case 0x67: rrd(); break;
+            debug_todo "group_ed" (c.value |> toHexString2) z80
 -- case 0x78: MP=(v=B<<8|C)+1; f_szh0n0p(A=env.in(v)); time+=4; break;
 -- case 0x41: env.out(B<<8|C,B); time+=4; break;
 -- case 0x49: env.out(B<<8|C,C); time+=4; break;
