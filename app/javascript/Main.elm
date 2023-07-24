@@ -14,19 +14,19 @@ import Json.Decode as Decode
 import Screen exposing (RawScreenData, ScreenLine)
 import Spectrum exposing (set_rom)
 import Svg exposing (Svg, line, svg)
-import Svg.Attributes exposing (height, stroke, viewBox, width, x1, x2, y1, y2)
+import Svg.Attributes exposing (cx, cy, fill, height, r, stroke, viewBox, width, x1, x2, y1, y2)
 import Time exposing (posixToMillis, toHour, toMillis, toMinute, toSecond, utc)
 import Html exposing (Html, button, div, h1, h2, text)
 import Html.Attributes exposing (style)
 import Params exposing (StringPair, valid_params)
-import Qaop exposing (Message(..), Qaop, ctrlKeyDownEvent, ctrlKeyUpEvent, keyDownEvent, keyUpEvent, pause)
-import Utils exposing (digitToString)
+import Qaop exposing (Message(..), Qaop, pause)
+import Utils exposing (debug_log, digitToString)
 import Z80Memory exposing (getScreenLine)
 
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
 -- Chromium debug 67.4ms(14.8Hz) live 50.4ms(19.8Hz)
--- firefox debug 154.1ms (6.4Hz) live 124ms(8.0Hz)
+-- firefox debug 310ms (3.2Hz) live 124ms(8.0Hz)
 c_TICKTIME = 50
 
 -- I'm currently unsure whether scaling the display results in a significant slowdown or not
@@ -162,13 +162,25 @@ update message model =
        Pause ->
           ({ model | time = Nothing, qaop = (model.qaop |> pause (not model.qaop.spectrum.paused))}, Cmd.none)
        CharacterKey char ->
-          ({ model | qaop = (model.qaop |> keyDownEvent char) }, Cmd.none)
-       ControlKeyDown str ->
-           ({model | qaop = (model.qaop |> ctrlKeyDownEvent str) }, Cmd.none)
+          let
+             i = debug_log "character key" char Nothing
+          in
+            (model, Cmd.none)
+       ControlKey str ->
+          let
+             o = debug_log "control key" str Nothing
+          in
+            (model, Cmd.none)
        CharacterUnKey char ->
-           ({model | qaop = (model.qaop |> keyUpEvent char) }, Cmd.none)
+          let
+             i = debug_log "no longer key" char Nothing
+          in
+            (model, Cmd.none)
        ControlUnKey string ->
-           ({model | qaop = (model.qaop |> ctrlKeyUpEvent string) }, Cmd.none)
+          let
+             o = debug_log "no longer control key" string Nothing
+          in
+            (model, Cmd.none)
        KeyRepeat ->
             -- do nothing on repeating keys
             (model, Cmd.none)
@@ -201,7 +213,7 @@ toKey keyValue repeat =
         Just ( char, "" ) ->
             CharacterKey char
         _ ->
-            ControlKeyDown keyValue
+            ControlKey keyValue
 
 keyUpDecoder : Decode.Decoder Message
 keyUpDecoder =

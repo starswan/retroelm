@@ -5,10 +5,9 @@ module Spectrum exposing (..)
 
 import Array exposing (Array)
 import Bitwise exposing (complement, shiftRightBy)
-import Keyboard exposing (KeyEvent, Keyboard, update_keyboard)
 import Utils exposing (debug_log)
 import Z80 exposing (Z80, execute, interrupt)
-import Z80Env exposing (c_FRSTART, c_FRTIME)
+import Z80Env exposing (Keyboard, c_FRSTART, c_FRTIME)
 
 type alias Audio =
     {
@@ -68,13 +67,13 @@ set_rom romdata spectrum =
 c_Mh = 6 -- margin
 c_Mv = 5
 c_W = 256 + 8*c_Mh*2 -- 352
---c_H = 192 + 8*c_Mv*2 -- 272
+c_H = 192 + 8*c_Mv*2 -- 272
 
---c_REFRESH_END = 99999
+c_REFRESH_END = 99999
 c_BORDER_START = -224*8*c_Mv - 4*c_Mh + 4
 
---c_CHANNEL_VOLUME = 26000
---c_SPEAKER_VOLUME = 49000
+c_CHANNEL_VOLUME = 26000
+c_SPEAKER_VOLUME = 49000
 
 -- Spectrum only contained a reference to Qaop
 -- so that it could call new_pixels() on it in 2 places
@@ -203,16 +202,17 @@ constructor =
 --			}
 --		} while(!interrupted());
 --	}
-frames: List KeyEvent -> Spectrum -> Spectrum
-frames keys speccy =
+frames: Spectrum -> Spectrum
+frames speccy =
     let
       --tap = 0
       --tend = False
       sz80 = speccy.cpu
       env = sz80.env
+      keyboard = env.keyboard
       cpu = { sz80 | time_limit = c_FRSTART + c_FRTIME,
                      env = { env | cpu_time = c_FRSTART,
-                                   keyboard = keys |> update_keyboard } } |> interrupt 0xFF |> execute
+                                   keyboard = keyboard |> update_keyboard } } |> interrupt 0xFF |> execute
       spectrum = { speccy | cpu = cpu }
       --x = if spectrum.paused then
       --       1
@@ -233,9 +233,9 @@ frames keys speccy =
     in
         spectrum
 
---do_load: number -> Bool -> Z80 -> Z80
---do_load thing flag z80  =
---    z80
+do_load: number -> Bool -> Z80 -> Z80
+do_load thing flag z80  =
+    z80
 
 refresh_new: ScreenRefresh -> BorderRefresh -> (ScreenRefresh, BorderRefresh)
 refresh_new screen_refresh border_refresh =
@@ -313,6 +313,103 @@ pause m spectrum =
 --	public int halt(int n, int ir)
 --	{
 --		return n;
+--	}
+--
+--	/* contention */
+--	// according to scratchpad.wikia.com/wiki/Contended_memory
+--
+--	static final int NOCONT = 99999;
+--	int ctime;
+--
+--
+--	private void cont_port(int port)
+--	{
+--		int n = cpu.time - ctime;
+--		if(n>0) cont(n);
+--
+--		if((port&0xC000) != 0x4000) {
+--			if((port&0x0001)==0)
+--				cont1(1);
+--			ctime = NOCONT;
+--		} else {
+--			ctime = cpu.time;
+--			cont(2 + ((port&1)<<1));
+--			ctime = cpu.time+4;
+--		}
+--	}
+--
+--	/* ImageProducer */
+--
+--	static final String pal1 =
+--	 "\0\0\0\25\25\311\312\41\41\313\46\313\54\313\54\57\314\314\315\315\65\315\315\315"
+--	+"\0\0\0\33\33\373\374\51\51\374\57\374\67\375\67\73\376\376\377\377\101\377\377\377";
+--
+--	static final String pal2 =
+--	 "\1\1\1\27\27\320\321\43\43\322\50\322\56\323\56\62\323\323\324\324\67\324\324\324"
+--	+"\1\1\1\34\34\377\377\53\53\377\61\377\71\377\71\76\377\377\377\377\104\377\377\377"
+--	+"\0\0\0\24\24\302\303\37\37\303\43\303\51\304\51\55\305\305\305\305\62\306\306\306"
+--	+"\0\0\0\31\31\364\367\46\46\370\54\370\64\372\64\70\373\373\375\375\76\376\376\376";
+--
+--	static byte[] palcolor(String p, int n, int m) {
+--		byte a[] = new byte[n];
+--		for(int i=0; i<n; i++) {
+--			a[i] = (byte)p.charAt(m);
+--			m += 3;
+--		}
+--		return a;
+--	}
+--
+--	static final ColorModel cm1 = new IndexColorModel(8, 16,
+--		palcolor(pal1,16,0), palcolor(pal1,16,1), palcolor(pal1,16,2));
+--
+--	static final ColorModel cm2 = new IndexColorModel(8, 32,
+--		palcolor(pal2,32,0), palcolor(pal2,32,1), palcolor(pal2,32,2));
+--
+--	private ColorModel cm;
+--	private Vector consumers = new Vector(1);
+--
+--	public synchronized void addConsumer(ImageConsumer ic)
+--	{
+--		try {
+--			update_buf = new byte[8*W*scale*scale];
+--			ic.setDimensions(width, height);
+--			consumers.addElement(ic); // XXX it may have been just removed
+--			ic.setHints(ic.RANDOMPIXELORDER|ic.SINGLEPASS);
+--			if(isConsumer(ic)) ic.setColorModel(cm);
+--			force_refresh();
+--		} catch(Exception e) {
+--			if(isConsumer(ic))
+--				ic.imageComplete(ImageConsumer.IMAGEERROR);
+--		}
+--	}
+--
+--	public boolean isConsumer(ImageConsumer ic)
+--	{
+--		return consumers.contains(ic);
+--	}
+--
+--	public synchronized void removeConsumer(ImageConsumer ic)
+--	{
+--		consumers.removeElement(ic);
+--	}
+--
+--	public void startProduction(ImageConsumer ic)
+--	{
+--		addConsumer(ic);
+--	}
+--
+--	public void requestTopDownLeftRightResend(ImageConsumer ic) {}
+--
+--	private void abort_consumers()
+--	{
+--		for(;;) {
+--			int s = consumers.size();
+--			if(s == 0) break;
+--			s--;
+--			ImageConsumer c = (ImageConsumer)consumers.elementAt(s);
+--			consumers.removeElementAt(s);
+--			c.imageComplete(ImageConsumer.IMAGEABORTED);
+--		}
 --	}
 --
 --	/* screen */
@@ -861,6 +958,114 @@ pause m spectrum =
 --		} while(n>1);
 --	}
 --
+--	/* keyboard & joystick */
+--
+--	public final int keyboard[] = new int[8];
+--	public int kempston = 0;
+--	public final KeyEvent keys[] = new KeyEvent[8];
+--	static final int arrowsDefault[] = {0143, 0124, 0134, 0144};
+--	int arrows[] = arrowsDefault;
+--
+--	void update_keyboard() {
+--		for(int i=0; i<8; i++) keyboard[i] = 0xFF;
+--		kempston = 0;
+--
+--		int m[] = new int[] {-1,-1,-1,-1,-1};
+--		int s = 0;
+--		synchronized(keys) {
+--			for(int i=0; i<keys.length; i++) if(keys[i]!=null) {
+--				int k = key(keys[i]);
+--				if(k<0) continue;
+--				// .......xxx row
+--				// ....xxx... column
+--				// ...x...... caps shift
+--				// ..x....... symbol shift
+--				// .x........ caps shift alone
+--				// x......... symbol shift alone
+--				s |= k;
+--				if(k<01000)
+--					pressed(k,m);
+--			}
+--		}
+--		if((s&0300)==0) s |= s>>>3 & 0300;
+--		if((s&0100)!=0) pressed(000,m);
+--		if((s&0200)!=0) pressed(017,m);
+--	}
+--
+update_keyboard: Keyboard -> Keyboard
+update_keyboard k =
+   let
+      keyboard = List.repeat 0xFF 8
+      kempston = 0
+      m = List.repeat -1 5
+      s = 0
+      new_keys = List.map key k.keys
+   in
+      { k | keyboard = keyboard, kempston = kempston }
+--	private final void pressed(int k, int m[])
+--	{
+--		int a = k&7, b = k>>>3 & 7;
+--		int v = keyboard[a] & ~(1<<b);
+--		int n = m[b];
+--		keyboard[a] = v; m[b] = a;
+--		if(n>=0) v |= keyboard[n];
+--		for(n=0; n<8; n++)
+--			if((keyboard[n]|v) != 0xFF)
+--				keyboard[n] = v;
+--	}
+--
+--	private int key(KeyEvent e)
+--	{
+--		int c = e.getKeyCode();
+--		int a = e.getKeyChar();
+--		int i = "[AQ10P\n ZSW29OL]XDE38IKMCFR47UJNVGT56YHB".indexOf((char)c);
+--		if(i>=0) simple: {
+--			int s = 0;
+--			if(c>=KeyEvent.VK_0 && c<=KeyEvent.VK_9) {
+--				if(c!=(int)a) break simple;
+--				if(e.isAltDown()) s = 0100;
+--			}
+--			return i | s;
+--		}
+--		if(a != '\0') {
+--			i = "\t\0\0!_\"\0\0:\0\0@);=\0\0\0\0#(\0+.?\0<$'\0-,/\0>%&\0^*".indexOf(a);
+--			if(i>=0)
+--				return i | 0200;
+--		}
+--		switch(c) {
+--			case KeyEvent.VK_INSERT:
+--			case KeyEvent.VK_ESCAPE: return 0103;
+--			case KeyEvent.VK_KP_LEFT:
+--			case KeyEvent.VK_LEFT: i=0; break;
+--			case KeyEvent.VK_KP_DOWN:
+--			case KeyEvent.VK_DOWN: i=3; break;
+--			case KeyEvent.VK_KP_UP:
+--			case KeyEvent.VK_UP: i=2; break;
+--			case KeyEvent.VK_KP_RIGHT:
+--			case KeyEvent.VK_RIGHT: i=1; break;
+--			case KeyEvent.VK_BACK_SPACE: return 0104;
+--			case KeyEvent.VK_SHIFT: return 01000;
+--			case KeyEvent.VK_CONTROL: kempston |= 0x10; /* fall */
+--			case KeyEvent.VK_ALT: return 02000;
+--			default: return -1;
+--		}
+--		kempston |= 1<<(i^1);
+--		return e.isAltDown() ? arrowsDefault[i] : arrows[i];
+--	}
+key: Int -> Int
+key event =
+   event
+--	public void setArrows(String s) {
+--		arrows = new int[4];
+--		for(int i=0; i<4; i++) {
+--			int c = -1;
+--			if(i<s.length())
+--				c = "Caq10pE_zsw29olSxde38ikmcfr47ujnvgt56yhb"
+--					.indexOf(s.charAt(i));
+--			if(c<0) c = arrowsDefault[i];
+--			arrows[i] = c;
+--		}
+--	}
 --
 --	/* tape */
 --

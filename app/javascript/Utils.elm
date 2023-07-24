@@ -13,17 +13,9 @@ shiftLeftBy8: Int -> Int
 shiftLeftBy8 reg =
     shiftLeftBy 8 reg
 
-shiftLeftBy1: Int -> Int
-shiftLeftBy1 reg =
-    shiftLeftBy 1 reg
-
 shiftRightBy8: Int -> Int
 shiftRightBy8 reg =
     shiftRightBy 8 reg
-
-shiftRightBy1: Int -> Int
-shiftRightBy1 reg =
-    shiftRightBy 1 reg
 
 listToDict: List Int -> Dict Int Int
 listToDict intlist =
@@ -51,18 +43,17 @@ toHexString: Int -> String
 toHexString value =
    "0x" ++ (Hex.toString value |> String.toUpper |> (String.padLeft 4 '0'))
 
--- just used for debugging
-toHexString2: Int -> String
-toHexString2 value =
-   "0x" ++ (Hex.toString value |> String.toUpper |> (String.padLeft 2 '0'))
+--toHexString2: Int -> String
+--toHexString2 value =
+--   "0x" ++ (Hex.toString value |> String.toUpper |> (String.padLeft 2 '0'))
 
 debug_log msg thingToLog thingToReturn =
-   Debug.log msg thingToLog |> (\_ -> thingToReturn)
-   --thingToReturn
+   --Debug.log msg thingToLog |> (\_ -> thingToReturn)
+   thingToReturn
 
 debug_todo msg thingToLog thingToReturn =
-   Debug.todo (msg ++ " " ++ thingToLog) |> (\_ -> thingToReturn)
-   --thingToReturn
+   --Debug.todo (msg ++ " " ++ thingToLog) |> (\_ -> thingToReturn)
+   thingToReturn
 
 
 
