@@ -96,7 +96,7 @@ z80_keyboard_input portnum keyboard =
       if Bitwise.and portnum 0x0001 == 0 then
          let
             list1 = keyboard.keyboard |> List.indexedMap Tuple.pair
-            debug_flag = (keyboard.keyboard |> List.sum) /= 255 * 8
+            --debug_flag = (keyboard.keyboard |> List.sum) /= 255 * 8
             --x = if debug_flag then
             --      debug_log ("keyboard poll " ++ (portnum |> toHexString)) keyboard.keyboard Nothing
             --    else
