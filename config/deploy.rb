@@ -20,7 +20,7 @@ set :use_sudo, false
 # set :scm, :subversion
 # set :repository, "http://subversion/svn/starswan/trunk/projects/retro/retroelm"
 set :scm, :git
-set :repository, "git@github.com:starswan/retroelm.git"
+set :repository, "git@github.com:starswan/qaop-elm.git"
 set :branch, ENV['BRANCH'] || 'main'
 
 set :deploy_to, "#{ENV['HOME']}/retroelm"
