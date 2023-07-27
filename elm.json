@@ -7,6 +7,7 @@
     "elm-version": "0.19.1",
     "dependencies": {
         "direct": {
+            "Chadtech/elm-vector": "3.0.2",
             "JohnBugner/elm-loop": "2.1.0",
             "elm/browser": "1.0.2",
             "elm/bytes": "1.0.8",
@@ -21,7 +22,6 @@
         },
         "indirect": {
             "elm/file": "1.0.5",
-            "elm/random": "1.0.0",
             "elm/url": "1.0.0",
             "elm/virtual-dom": "1.0.2"
         }
@@ -30,6 +30,8 @@
         "direct": {
             "elm-explorations/test": "1.2.2"
         },
-        "indirect": {}
+        "indirect": {
+            "elm/random": "1.0.0"
+        }
     }
 }

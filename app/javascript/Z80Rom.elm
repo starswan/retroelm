@@ -3,15 +3,31 @@ module Z80Rom exposing (..)
 import Dict exposing (Dict)
 import Utils exposing (toHexString)
 import Z80Debug exposing (debug_todo)
-type alias Z80ROM = Dict Int Int
+import Vector16 exposing (Vector16)
+import Vector4 exposing (Vector4)
+type alias Z80ROM16 = Vector16 Int
+type alias Z80ROM256 = Vector16 Z80ROM16
+type alias Z80ROM1024 = Vector4 Z80ROM256
+type alias Z80ROM = Vector16 Z80ROM1024
+
+type alias ROMAddr =
+    {
+        v16: Vector16.Index,
+        v256: Vector16.Index,
+        v1024: Vector4.Index,
+        v16k: Vector16.Index
+    }
 
 constructor: Z80ROM
 constructor =
    let
-     rom48k = List.range 0 16384
-     rom_list = List.indexedMap Tuple.pair rom48k
+     rom16 = Vector16.from16 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+     rom256 = Vector16.from16 rom16 rom16 rom16 rom16 rom16 rom16 rom16 rom16
+                              rom16 rom16 rom16 rom16 rom16 rom16 rom16 rom16
+     rom1024 = Vector4.from4 rom256 rom256 rom256 rom256
    in
-     Dict.fromList rom_list
+     Vector16.from16 rom1024 rom1024 rom1024 rom1024 rom1024 rom1024 rom1024 rom1024
+                     rom1024 rom1024 rom1024 rom1024 rom1024 rom1024 rom1024 rom1024
 
 getROMValue: Int -> Z80ROM -> Int
 getROMValue addr z80dict  =
