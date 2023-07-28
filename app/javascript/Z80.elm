@@ -4,9 +4,8 @@
 module Z80 exposing (..)
 
 import Bitwise exposing (and, complement, or, shiftLeftBy, shiftRightBy)
-import Dict
 import Loop
-import Utils exposing (byte, char, debug_log, debug_todo, shiftLeftBy1, shiftLeftBy8, shiftRightBy1, shiftRightBy8, toHexString, toHexString2)
+import Utils exposing (byte, char, debug_log, debug_todo, shiftLeftBy1, shiftLeftBy8, shiftRightBy1, shiftRightBy8, toHexString)
 import Z80Env exposing (Z80Env, c_FRSTART, m1, mem, mem16, out, set_mem, set_mem16, z80_in, z80env_constructor)
 import Z80Rom exposing (subName)
 
@@ -41,12 +40,6 @@ type alias IntWithFlagsAndTime =
        value: Int,
        flags: FlagRegisters,
        time: Int
-    }
-type alias IntWithZ80AndTime =
-    {
-        value: Int,
-        z80: Z80,
-        time: Int
     }
 type alias IntWithZ80 =
     {
