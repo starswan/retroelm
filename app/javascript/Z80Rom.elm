@@ -1,7 +1,8 @@
 module Z80Rom exposing (..)
 
 import Dict exposing (Dict)
-import Utils exposing (debug_todo, toHexString)
+import Utils exposing (toHexString)
+import Z80Debug exposing (debug_todo)
 type alias Z80ROM = Dict Int Int
 
 constructor: Z80ROM
