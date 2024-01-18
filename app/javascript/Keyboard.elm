@@ -3,7 +3,8 @@ module Keyboard exposing (..)
 import Array exposing (Array)
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Dict
-import Utils exposing (debug_log, toHexString, toHexString2)
+import Utils exposing (toHexString, toHexString2)
+import Z80Debug exposing (debug_log)
 
 type Kempston = JoystickLeft | JoystickRight | JoystickUp | JoystickDown | JoystickControl
 --type ControlKey = Shift | Control | Enter | Alt | AltGraph | Backspace | Delete | Home | Escape |
