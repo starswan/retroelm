@@ -16,7 +16,8 @@ import Params exposing (StringPair)
 import Spectrum exposing (Spectrum, frames, new_tape)
 import String exposing (fromChar)
 import Time
-import Utils exposing (compact, debug_log)
+import Utils exposing (compact)
+import Z80Debug exposing (debug_log)
 
 type alias Qaop =
     {
