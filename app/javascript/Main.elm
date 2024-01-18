@@ -25,8 +25,8 @@ import Z80Memory exposing (getScreenLine)
 
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
--- Chromium debug 86.4ms(11.5Hz) live 46.6ms(21.4Hz)
--- firefox debug 140.1ms (7.1Hz) live 93.2ms(10.7Hz)
+-- Chromium debug 85.5ms(11.7 Hz) live 45.9ms(21.8 Hz)
+-- firefox debug 108.4ms (9.2 Hz) live 75.8ms(13.2 Hz)
 c_TICKTIME = 40
 
 -- I'm currently unsure whether scaling the display results in a significant slowdown or not
@@ -87,10 +87,12 @@ lineListToSvg: Int -> List ScreenLine -> List (Svg Message)
 lineListToSvg y_index linelist =
    List.map (lineToSvg y_index) linelist
 
+range0192 = List.range 0 191
+
 view : Model -> Html Message
 view model =
    let
-      rawlines = List.map (screenLine model) (List.range 0 255)
+      rawlines = List.map (screenLine model) range0192
       lines = List.map Screen.rawToLines rawlines
    in
      -- The inline style is being used for example purposes in order to keep this example simple and

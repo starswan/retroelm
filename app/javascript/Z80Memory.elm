@@ -8,9 +8,6 @@ import Z80Debug exposing (debug_todo)
 type alias Z80Memory =
    {
       mainDict: Dict Int Int
-      --quickDict: Dict Int Int,
-      --mainSize: Int,
-      --opCount: Int
    }
 
 constructor: List Int -> Z80Memory
@@ -18,38 +15,22 @@ constructor list =
    let
       ramarray = List.indexedMap Tuple.pair list
    in
-      --Z80Memory (Dict.fromList ramarray) Dict.empty (List.length ramarray) 0
       Z80Memory (Dict.fromList ramarray)
 
--- These ideas don't seem to give us much of a boost sadly
 getValue: Int -> Z80Memory -> Int
 getValue addr z80dict  =
-    --case Dict.get addr z80dict.quickDict of
-    --    Just a ->
-    --      a
-    --    Nothing ->
-    --      case Dict.get addr z80dict.mainDict of
-    --          Just a ->
-    --            a
-    --          Nothing ->
-    --            -1
     case Dict.get addr z80dict.mainDict of
         Just a ->
           a
         Nothing ->
           debug_todo "Z80Memory:getValue" (addr |> toHexString) -1
 
-insert: Int -> Int -> Z80Memory -> Z80Memory
-insert addr value z80mem =
-   --let
-   --   newq = Dict.insert addr value z80mem.quickDict
-   --in
-   --   if z80mem.opCount == 1024 then
-   --      { z80mem | opCount = 0, quickDict = Dict.empty, mainDict = Dict.union newq z80mem.mainDict }
-   --   else
-   --      { z80mem | quickDict = newq, opCount = z80mem.opCount + 1 }
+-- insert value at address addr (except that 16384 has been already subtracted)
+set_value: Int -> Int -> Z80Memory -> Z80Memory
+set_value addr value z80mem =
    { z80mem | mainDict = Dict.insert addr value z80mem.mainDict }
 
+-- Convert row index into start row data location and (colour-ish) attribute memory location
 calcIndexes: Int -> (Int, Int)
 calcIndexes start =
    let
@@ -71,10 +52,9 @@ mapScreen line_num z80mem index  =
    in
       { colour=colour,data=data }
 
+range031 = (List.range 0 31)
+
 -- line_num ranges from 0 to 255
 getScreenLine: Int -> Z80Memory -> List RawScreenData
 getScreenLine line_num z80dict =
-   let
-      indexes = List.range 0 31
-   in
-      List.map (mapScreen line_num z80dict) indexes
+   List.map (mapScreen line_num z80dict) range031
