@@ -5,7 +5,8 @@ module Z80 exposing (..)
 
 import Bitwise exposing (and, complement, or, shiftLeftBy, shiftRightBy)
 import Loop
-import Utils exposing (byte, char, debug_log, debug_todo, shiftLeftBy8, shiftRightBy8, toHexString)
+import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8, toHexString)
+import Z80Debug exposing (debug_log, debug_todo)
 import Z80Env exposing (Z80Env, c_FRSTART, m1, mem, mem16, out, set_mem, set_mem16, z80_in, z80env_constructor)
 import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Rom exposing (subName)

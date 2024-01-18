@@ -6,8 +6,8 @@ module Spectrum exposing (..)
 import Array exposing (Array)
 import Bitwise exposing (complement, shiftRightBy)
 import Keyboard exposing (KeyEvent, Keyboard, update_keyboard)
-import Utils exposing (debug_log)
 import Z80 exposing (Z80, execute, interrupt)
+import Z80Debug exposing (debug_log)
 import Z80Env exposing (c_FRSTART, c_FRTIME)
 
 type alias Audio =

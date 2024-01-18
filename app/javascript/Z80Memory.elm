@@ -3,7 +3,8 @@ module Z80Memory exposing (..)
 import Bitwise exposing (shiftLeftBy)
 import Dict exposing (Dict)
 import Screen exposing (RawScreenData)
-import Utils exposing (debug_todo, toHexString)
+import Utils exposing (toHexString)
+import Z80Debug exposing (debug_todo)
 type alias Z80Memory =
    {
       mainDict: Dict Int Int
