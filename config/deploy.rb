@@ -3,11 +3,12 @@
 # $Id$
 #
 require "rvm/capistrano"
-set :rvm_ruby_string, "2.7.6@retroelm"
+set :rvm_ruby_string, "3.1.4@retroelm"
 set :bundle_without, %i[development test]
 #set :rvm_install_type, '1.26.10'
 # Using distcc this number can maybe go higher
 #set :rvm_install_ruby_threads, 3
+set :rvm_type, "/usr/share/rvm"
 
 # main details
 set :application, "retroelm"

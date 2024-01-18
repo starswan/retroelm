@@ -57,12 +57,12 @@ toHexString2 value =
    "0x" ++ (Hex.toString value |> String.toUpper |> (String.padLeft 2 '0'))
 
 debug_log msg thingToLog thingToReturn =
-   Debug.log msg thingToLog |> (\_ -> thingToReturn)
-   --thingToReturn
+   --Debug.log msg thingToLog |> (\_ -> thingToReturn)
+   thingToReturn
 
 debug_todo msg thingToLog thingToReturn =
-   Debug.todo (msg ++ " " ++ thingToLog) |> (\_ -> thingToReturn)
-   --thingToReturn
+   --Debug.todo (msg ++ " " ++ thingToLog) |> (\_ -> thingToReturn)
+   thingToReturn
 
 
 
