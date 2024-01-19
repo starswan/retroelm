@@ -25,7 +25,7 @@ import Z80Memory exposing (getScreenLine)
 
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
--- Chromium debug 74.2ms(13.4 Hz) live 38.1ms(26.2 Hz)
+-- Chromium debug 74.2ms(13.4 Hz) live 37.8ms(26.4 Hz)
 -- firefox debug 86.5ms (11.5 Hz) live 59.9ms(16.6 Hz)
 c_TICKTIME = 33
 
