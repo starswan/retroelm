@@ -52,7 +52,7 @@ mapScreen line_num z80mem index  =
    in
       { colour=colour,data=data }
 
-range031 = (List.range 0 31)
+range031 = List.range 0 31
 
 -- line_num ranges from 0 to 255
 getScreenLine: Int -> Z80Memory -> List RawScreenData
