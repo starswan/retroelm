@@ -26,7 +26,7 @@ import Z80Memory exposing (getScreenLine)
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
 -- Chromium debug 85.5ms(11.7 Hz) live 45.9ms(21.8 Hz)
--- firefox debug 102.0ms (9.8 Hz) live 75.8ms(13.2 Hz)
+-- firefox debug 100.9ms (9.9 Hz) live 75.8ms(13.2 Hz)
 c_TICKTIME = 40
 
 -- I'm currently unsure whether scaling the display results in a significant slowdown or not
