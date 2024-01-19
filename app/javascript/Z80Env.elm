@@ -246,7 +246,7 @@ set_mem z80_addr value old_z80env =
                                    ram_value = getValue addr z80env.ram
                                in
                                   if ram_value == value then
-                                    (z80env_1 , new_time)
+                                     (z80env_1 , new_time)
                                   else
                                      if addr < 6912 then
                                         (z80env_1 |> refresh_screen |> set_ram addr value, new_time)
