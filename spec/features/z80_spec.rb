@@ -10,7 +10,11 @@ RSpec.describe "Spectrum Emulator" do
     sleep 5
     click_on 'Match Day'
     # Let the code run to initialization point
-    sleep 40
+    if ENV.key? 'CI'
+      sleep 5
+    else
+      sleep 60
+    end
     # check that Elm is still running
     expect(page).to have_content 'Refresh Interval'
   end
