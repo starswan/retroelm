@@ -225,31 +225,33 @@ set_ram addr value z80env =
       --    else
       --       Nothing
    --in
-   { z80env | ram = z80env.ram |> Z80Memory.insert addr value }
+   { z80env | ram = z80env.ram |> Z80Memory.set_value addr value }
 
 set_mem: Int -> Int -> Z80Env -> Z80Env
-set_mem addr1 value old_z80env =
+set_mem z80_addr value old_z80env =
    let
       n = old_z80env.cpu_time - old_z80env.ctime
       z80env = if n > 0 then
                 old_z80env |> cont n
              else
                 { old_z80env | ctime = c_NOCONT }
-      addr = addr1 - 0x4000
+      addr = z80_addr - 0x4000
       (new_env, ctime) = if addr < 0x4000 then
                             if addr < 0 then
                                (z80env, c_NOCONT)
                             else
                                let
-                                  ram_value = getValue addr z80env.ram
+                                   z80env_1 = z80env |> cont1 0
+                                   new_time = z80env.cpu_time + 3
+                                   ram_value = getValue addr z80env.ram
                                in
                                   if ram_value == value then
-                                    (z80env |> cont1 0 , z80env.cpu_time + 3)
+                                    (z80env_1 , new_time)
                                   else
                                      if addr < 6912 then
-                                        (z80env |> cont1 0 |> refresh_screen |> set_ram addr value, z80env.cpu_time + 3)
+                                        (z80env_1 |> refresh_screen |> set_ram addr value, new_time)
                                      else
-                                        (z80env |> cont1 0 |> set_ram addr value, z80env.cpu_time + 3)
+                                        (z80env_1 |> set_ram addr value, new_time)
                          else
                             (z80env |> set_ram addr value, c_NOCONT)
    in
