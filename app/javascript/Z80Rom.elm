@@ -29,13 +29,39 @@ constructor =
      Vector16.from16 rom1024 rom1024 rom1024 rom1024 rom1024 rom1024 rom1024 rom1024
                      rom1024 rom1024 rom1024 rom1024 rom1024 rom1024 rom1024 rom1024
 
+maybeVector16: Maybe Vector16.Index -> Vector16.Index
+maybeVector16 index =
+   case index of
+      Just a -> a
+      Nothing -> Vector16.Index0
+
+maybeVector4: Maybe Vector4.Index -> Vector4.Index
+maybeVector4 index =
+   case index of
+      Just a -> a
+      Nothing -> Vector4.Index0
+
+intToRomAddress: Int -> ROMAddr
+intToRomAddress addr =
+    let
+        v16 = addr |> modBy 16 |> Vector16.intToIndex |> maybeVector16
+        v16rest = addr // 16
+        v256 = v16rest |> modBy 16 |> Vector16.intToIndex |> maybeVector16
+        v256rest = v16rest // 16
+        v1024 = v256rest |> modBy 4 |> Vector4.intToIndex |> maybeVector4
+        v16k = v256rest // 4 |> Vector16.intToIndex |> maybeVector16
+    in
+        ROMAddr v16 v256 v1024 v16k
+
 getROMValue: Int -> Z80ROM -> Int
-getROMValue addr z80dict  =
-    case Dict.get addr z80dict of
-        Just a ->
-          a
-        Nothing ->
-          debug_todo "getROMValue" (String.fromInt addr) -1
+getROMValue addr z80rom  =
+    let
+        rom_addr = addr |> intToRomAddress
+        v1024 = z80rom |> Vector16.get rom_addr.v16k
+        v256 = v1024 |> Vector4.get rom_addr.v1024
+        v16 = v256 |> Vector16.get rom_addr.v256
+    in
+        v16 |> Vector16.get rom_addr.v16
 
 c_COMMON_NAMES = Dict.fromList [(0x11DC, "RAM-FILL"), (0x11E2, "RAM-READ"), (0xEE7, "PRB-BYTES"),
                                 (0x19B8, "NEXT-ONE"),(0x15E6, "INPUT-AD"), (0x15F7, "CALL-SUB"),
