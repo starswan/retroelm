@@ -11,7 +11,7 @@ import Html.Events exposing (onClick)
 import Http
 import Http.Detailed
 import Json.Decode as Decode
-import Screen exposing (RawScreenData, ScreenLine)
+import Screen exposing (RawScreenData, getScreenLines)
 import Spectrum exposing (set_rom)
 import Svg exposing (Svg, line, svg)
 import Svg.Attributes exposing (height, stroke, viewBox, width, x1, x2, y1, y2)
@@ -21,7 +21,7 @@ import Html.Attributes exposing (style)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Message(..), Qaop, ctrlKeyDownEvent, ctrlKeyUpEvent, keyDownEvent, keyUpEvent, pause)
 import Utils exposing (digitToString)
-import Z80Memory exposing (getScreenLine)
+import Z80Env exposing (ScreenLine)
 
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
@@ -68,10 +68,6 @@ time_display model =
       elapsed_string ++ " sec, time " ++ time_string ++ "." ++ last ++ " ms " ++
       (speed_in_hz |> String.fromInt) ++ "." ++ (speed_in_hz_frac |> String.fromInt |> String.padLeft 3 '0') ++ " Hz "
 
-screenLine: Model -> Int -> List RawScreenData
-screenLine model index =
-   model.qaop.spectrum.cpu.env.ram |> getScreenLine index
-
 lineToSvg: Int -> ScreenLine -> Svg Message
 lineToSvg y_index linedata =
    line [
@@ -87,13 +83,10 @@ lineListToSvg: Int -> List ScreenLine -> List (Svg Message)
 lineListToSvg y_index linelist =
    List.map (lineToSvg y_index) linelist
 
-range0192 = List.range 0 191
-
 view : Model -> Html Message
 view model =
    let
-      rawlines = List.map (screenLine model) range0192
-      lines = List.map Screen.rawToLines rawlines
+      lines = model.qaop.spectrum.cpu.env |> getScreenLines
    in
      -- The inline style is being used for example purposes in order to keep this example simple and
      -- avoid loading additional resources. Use a proper stylesheet when building your own app.

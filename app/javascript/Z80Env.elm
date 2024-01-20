@@ -5,10 +5,23 @@ module Z80Env exposing (..)
 
 import Array exposing (Array)
 import Bitwise exposing (and, or, shiftLeftBy, shiftRightBy)
+import Dict exposing (Dict)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (listToDict, shiftLeftBy8, shiftRightBy8)
 import Z80Memory exposing (Z80Memory, getValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
+
+-- line definition - length colour (3 bits) and brightness
+-- ignore flash for now
+type alias ScreenLine =
+   {
+      start: Int,
+      length: Int,
+      colour: String,
+      flash: Bool
+   }
+
+type alias AttrLineCache = Dict Int (Dict Int (List ScreenLine))
 
 -- changing this to an array results in a recursion error in the browser :-(
 type alias Z80Env =
@@ -17,7 +30,8 @@ type alias Z80Env =
             ram: Z80Memory,
             keyboard: Keyboard,
             ctime: Int,
-            cpu_time: Int
+            cpu_time: Int,
+            attr_cache: AttrLineCache
     }
 
 type alias Z80EnvWithValue =
@@ -50,7 +64,7 @@ z80env_constructor =
 
         keyboard = Keyboard (List.repeat 8 0xFF) []
     in
-        Z80Env Z80Rom.constructor (Z80Memory.constructor ram) keyboard 0 c_FRSTART
+        Z80Env Z80Rom.constructor (Z80Memory.constructor ram) keyboard 0 c_FRSTART Dict.empty
 
 set_rom: Array Int -> Z80Env -> Z80Env
 set_rom romdata z80env =
@@ -537,3 +551,4 @@ z80_in portnum env_in =
       value = env.keyboard |> z80_keyboard_input portnum
    in
       Z80EnvWithValue env value
+
