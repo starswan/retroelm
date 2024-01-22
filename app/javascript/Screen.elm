@@ -166,9 +166,10 @@ rawToLinesWithCache z80env rawscreendatalist =
    in
        values
 
-getScreenLines: Z80Env -> List (List ScreenLine)
+getScreenLines: Z80Env -> (Z80Env, List (List ScreenLine))
 getScreenLines z80env =
     let
         rawlines = List.map (rawScreenLine z80env) range0192
+        lines = List.map (rawToLinesWithCache z80env) rawlines
     in
-        List.map (rawToLinesWithCache z80env) rawlines
+        (z80env ,lines)

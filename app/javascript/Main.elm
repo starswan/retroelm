@@ -86,7 +86,7 @@ lineListToSvg y_index linelist =
 view : Model -> Html Message
 view model =
    let
-      lines = model.qaop.spectrum.cpu.env |> getScreenLines
+      (z80env, lines) = model.qaop.spectrum.cpu.env |> getScreenLines
    in
      -- The inline style is being used for example purposes in order to keep this example simple and
      -- avoid loading additional resources. Use a proper stylesheet when building your own app.
