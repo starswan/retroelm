@@ -146,7 +146,10 @@ gotRom: Qaop -> Result (Http.Detailed.Error Bytes) (Http.Metadata, Array Int) ->
 gotRom qaop result =
     case result of
         Ok (_, value) ->
-           { qaop | spectrum = qaop.spectrum |> set_rom value } |> Qaop.run
+            let
+                x = debug_log (Array.length(value) |> String.fromInt)  Nothing
+            in
+                { qaop | spectrum = qaop.spectrum |> set_rom value } |> Qaop.run
         Err _ ->
             (qaop, Cmd.none)
 
