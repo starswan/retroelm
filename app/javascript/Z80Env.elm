@@ -7,6 +7,7 @@ import Array exposing (Array)
 import Bitwise exposing (and, or, shiftLeftBy, shiftRightBy)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (listToDict, shiftLeftBy8, shiftRightBy8)
+import Vector16384 exposing (Vector16384)
 import Z80Ram exposing (Z80Ram, c_FRSTART, getRam16Value, getRamValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
 
@@ -20,7 +21,7 @@ type alias CpuTimeCTime =
 -- changing this to an array results in a recursion error in the browser :-(
 type alias Z80Env =
     {
-            rom48k: Z80ROM,
+            rom48k: Vector16384,
             ram: Z80Ram,
             keyboard: Keyboard,
             time: CpuTimeCTime
@@ -44,12 +45,12 @@ c_SCRENDT = 191*224+126
 z80env_constructor =
     Z80Env Z80Rom.constructor Z80Ram.constructor Keyboard.constructor (CpuTimeCTime c_FRSTART 0)
 
-set_rom: Array Int -> Z80Env -> Z80Env
+set_rom: Vector16384 -> Z80Env -> Z80Env
 set_rom romdata z80env =
-   let
-      romDict = listToDict (Array.toList romdata)
-   in
-      { z80env | rom48k = romDict }
+   --let
+   --   romDict = listToDict (Array.toList romdata)
+   --in
+      { z80env | rom48k = romdata }
 
 --public final int m1(int addr, int ir) {
 --	int n = cpu.time - ctime;

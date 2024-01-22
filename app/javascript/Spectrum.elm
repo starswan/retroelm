@@ -6,6 +6,7 @@ module Spectrum exposing (..)
 import Array exposing (Array)
 import Bitwise exposing (complement, shiftRightBy)
 import Keyboard exposing (KeyEvent, Keyboard, update_keyboard)
+import Vector16384 exposing (Vector16384)
 import Z80 exposing (execute, interrupt)
 import Z80Debug exposing (debug_log)
 import Z80Env exposing (reset_cpu_time)
@@ -71,7 +72,7 @@ new_tape tapfile_list spectrum =
   -- in
   --    { spectrum | cpu = { z80 | env = z80.env |> Z80Env.set_tape tape_string } }
 
-set_rom: Array Int -> Spectrum -> Spectrum
+set_rom: Vector16384 -> Spectrum -> Spectrum
 set_rom romdata spectrum =
    let
       z80 = spectrum.cpu
