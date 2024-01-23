@@ -1,8 +1,8 @@
 module Z80MemoryTest exposing (..)
 
 import Expect
+import Screen exposing (calcOffsets)
 import Test exposing (Test, describe, test)
-import Z80Memory exposing (calcOffsets)
 suite : Test
 suite =
    -- The Spectrum screen is mapped as 3 banks of 8 lines. The lines are scanned

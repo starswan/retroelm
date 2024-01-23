@@ -1,9 +1,7 @@
 module ScreenTest exposing (..)
 
-import Array
 import Bitwise
 import Expect exposing (Expectation)
-import Fuzz exposing (Fuzzer, int, list, string)
 import Screen exposing (runCounts)
 import Test exposing (..)
 

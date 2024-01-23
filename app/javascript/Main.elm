@@ -11,7 +11,7 @@ import Html.Events exposing (onClick)
 import Http
 import Http.Detailed
 import Json.Decode as Decode
-import Screen exposing (RawScreenData, ScreenLine)
+import Screen exposing (RawScreenData, ScreenLine, getScreenLine)
 import Spectrum exposing (set_rom)
 import Svg exposing (Svg, line, svg)
 import Svg.Attributes exposing (height, stroke, viewBox, width, x1, x2, y1, y2)
@@ -70,7 +70,7 @@ time_display model =
 
 screenLine: Model -> Int -> List RawScreenData
 screenLine model index =
-   model.qaop.spectrum.cpu.env.ram |> getScreenLine index
+   model.qaop.spectrum.cpu.env |> getScreenLine index
 
 lineToSvg: Int -> ScreenLine -> Svg Message
 lineToSvg y_index linedata =
