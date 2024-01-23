@@ -32,7 +32,7 @@ c_TICKTIME = 33
 -- I'm currently unsure whether scaling the display results in a significant slowdown or not
 -- what it does show is that changing the screen makes everything slower, which probably means in practice
 -- that the display code will need some optimisation
-c_SCALEFACTOR = 4
+c_SCALEFACTOR = 3
 
 type alias Model =
   {
