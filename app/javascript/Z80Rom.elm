@@ -4,33 +4,31 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Utils exposing (listToDict, toHexString)
 import Z80Debug exposing (debug_todo)
-type Z80ROM = Z80ROM (Dict Int Int)
+type Z80ROM = Z80ROM (Maybe (Array Int))
 
 constructor: Z80ROM
 constructor =
    let
      rom48k = List.range 0 16384
-     rom_list = List.indexedMap Tuple.pair rom48k
-     rom_dict = Dict.fromList rom_list
    in
-     Z80ROM rom_dict
+     --Array.fromList rom48k
+     Z80ROM Nothing
 
 getROMValue: Int -> Z80ROM -> Int
 getROMValue addr z80rom =
     case z80rom of
-        Z80ROM z80dict ->
-           case Dict.get addr z80dict of
-                Just a ->
-                  a
+        Z80ROM maybe ->
+            case maybe of
+                Just z80dict ->
+                   case Array.get addr z80dict of
+                        Just item -> item
+                        Nothing -> debug_todo "getROMValue" (String.fromInt addr) -1
                 Nothing ->
-                  debug_todo "getROMValue" (String.fromInt addr) -1
+                   debug_todo "getROMValue" (String.fromInt addr) -1
 
 make_spectrum_rom: Array Int -> Z80ROM
 make_spectrum_rom romdata =
-   let
-      romDict = listToDict (Array.toList romdata)
-   in
-      Z80ROM romDict
+   Z80ROM (Just romdata)
 
 -- elm reserves First caps for types, so have to tweak names for constants
 c_COMMON_NAMES = Dict.fromList [(0x11DC, "RAM-FILL"), (0x11E2, "RAM-READ"), (0xEE7, "PRB-BYTES"),
