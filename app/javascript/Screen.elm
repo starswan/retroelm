@@ -1,9 +1,11 @@
 module Screen exposing (..)
 
-import Bitwise exposing (shiftRightBy)
+import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Byte exposing (Byte, getBit)
 import Dict
 import Maybe exposing (withDefault)
+import Z80Env exposing (Z80Env)
+import Z80Memory exposing (getValue)
 
 -- colour data is bit 7 flash, bit 6 bright, bits 5-3 paper, bits 2-0 ink
 type alias RawScreenData =
@@ -122,3 +124,41 @@ lines screen =
 rawToLines: List RawScreenData -> List ScreenLine
 rawToLines screen =
    lines screen |> List.foldr toDrawn []
+
+-- Convert row index into start row data location and (colour-ish) attribute memory location
+calcOffsets: Int -> (Int, Int)
+calcOffsets start =
+   let
+      bank = start // 64
+      bankOffset = start |> modBy 64
+      startDiv8 = bankOffset // 8
+      data_offset = start |> modBy 8 |> shiftLeftBy 3
+      row_index = 64 * bank + startDiv8 + data_offset
+      attr_index = (bank * 8) + (bankOffset |> modBy 8)
+      row_offset = row_index * 32
+      attr_offset = 0x1800 + (attr_index * 32)
+   in
+      (row_offset, attr_offset)
+
+mapScreen: Int -> Z80Env -> Int -> RawScreenData
+mapScreen line_num z80env index  =
+   let
+      (row_offset, attr_offset) = calcOffsets line_num
+      data = getValue (row_offset + index) z80env.ram
+      colour = getValue (attr_offset + index) z80env.ram
+   in
+      { colour=colour,data=data }
+
+range031 = List.range 0 31
+range0192 = List.range 0 191
+
+screenLines: Z80Env -> List (List ScreenLine)
+screenLines z80env =
+    let
+        rawlines = List.map (\line_num -> List.map (mapScreen line_num z80env) range031) range0192
+    in
+        List.map rawToLines rawlines
+
+
+
+

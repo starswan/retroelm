@@ -1,10 +1,8 @@
 module Z80Memory exposing (..)
 
-import Bitwise exposing (shiftLeftBy)
 import Dict exposing (Dict)
-import Screen exposing (RawScreenData)
-import Utils exposing (toHexString, toHexString2)
-import Z80Debug exposing (debug_log, debug_todo)
+import Utils exposing (toHexString)
+import Z80Debug exposing (debug_todo)
 type alias Z80Memory =
    {
       mainDict: Dict Int Int
@@ -30,41 +28,3 @@ set_value: Int -> Int -> Z80Memory -> Z80Memory
 set_value addr value z80mem =
    { z80mem | mainDict = Dict.insert addr value z80mem.mainDict }
 
--- Convert row index into start row data location and (colour-ish) attribute memory location
-calcOffsets: Int -> (Int, Int)
-calcOffsets start =
-   let
-      bank = start // 64
-      bankOffset = start |> modBy 64
-      startDiv8 = bankOffset // 8
-      data_offset = start |> modBy 8 |> shiftLeftBy 3
-      row_index = 64 * bank + startDiv8 + data_offset
-      attr_index = (bank * 8) + (bankOffset |> modBy 8)
-      --attr_index = start
-      row_offset = row_index * 32
-      attr_offset = 0x1800 + (attr_index * 32)
-      --x = debug_log "calcOffsets" (start, row_offset, attr_offset) Nothing
-   in
-      (row_offset, attr_offset)
-
-mapScreen: Int -> Z80Memory -> Int -> RawScreenData
-mapScreen line_num z80mem index  =
-   let
-      --y = debug_log "mapScreen of" index Nothing
-      (row_offset, attr_offset) = calcOffsets line_num
-      --x = debug_log "mapScreen 2" (row_index, attr_index) Nothing
-      --x = debug_log "data value" (row_offset + index) Nothing
-      data = getValue (row_offset + index) z80mem
-      --data = 0
-      --y = debug_log "attr value" (attr_offset + index) Nothing
-      colour = getValue (attr_offset + index) z80mem
-      --colour = 0
-   in
-      { colour=colour,data=data }
-
-range031 = List.range 0 31
-
--- line_num ranges from 0 to 255
-getScreenLine: Int -> Z80Memory -> List RawScreenData
-getScreenLine line_num z80dict =
-   List.map (mapScreen line_num z80dict) range031
