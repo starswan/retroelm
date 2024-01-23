@@ -11,9 +11,9 @@ import Html.Events exposing (onClick)
 import Http
 import Http.Detailed
 import Json.Decode as Decode
+import Spectrum exposing (new_tape, set_spectrum_rom)
 import Z80Debug exposing (debug_log)
 import Z80Screen exposing (ScreenLine, screenLines, spectrumColour)
-import Spectrum exposing (new_tape, set_rom)
 import Svg exposing (Svg, line, rect, svg)
 import Svg.Attributes exposing (fill, height, rx, stroke, viewBox, width, x1, x2, y1, y2)
 import Time exposing (posixToMillis)
@@ -146,7 +146,7 @@ gotRom: Qaop -> Result (Http.Detailed.Error Bytes) (Http.Metadata, Array Int) ->
 gotRom qaop result =
     case result of
         Ok (_, value) ->
-           { qaop | spectrum = qaop.spectrum |> set_rom value } |> Qaop.run
+           { qaop | spectrum = qaop.spectrum |> set_spectrum_rom value } |> Qaop.run
         Err _ ->
             (qaop, Cmd.none)
 

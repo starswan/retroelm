@@ -7,6 +7,7 @@ import Array exposing (Array)
 import Bitwise exposing (and, or, shiftLeftBy, shiftRightBy)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (shiftLeftBy8, shiftRightBy8)
+import Z80Debug exposing (debug_log)
 import Z80Ram exposing (Z80Ram, c_FRSTART, getRamValue)
 import Z80Rom exposing (Z80ROM, getROMValue, set_spectrum_rom)
 
@@ -46,10 +47,11 @@ z80env_constructor =
 
 set_rom: Array Int -> Z80Env -> Z80Env
 set_rom romdata z80env =
-   let
-       rommy = z80env.rom48k |> set_spectrum_rom romdata
-   in
-      { z80env | rom48k = rommy }
+    let
+        x = debug_log "set_rom" (romdata |> Array.length |> String.fromInt) Nothing
+        rommy = z80env.rom48k |> set_spectrum_rom romdata
+    in
+        { z80env | rom48k = rommy }
 
 --public final int m1(int addr, int ir) {
 --	int n = cpu.time - ctime;
