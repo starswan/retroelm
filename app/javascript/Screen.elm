@@ -150,18 +150,12 @@ mapScreen line_num z80env index  =
       { colour=colour,data=data }
 
 range031 = List.range 0 31
-
--- line_num ranges from 0 to 191
-getScreenLine: Int -> Z80Env -> List RawScreenData
-getScreenLine line_num z80dict =
-   List.map (mapScreen line_num z80dict) range031
-
 range0192 = List.range 0 191
 
 screenLines: Z80Env -> List (List ScreenLine)
 screenLines z80env =
     let
-        rawlines = List.map (\index -> z80env |> getScreenLine index) range0192
+        rawlines = List.map (\line_num -> List.map (mapScreen line_num z80env) range031) range0192
     in
         List.map rawToLines rawlines
 
