@@ -156,9 +156,20 @@ getScreenLine: Int -> Z80Env -> List RawScreenData
 getScreenLine line_num z80dict =
    List.map (mapScreen line_num z80dict) range031
 
-screenLine: Z80Env -> Int -> List RawScreenData
-screenLine z80env index =
+rawScreenData: Z80Env -> Int -> List RawScreenData
+rawScreenData z80env index =
    z80env |> getScreenLine index
+
+range0192 = List.range 0 191
+
+rawLines: Z80Env -> List (List RawScreenData)
+rawLines z80env =
+    List.map (rawScreenData z80env) range0192
+
+screenLines: Z80Env -> List (List ScreenLine)
+screenLines z80env =
+    List.map rawToLines (rawLines z80env)
+
 
 
 
