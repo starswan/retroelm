@@ -2,7 +2,7 @@ module ScreenTest exposing (..)
 
 import Bitwise
 import Expect exposing (Expectation)
-import Screen exposing (runCounts)
+import Z80Screen exposing (runCounts)
 import Test exposing (..)
 
 suite : Test
@@ -16,20 +16,20 @@ suite =
                let
                   a = [{colour=0x70, data=0x76}]
                in
-                  Expect.equal [{colour=0x70, data=[0x76]}] (a |> Screen.lines)
+                  Expect.equal [{colour=0x70, data=[0x76]}] (a |> Z80Screen.lines)
          ,test "with dups" <|
             \_ ->
                let
                   a = [{colour=0x70, data=0x76}, {colour=0x70, data=0x71}, { colour=0x45, data=0x87}]
                in
-                  Expect.equal [{colour=0x70, data=[0x76, 0x71]}, {colour=0x45, data=[0x87]}] (a |> Screen.lines)
+                  Expect.equal [{colour=0x70, data=[0x76, 0x71]}, {colour=0x45, data=[0x87]}] (a |> Z80Screen.lines)
       ],
       describe "rawToLines"
       [
          test "runCounts" <|
             \_ ->
                let
-                  a = [0x80, 0x03] |> Screen.intsToBools
+                  a = [0x80, 0x03] |> Z80Screen.intsToBools
                in
                   Expect.equal [
                   {start=0,count=1,value=True},
@@ -46,12 +46,12 @@ suite =
                   {start=0,length=1,colour="#0000D7",flash=False},
                   {start=1,length=13, colour="#00D700", flash=False},
                   {start=14,length=2, colour="#0000D7", flash=False}]
-                   (a |> Screen.rawToLines)
+                   (a |> Z80Screen.rawToLines)
          --,test "with dups" <|
          --   \_ ->
          --      let
          --         a = [{colour=0x70, data=0x76}, {colour=0x70, data=0x71}, { colour=0x45, data=0x87}]
          --      in
-         --         Expect.equal [{colour=0x70, data=[0x76, 0x71]}, {colour=0x45, data=[0x87]}] (a |> Screen.lines)
+         --         Expect.equal [{colour=0x70, data=[0x76, 0x71]}, {colour=0x45, data=[0x87]}] (a |> Z80Screen.lines)
       ]
    ]

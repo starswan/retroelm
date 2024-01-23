@@ -1,11 +1,30 @@
-module Screen exposing (..)
+module Z80Screen exposing (..)
 
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Byte exposing (Byte, getBit)
 import Dict
 import Maybe exposing (withDefault)
-import Z80Env exposing (Z80Env)
-import Z80Memory exposing (getValue)
+import Z80Memory exposing (Z80Memory, getValue)
+
+type alias Z80Screen =
+    {
+        screen: Z80Memory
+    }
+
+constructor: Z80Screen
+constructor =
+   let
+      --for(int i=6144;i<6912;i++) ram[i] = 070; // white
+      startrange = List.repeat 6144 0
+      whiterange = List.repeat (6912 - 6144) 0x38 -- white
+
+      screen = List.concat [startrange, whiterange] |> Z80Memory.constructor
+   in
+      Z80Screen screen
+
+set_value: Int -> Int -> Z80Screen -> Z80Screen
+set_value addr value z80screen =
+    { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
 
 -- colour data is bit 7 flash, bit 6 bright, bits 5-3 paper, bits 2-0 ink
 type alias RawScreenData =
@@ -140,25 +159,22 @@ calcOffsets start =
    in
       (row_offset, attr_offset)
 
-mapScreen: Int -> Z80Env -> Int -> RawScreenData
-mapScreen line_num z80env index  =
+mapScreen: Int -> Z80Screen -> Int -> RawScreenData
+mapScreen line_num z80env_ram index  =
    let
       (row_offset, attr_offset) = calcOffsets line_num
-      data = getValue (row_offset + index) z80env.ram
-      colour = getValue (attr_offset + index) z80env.ram
+      data = getValue (row_offset + index) z80env_ram.screen
+      colour = getValue (attr_offset + index) z80env_ram.screen
    in
       { colour=colour,data=data }
 
 range031 = List.range 0 31
 range0192 = List.range 0 191
 
-screenLines: Z80Env -> List (List ScreenLine)
+screenLines: Z80Screen -> List (List ScreenLine)
 screenLines z80env =
     let
         rawlines = List.map (\line_num -> List.map (mapScreen line_num z80env) range031) range0192
     in
         List.map rawToLines rawlines
-
-
-
 

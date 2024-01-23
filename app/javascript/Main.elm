@@ -11,7 +11,7 @@ import Html.Events exposing (onClick)
 import Http
 import Http.Detailed
 import Json.Decode as Decode
-import Screen exposing (ScreenLine, screenLines)
+import Z80Screen exposing (ScreenLine, screenLines)
 import Spectrum exposing (set_rom)
 import Svg exposing (Svg, line, svg)
 import Svg.Attributes exposing (height, stroke, viewBox, width, x1, x2, y1, y2)
@@ -85,7 +85,7 @@ lineListToSvg y_index linelist =
 view : Model -> Html Message
 view model =
    let
-      lines = model.qaop.spectrum.cpu.env |> screenLines
+      lines = model.qaop.spectrum.cpu.env.ram.screen |> screenLines
    in
      -- The inline style is being used for example purposes in order to keep this example simple and
      -- avoid loading additional resources. Use a proper stylesheet when building your own app.
