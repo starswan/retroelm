@@ -156,3 +156,9 @@ getScreenLine: Int -> Z80Env -> List RawScreenData
 getScreenLine line_num z80dict =
    List.map (mapScreen line_num z80dict) range031
 
+screenLine: Z80Env -> Int -> List RawScreenData
+screenLine z80env index =
+   z80env |> getScreenLine index
+
+
+
