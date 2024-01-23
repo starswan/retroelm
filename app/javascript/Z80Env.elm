@@ -7,14 +7,14 @@ import Array exposing (Array)
 import Bitwise exposing (and, or, shiftLeftBy, shiftRightBy)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (listToDict, shiftLeftBy8, shiftRightBy8)
-import Z80Memory exposing (Z80Memory, getValue)
+import Z80Ram exposing (Z80Ram, getRamValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
 
 -- changing this to an array results in a recursion error in the browser :-(
 type alias Z80Env =
     {
             rom48k: Z80ROM,
-            ram: Z80Memory,
+            ram: Z80Ram,
             keyboard: Keyboard,
             ctime: Int,
             cpu_time: Int
@@ -41,16 +41,9 @@ c_FRTIME = 69888
 
 z80env_constructor =
     let
-        --for(int i=6144;i<6912;i++) ram[i] = 070; // white
-        startrange = List.repeat 6144 0
-        whiterange = List.repeat (6912 - 6144) 0x38 -- white
-        endrange = List.repeat (49152 - 6912) 0
-
-        ram = List.concat [startrange, whiterange, endrange]
-
         keyboard = Keyboard (List.repeat 8 0xFF) []
     in
-        Z80Env Z80Rom.constructor (Z80Memory.constructor ram) keyboard 0 c_FRSTART
+        Z80Env Z80Rom.constructor Z80Ram.constructor keyboard 0 c_FRSTART
 
 set_rom: Array Int -> Z80Env -> Z80Env
 set_rom romdata z80env =
@@ -77,7 +70,7 @@ m1 tmp_addr ir z80env_ =
                else
                   c_NOCONT
        value = if addr >= 0 then
-                  z80env_1.ram |> getValue addr
+                  z80env_1.ram |> getRamValue addr
                else
                   -- not implementing IF1 switching for now
                   z80env_1.rom48k |> getROMValue tmp_addr
@@ -98,9 +91,9 @@ mem base_addr z80env_ctime =
                                      let
                                         new_z80 = z80env |> cont1 0
                                      in
-                                        (new_z80, new_z80.cpu_time + 3, z80env.ram |> getValue addr)
+                                        (new_z80, new_z80.cpu_time + 3, z80env.ram |> getRamValue addr)
                                    else
-                                     (z80env_ctime, c_NOCONT, z80env.ram |> getValue addr)
+                                     (z80env_ctime, c_NOCONT, z80env.ram |> getRamValue addr)
                                  else
                                    (z80env_ctime, c_NOCONT, z80env.rom48k |> getROMValue base_addr)
     in
@@ -144,8 +137,8 @@ mem16impl addr addr1 z80env =
             Z80EnvWithValue { z80env | ctime = c_NOCONT } (Bitwise.or low (shiftLeftBy8 high))
       else
         let
-            low = getValue (addr - 0x4000) z80env.ram
-            high = getValue addr1 z80env.ram
+            low = getRamValue (addr - 0x4000) z80env.ram
+            high = getRamValue addr1 z80env.ram
             z80env_1 = if addr1 < 0x4000 then
                           let
                              x = z80env
@@ -165,26 +158,26 @@ mem16impl addr addr1 z80env =
             let
                 new_z80 = cont1 3 z80env
                 low = new_z80.rom48k |> getROMValue addr
-                high = getValue 0 new_z80.ram
+                high = getRamValue 0 new_z80.ram
             in
                 Z80EnvWithValue new_z80 (or low (shiftLeftBy8 high))
         else if addr1shift14 == 1 then
             let
                 new_env = z80env |> cont1 0
-                low = getValue (addr - 0x4000) new_env.ram
-                high = getValue addr1 new_env.ram
+                low = getRamValue (addr - 0x4000) new_env.ram
+                high = getRamValue addr1 new_env.ram
             in
                 Z80EnvWithValue new_env (or low (shiftLeftBy8 high))
         else if addr1shift14 == 2 then
             let
-                low = getValue (addr - 0x4000) z80env.ram
-                high = getValue addr1 z80env.ram
+                low = getRamValue (addr - 0x4000) z80env.ram
+                high = getRamValue addr1 z80env.ram
             in
                 Z80EnvWithValue { z80env | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
         else
             let
-                low = getValue 0xBFFF z80env.ram
-                high = getValue 0 z80env.ram
+                low = getRamValue 0xBFFF z80env.ram
+                high = getRamValue 0 z80env.ram
             in
                 Z80EnvWithValue { z80env | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
 
@@ -225,7 +218,7 @@ set_ram addr value z80env =
       --    else
       --       Nothing
    --in
-   { z80env | ram = z80env.ram |> Z80Memory.set_value addr value }
+   { z80env | ram = z80env.ram |> Z80Ram.setRamValue addr value }
 
 set_mem: Int -> Int -> Z80Env -> Z80Env
 set_mem z80_addr value old_z80env =
@@ -243,7 +236,7 @@ set_mem z80_addr value old_z80env =
                                let
                                    z80env_1 = z80env |> cont1 0
                                    new_time = z80env.cpu_time + 3
-                                   ram_value = getValue addr z80env.ram
+                                   ram_value = getRamValue addr z80env.ram
                                in
                                   if ram_value == value then
                                      (z80env_1 , new_time)
