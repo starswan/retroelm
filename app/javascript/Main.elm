@@ -11,7 +11,7 @@ import Html.Events exposing (onClick)
 import Http
 import Http.Detailed
 import Json.Decode as Decode
-import Screen exposing (RawScreenData, ScreenLine, screenLines, rawLines, rawScreenData)
+import Screen exposing (ScreenLine, screenLines)
 import Spectrum exposing (set_rom)
 import Svg exposing (Svg, line, svg)
 import Svg.Attributes exposing (height, stroke, viewBox, width, x1, x2, y1, y2)

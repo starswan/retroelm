@@ -162,13 +162,12 @@ rawScreenData z80env index =
 
 range0192 = List.range 0 191
 
-rawLines: Z80Env -> List (List RawScreenData)
-rawLines z80env =
-    List.map (rawScreenData z80env) range0192
-
 screenLines: Z80Env -> List (List ScreenLine)
 screenLines z80env =
-    List.map rawToLines (rawLines z80env)
+    let
+        rawlines = List.map (rawScreenData z80env) range0192
+    in
+        List.map rawToLines rawlines
 
 
 
