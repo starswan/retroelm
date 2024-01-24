@@ -40,10 +40,7 @@ c_FRTIME = 69888
 --c_FRTIME = 14350
 
 z80env_constructor =
-    let
-        keyboard = Keyboard (List.repeat 8 0xFF) []
-    in
-        Z80Env Z80Rom.constructor Z80Ram.constructor keyboard 0 c_FRSTART
+    Z80Env Z80Rom.constructor Z80Ram.constructor Keyboard.constructor 0 c_FRSTART
 
 set_rom: Array Int -> Z80Env -> Z80Env
 set_rom romdata z80env =
