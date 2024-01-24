@@ -32,6 +32,10 @@ type KeyEvent
    = KeyDownEvent Char
    | ControlKeyDownEvent ControlKey
 
+constructor: Keyboard
+constructor =
+    Keyboard (List.repeat 8 0xFF) []
+
 --	private int ear = 0x1BBA4; // EAR noise
 --
 --	public int in(int port)
