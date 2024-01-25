@@ -15,8 +15,9 @@ RSpec.describe "Spectrum Emulator" do
     else
       sleep 30
     end
-    # check that Elm is still running
+    # check that Elm is running
     expect(page).to have_content 'Refresh Interval'
-    expect(page.find("#hz").text.to_f).to be > 9
+    # Test emulation speed in Hz
+    expect(page.find("#hz").text.to_f).to be > 9.3
   end
 end
