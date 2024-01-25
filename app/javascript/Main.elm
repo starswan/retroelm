@@ -16,8 +16,8 @@ import Spectrum exposing (set_rom)
 import Svg exposing (Svg, line, svg)
 import Svg.Attributes exposing (height, stroke, viewBox, width, x1, x2, y1, y2)
 import Time exposing (posixToMillis)
-import Html exposing (Html, button, div, h2, text)
-import Html.Attributes exposing (style)
+import Html exposing (Html, button, div, h2, span, text)
+import Html.Attributes exposing (id, style)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Message(..), Qaop, ctrlKeyDownEvent, ctrlKeyUpEvent, keyDownEvent, keyUpEvent, pause)
 import Utils exposing (digitToString)
@@ -58,14 +58,20 @@ time_display model =
    let
       elapsed_string = (model.elapsed_millis // 1000) |> String.fromInt
       loop_time_in_ms = (10 ^ c_DECIMAL_PLACES) * model.elapsed_millis // model.count
-      speed_in_mhz = 1000000 / (loop_time_in_ms |> toFloat) * 1000 |> round
       time_string = loop_time_in_ms |> String.fromInt |> String.reverse |> String.toList |> List.drop c_DECIMAL_PLACES |> String.fromList |> String.reverse
       last = loop_time_in_ms |> modBy (10 ^ c_DECIMAL_PLACES) |> digitToString c_DECIMAL_PLACES
-      speed_in_hz = speed_in_mhz // 1000
+   in
+      elapsed_string ++ " sec, time " ++ time_string ++ "." ++ last ++ " ms "
+
+speed_in_hz: Model -> String
+speed_in_hz model =
+   let
+      loop_time_in_ms = (10 ^ c_DECIMAL_PLACES) * model.elapsed_millis // model.count
+      speed_in_mhz = 1000000 / (loop_time_in_ms |> toFloat) * 1000 |> round
+      speed_in_hz_mant = speed_in_mhz // 1000
       speed_in_hz_frac = speed_in_mhz |> modBy 1000
    in
-      elapsed_string ++ " sec, time " ++ time_string ++ "." ++ last ++ " ms " ++
-      (speed_in_hz |> String.fromInt) ++ "." ++ (speed_in_hz_frac |> String.fromInt |> String.padLeft 3 '0') ++ " Hz "
+      (speed_in_hz_mant |> String.fromInt) ++ "." ++ (speed_in_hz_frac |> String.fromInt |> String.padLeft 3 '0')
 
 lineToSvg: Int -> ScreenLine -> Svg Message
 lineToSvg y_index linedata =
@@ -91,10 +97,10 @@ view model =
      -- avoid loading additional resources. Use a proper stylesheet when building your own app.
      div []
      [
-        div [style "display" "flex", style "justify-content" "center"]
+        h2 [] [text ("Refresh Interval " ++ (model.tickInterval |> String.fromInt) ++ "ms ")]
+        ,div [style "display" "flex", style "justify-content" "center"]
         [
-            h2 [] [text ("Refresh Interval " ++ (model.tickInterval |> String.fromInt) ++ "ms ")]
-            ,text ((String.fromInt model.count) ++ " in " ++ (model |> time_display))
+            div [] [text (String.fromInt model.count), text " in ", text (model |> time_display), span [id "hz"] [text (model |> speed_in_hz)], text " Hz"]
            ,button [ onClick Pause ] [ text (if model.qaop.spectrum.paused then "Unpause" else "Pause") ]
         ]
         ,svg [height (192 * c_SCALEFACTOR |> String.fromInt), width (256 * c_SCALEFACTOR |> String.fromInt), viewBox "0 0 256 192"] (List.indexedMap lineListToSvg lines |> List.concat)
