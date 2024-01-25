@@ -1121,28 +1121,55 @@ execute_lt40 c ixiyhl z80 =
 
 executegt40ltC0: Int -> IXIYHL -> Z80 -> Z80
 executegt40ltC0 c ixiyhl z80 =
+    case c of
+       --// case 0x40: break;
+       0x40 -> z80
+       -- case 0x41: B=C; break;
+       0x41 -> z80 |> set_b z80.main.c
+       -- case 0x42: B=D; break;
+       0x42 -> z80 |> set_b z80.main.d
+       -- case 0x43: B=E; break;
+       0x43 -> z80 |> set_b z80.main.e
+       -- case 0x44: B=HL>>>8; break;
+       -- case 0x44: B=xy>>>8; break;
+       0x44 -> z80 |> set_b (get_h ixiyhl z80)
+       -- case 0x45: B=HL&0xFF; break;
+       -- case 0x45: B=xy&0xFF; break;
+       0x45 -> z80 |> set_b (get_l ixiyhl z80)
+       -- case 0x46: B=env.mem(HL); time+=3; break;
+       -- case 0x46: B=env.mem(getd(xy)); time+=3; break;
+       0x46 -> let
+                  value = hl_deref_with_z80 ixiyhl z80
+               in
+                  value.z80 |> set_b value.value
+       -- case 0x47: B=A; break;
+       0x47 -> z80 |> set_b z80.flags.a
+       -- case 0x48: C=B; break;
+       0x48 -> z80 |> set_c z80.main.b
+       --// case 0x49: break;
+       0x49 -> z80
+       -- case 0x4A: C=D; break;
+       0x4A -> z80 |> set_c z80.main.d
+       -- case 0x4B: C=E; break;
+       0x4B -> z80 |> set_c z80.main.e
+       -- case 0x4C: C=HL>>>8; break;
+       0x4C -> z80 |> set_c (get_h ixiyhl z80)
+       -- case 0x4D: C=HL&0xFF; break;
+       0x4D -> z80 |> set_c (get_l ixiyhl z80)
+       -- case 0x4E: C=env.mem(HL); time+=3; break;
+       0x4E -> let
+                  value = hl_deref_with_z80 ixiyhl z80
+               in
+                  value.z80 |> set_c value.value
+       -- case 0x4F: C=A; break;
+       0x4F -> z80 |> set_c z80.flags.a
+       _ -> executegt40ltC0slow c ixiyhl z80
+
+executegt40ltC0slow: Int -> IXIYHL -> Z80 -> Z80
+executegt40ltC0slow c ixiyhl z80 =
    let
       shiftRight3 =  shiftRightBy 3 (c - 0x40)
    in
-      --// case 0x40: break;
-      -- case 0x41: B=C; break;
-      -- case 0x42: B=D; break;
-      -- case 0x43: B=E; break;
-      -- case 0x44: B=HL>>>8; break;
-      -- case 0x44: B=xy>>>8; break;
-      -- case 0x45: B=HL&0xFF; break;
-      -- case 0x45: B=xy&0xFF; break;
-      -- case 0x46: B=env.mem(HL); time+=3; break;
-      -- case 0x46: B=env.mem(getd(xy)); time+=3; break;
-      -- case 0x47: B=A; break;
-      -- case 0x48: C=B; break;
-      --// case 0x49: break;
-      -- case 0x4A: C=D; break;
-      -- case 0x4B: C=E; break;
-      -- case 0x4C: C=HL>>>8; break;
-      -- case 0x4D: C=HL&0xFF; break;
-      -- case 0x4E: C=env.mem(HL); time+=3; break;
-      -- case 0x4F: C=A; break;
       -- case 0x50: D=B; break;
       -- case 0x51: D=C; break;
       --// case 0x52: break;
@@ -1160,16 +1187,11 @@ executegt40ltC0 c ixiyhl z80 =
       -- case 0x5E: E=env.mem(HL); time+=3; break;
       -- case 0x5F: E=A; break;
       case shiftRight3 of
-         0x00 ->
-            let
-                value = load408bit c ixiyhl z80
-            in
-                set408bit shiftRight3 value.value ixiyhl value.z80
-         0x01 ->
-            let
-                value = load408bit c ixiyhl z80
-            in
-                set408bit shiftRight3 value.value ixiyhl value.z80
+         --0x01 ->
+         --   let
+         --       value = load408bit c ixiyhl z80
+         --   in
+         --       set408bit shiftRight3 value.value ixiyhl value.z80
          0x02 ->
             let
                 value = load408bit c ixiyhl z80
@@ -1411,35 +1433,78 @@ executegt40ltC0 c ixiyhl z80 =
          -- case 0xBE: cp(env.mem(HL)); time+=3; break;
          -- case 0xBE: cp(env.mem(getd(xy))); time+=3; break;
          -- case 0xBF: cp(A); break;
-         _ ->
+         0x0F ->
             let
                 value = load408bit c ixiyhl z80
                 z80_1 = value.z80
             in
                 { z80_1 | flags = z80_1.flags |> cp value.value }
+         _ ->
+             debug_todo "executegt40ltC0slow" (c |> String.fromInt) z80
 
+-- There appear to be many situations where we already know that we don't need all
+-- this complexity as we're just doing LD A,B or something similar - so stop using it in those cases
 load408bit: Int -> IXIYHL -> Z80 -> IntWithZ80
 load408bit c_value ixiyhl z80 =
    case (and c_value 0x07) of
-      0 -> IntWithZ80 z80.main.b z80
-      1 -> IntWithZ80 z80.main.c z80
-      2 -> IntWithZ80 z80.main.d z80
-      3 -> IntWithZ80 z80.main.e z80
-      4 -> IntWithZ80 (shiftRightBy8 (get_xy ixiyhl z80)) z80
-      5 -> IntWithZ80 (and (get_xy ixiyhl z80) 0xFF) z80
-      6 -> let
-            xy = get_xy ixiyhl z80
-            a = case ixiyhl of
-               HL ->
-                  IntWithZ80 z80.main.hl z80
-               _ ->
-                  z80 |> getd xy
-            new_z80 = a.z80
-            new_b = mem a.value new_z80.env
-           in
-               IntWithZ80 new_b.value { new_z80 | env = new_b.env }
-      -- 7 is the last (and only) possibility after and-ing with 0x07
-      _ -> IntWithZ80 z80.flags.a z80
+      0 -> b_with_z80 z80
+      1 -> c_with_z80 z80
+      2 -> d_with_z80 z80
+      3 -> e_with_z80 z80
+      4 -> h_with_z80 ixiyhl z80
+      5 -> l_with_z80 ixiyhl z80
+      6 -> hl_deref_with_z80 ixiyhl z80
+      _ -> a_with_z80 z80
+
+b_with_z80: Z80 -> IntWithZ80
+b_with_z80 z80 =
+    IntWithZ80 z80.main.b z80
+
+c_with_z80: Z80 -> IntWithZ80
+c_with_z80 z80 =
+    IntWithZ80 z80.main.c z80
+
+d_with_z80: Z80 -> IntWithZ80
+d_with_z80 z80 =
+    IntWithZ80 z80.main.d z80
+
+e_with_z80: Z80 -> IntWithZ80
+e_with_z80 z80 =
+    IntWithZ80 z80.main.e z80
+
+get_h: IXIYHL -> Z80 -> Int
+get_h ixiyhl z80 =
+    shiftRightBy8 (get_xy ixiyhl z80)
+
+h_with_z80: IXIYHL -> Z80 -> IntWithZ80
+h_with_z80 ixiyhl z80 =
+    IntWithZ80 (shiftRightBy8 (get_xy ixiyhl z80)) z80
+
+get_l: IXIYHL -> Z80 -> Int
+get_l ixiyhl z80 =
+    and (get_xy ixiyhl z80) 0xFF
+
+l_with_z80: IXIYHL -> Z80 -> IntWithZ80
+l_with_z80 ixiyhl z80 =
+    IntWithZ80 (and (get_xy ixiyhl z80) 0xFF) z80
+
+hl_deref_with_z80: IXIYHL -> Z80 -> IntWithZ80
+hl_deref_with_z80 ixiyhl z80 =
+    let
+        xy = get_xy ixiyhl z80
+        a = case ixiyhl of
+           HL ->
+              IntWithZ80 z80.main.hl z80
+           _ ->
+              z80 |> getd xy
+        new_z80 = a.z80
+        new_b = mem a.value new_z80.env
+    in
+        IntWithZ80 new_b.value { new_z80 | env = new_b.env }
+
+a_with_z80: Z80 -> IntWithZ80
+a_with_z80 z80 =
+    IntWithZ80 z80.flags.a z80
 
 set408bit: Int -> Int -> IXIYHL -> Z80 -> Z80
 set408bit c value ixiyhl z80 =
@@ -1448,14 +1513,28 @@ set408bit c value ixiyhl z80 =
       z80_flags = z80.flags
    in
       case (and c 0x07) of
-         0 -> { z80 | main = { z80_main | b = value } }
-         1 -> { z80 | main = { z80_main | c = value } }
+         0 -> z80 |> set_b value
+         1 -> z80 |> set_c value
          2 -> { z80 | main = { z80_main | d = value } }
          3 -> { z80 | main = { z80_main | e = value } }
          4 -> set_h value ixiyhl z80
          5 -> set_l value ixiyhl z80
          6 -> { z80 | env = set_mem z80_main.hl value z80.env }
          _ -> { z80 | flags = { z80_flags | a = value } }
+
+set_b: Int -> Z80 -> Z80
+set_b value z80 =
+   let
+      z80_main = z80.main
+   in
+    { z80 | main = { z80_main | b = value } }
+
+set_c: Int -> Z80 -> Z80
+set_c value z80 =
+   let
+      z80_main = z80.main
+   in
+    { z80 | main = { z80_main | c = value } }
 
 execute_gtc0: Int -> IXIYHL -> Z80 -> Z80
 execute_gtc0 c ixiyhl z80 =
