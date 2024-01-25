@@ -26,5 +26,5 @@ getValue addr z80dict  =
 -- insert value at address addr (except that 16384 has been already subtracted)
 set_value: Int -> Int -> Z80Memory -> Z80Memory
 set_value addr value z80mem =
-   { z80mem | mainDict = Dict.insert addr value z80mem.mainDict }
+   { z80mem | mainDict = z80mem.mainDict |> Dict.insert addr value }
 
