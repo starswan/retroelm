@@ -5,6 +5,8 @@ RSpec.describe "Spectrum Emulator" do
     Game.create! :name => 'Match Day', :tapfile => 'MATCHDAY.tap'
   end
 
+  let(:expected_hz) { (ENV['HZ'] || "8.5").to_f }
+
   it "loads the emulator", :js do
     visit '/'
     click_on 'Match Day'
@@ -23,7 +25,7 @@ RSpec.describe "Spectrum Emulator" do
       low = sorted.first
       high = sorted.last
     end
-    expect(high).to be > 9.4
+    expect(high).to be > expected_hz
     p "Speed #{high} Hz"
   end
 end

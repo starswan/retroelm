@@ -1243,6 +1243,13 @@ execute_0x2E ixiyhl z80 =
   in
      set_xy new_xy ixiyhl new_z80
 
+env_mem_hl: IXIYHL -> Int -> Z80 -> IntWithZ80
+env_mem_hl ixiyhl xy z80 =
+     case ixiyhl of
+        IX -> getd xy z80
+        IY -> getd xy z80
+        HL -> IntWithZ80 z80.main.hl z80
+
 execute_0x34: IXIYHL -> Z80 -> Z80
 execute_0x34 ixiyhl z80 =
   -- case 0x34: v=inc(env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
@@ -1250,10 +1257,7 @@ execute_0x34 ixiyhl z80 =
   let
      z80_flags = z80.flags
      xy = get_xy ixiyhl z80
-     a = case ixiyhl of
-        IX -> getd xy z80
-        IY -> getd xy z80
-        HL -> IntWithZ80 z80.main.hl z80
+     a = env_mem_hl ixiyhl xy z80
      value = mem a.value z80.env
      v = z80_flags |> inc value.value
      z80_1 = a.z80 |> add_cpu_time 4
@@ -1266,20 +1270,16 @@ execute_0x35 ixiyhl z80 =
   -- case 0x35: v=dec(env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
   -- case 0x35: {int a; v=dec(env.mem(a=getd(xy))); time+=4; env.mem(a,v); time+=3;} break;
    let
-      z80_flags = z80.flags
       xy = get_xy ixiyhl z80
-      a = case ixiyhl of
-         IX ->  getd xy z80
-         IY ->  getd xy z80
-         HL ->  IntWithZ80 z80.main.hl z80
+      a = env_mem_hl ixiyhl xy z80
       z80_1 = a.z80
       value = mem a.value z80_1.env
       env_1 = value.env
-      v = z80_flags |> dec value.value
+      v = z80.flags |> dec value.value
       new_env = { env_1 | cpu_time = env_1.cpu_time + 4 } |> set_mem a.value v.value
       env_2 = { new_env | cpu_time = new_env.cpu_time + 3 }
    in
-      { z80_1 | env = env_2, flags = v.flags }
+      z80_1 |> set_env env_2 |> set_flag_regs v.flags
 
 execute_0x36: IXIYHL -> Z80 -> Z80
 execute_0x36 ixiyhl z80 =
