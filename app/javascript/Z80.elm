@@ -1387,12 +1387,12 @@ execute_0x2F z80 =
 execute_0x37: Z80 -> Z80
 execute_0x37 z80 =
    -- case 0x37: scf_ccf(0); break;
-   { z80 | flags = scf_ccf 0 z80.flags }
+   { z80 | flags = z80.flags |> scf_ccf 0 }
 
 execute_0x3F: Z80 -> Z80
 execute_0x3F z80 =
    -- case 0x3F: scf_ccf(Ff&0x100); break;
-   { z80 | flags = scf_ccf (and z80.flags.ff 0x100) z80.flags }
+   { z80 | flags = z80.flags |> scf_ccf (and z80.flags.ff 0x100) }
 
 executegt40ltC0: Int -> IXIYHL -> Z80 -> Z80
 executegt40ltC0 c ixiyhl z80 =
