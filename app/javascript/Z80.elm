@@ -1487,6 +1487,18 @@ executegt40ltC0 c ixiyhl z80 =
        -- case 0x6F: HL=HL&0xFF00|A; break;
        -- case 0x6F: xy=xy&0xFF00|A; break;
        0x6F -> z80 |> set_l z80.flags.a ixiyhl
+       -- case 0x70: env.mem(HL,B); time+=3; break;
+       -- case 0x70: env.mem(getd(xy),B); time+=3; break;
+       0x70 -> let
+                  xy = get_xy ixiyhl z80
+                  mem_target = if ixiyhl == HL then
+                                 IntWithZ80 z80.main.hl z80
+                               else
+                                 getd xy z80
+                  new_z80 = mem_target.z80
+                  new_env = set_mem mem_target.value z80.main.b new_z80.env
+               in
+                  { new_z80 | env = new_env } |> add_cpu_time 3
 
        _ -> executegt40ltC0slow c ixiyhl z80
 
