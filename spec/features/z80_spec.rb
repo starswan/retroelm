@@ -8,15 +8,18 @@ RSpec.describe "Spectrum Emulator" do
   it "loads the emulator", :js do
     visit '/'
     click_on 'Match Day'
-    # Let the code run to initialization point
-    if ENV.key? 'CI'
-      sleep 10
-    else
-      sleep 30
-    end
     # check that Elm is running
     expect(page).to have_content 'Refresh Interval'
     # Test emulation speed in Hz
-    expect(page.find("#hz").text.to_f).to be > 9.4
+    old = 0
+    new = page.find("#hz").text.to_f
+    # wait for speed to hit a steady state
+    while (new - old).abs > 0.01
+      sleep 1.5
+      old = new
+      new = page.find("#hz").text.to_f
+    end
+    expect(new).to be > 9.4
+    p "Speed #{new} Hz"
   end
 end
