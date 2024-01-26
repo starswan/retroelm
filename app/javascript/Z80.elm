@@ -684,7 +684,27 @@ lt40_dict_lite = Dict.fromList
           (0x2F, execute_0x2F),
           (0x37, execute_0x37),
           (0x3F, execute_0x3F),
-          (0x00, (\z80 -> z80))
+          (0x00, (\z80 -> z80)),
+          -- case 0x40: break;
+          (0x40, (\z80 -> z80)),
+          -- case 0x41: B=C; break;
+          (0x41, (\z80-> z80 |> set_b z80.main.c)),
+          -- case 0x42: B=D; break;
+          (0x42, (\z80 -> z80 |> set_b z80.main.d)),
+          -- case 0x43: B=E; break;
+          (0x43, (\z80 -> z80 |> set_b z80.main.e)),
+          -- case 0x47: B=A; break;
+          (0x47, (\z80 -> z80 |> set_b z80.flags.a)),
+          -- case 0x48: C=B; break;
+          (0x48, (\z80 -> z80 |> set_c z80.main.b)),
+          -- case 0x49: break;
+          (0x49, (\z80 -> z80)),
+          -- case 0x4A: C=D; break;
+          (0x4A, (\z80 -> z80 |> set_c z80.main.d)),
+          -- case 0x4B: C=E; break;
+          (0x4B, (\z80 -> z80 |> set_c z80.main.e)),
+          -- case 0x4F: C=A; break;
+          (0x4F, (\z80 -> z80 |> set_c z80.flags.a))
     ]
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
@@ -706,7 +726,28 @@ lt40_dict = Dict.fromList
           (0x2E, execute_0x2E),
           (0x34, execute_0x34),
           (0x35, execute_0x35),
-          (0x36, execute_0x36)
+          (0x36, execute_0x36),
+          -- case 0x44: B=HL>>>8; break;
+          -- case 0x44: B=xy>>>8; break;
+          (0x44, (\ixiyhl z80 -> z80 |> set_b (get_h ixiyhl z80))),
+          -- case 0x45: B=HL&0xFF; break;
+          -- case 0x45: B=xy&0xFF; break;
+          (0x45, (\ixiyhl z80 -> z80 |> set_b (get_l ixiyhl z80))),
+          -- case 0x46: B=env.mem(HL); time+=3; break;
+          -- case 0x46: B=env.mem(getd(xy)); time+=3; break;
+          (0x46, (\ixiyhl z80 -> let
+                                    value = hl_deref_with_z80 ixiyhl z80
+                                 in
+                                    value.z80 |> set_b value.value)),
+          -- case 0x4C: C=HL>>>8; break;
+          (0x4C, (\ixiyhl z80 -> z80 |> set_c (get_h ixiyhl z80))),
+          -- case 0x4D: C=HL&0xFF; break;
+          (0x4D, (\ixiyhl z80 -> z80 |> set_c (get_l ixiyhl z80))),
+          -- case 0x4E: C=env.mem(HL); time+=3; break;
+          (0x4E, (\ixiyhl z80 -> let
+                                    value = hl_deref_with_z80 ixiyhl z80
+                                  in
+                                    value.z80 |> set_c value.value))
     ]
 
 execute_0x10: Z80 -> Z80
@@ -1356,47 +1397,71 @@ execute_0x3F z80 =
 executegt40ltC0: Int -> IXIYHL -> Z80 -> Z80
 executegt40ltC0 c ixiyhl z80 =
     case c of
-       --// case 0x40: break;
-       0x40 -> z80
-       -- case 0x41: B=C; break;
-       0x41 -> z80 |> set_b z80.main.c
-       -- case 0x42: B=D; break;
-       0x42 -> z80 |> set_b z80.main.d
-       -- case 0x43: B=E; break;
-       0x43 -> z80 |> set_b z80.main.e
-       -- case 0x44: B=HL>>>8; break;
-       -- case 0x44: B=xy>>>8; break;
-       0x44 -> z80 |> set_b (get_h ixiyhl z80)
-       -- case 0x45: B=HL&0xFF; break;
-       -- case 0x45: B=xy&0xFF; break;
-       0x45 -> z80 |> set_b (get_l ixiyhl z80)
-       -- case 0x46: B=env.mem(HL); time+=3; break;
-       -- case 0x46: B=env.mem(getd(xy)); time+=3; break;
-       0x46 -> let
+       -- case 0x50: D=B; break;
+       0x50 -> z80 |> set_d z80.main.b
+       -- case 0x51: D=C; break;
+       0x51 -> z80 |> set_d z80.main.c
+       -- case 0x52: break;
+       0x52 -> z80
+       -- case 0x53: D=E; break;
+       0x53 -> z80 |> set_d z80.main.e
+       -- case 0x54: D=HL>>>8; break;
+       0x54 -> z80 |> set_d (get_h ixiyhl z80)
+       -- case 0x55: D=HL&0xFF; break;
+       0x55 -> z80 |> set_d (get_l ixiyhl z80)
+       -- case 0x56: D=env.mem(HL); time+=3; break;
+       0x56 -> let
+                  value = hl_deref_with_z80 ixiyhl z80
+                in
+                  value.z80 |> set_d value.value
+       -- case 0x57: D=A; break;
+       0x57 -> z80 |> set_d z80.flags.a
+      -- case 0x58: E=B; break;
+       0x58 -> z80 |> set_e z80.main.b
+      -- case 0x59: E=C; break;
+       0x59 -> z80 |> set_e z80.main.c
+      -- case 0x5A: E=D; break;
+       0x5A -> z80 |> set_e z80.main.d
+      --// case 0x5B: break;
+       0x5B -> z80
+      -- case 0x5C: E=HL>>>8; break;
+       0x5C -> z80 |> set_e (get_h ixiyhl z80)
+      -- case 0x5D: E=HL&0xFF; break;
+       0x5D -> z80 |> set_e (get_l ixiyhl z80)
+      -- case 0x5E: E=env.mem(HL); time+=3; break;
+       0x5E -> let
                   value = hl_deref_with_z80 ixiyhl z80
                in
-                  value.z80 |> set_b value.value
-       -- case 0x47: B=A; break;
-       0x47 -> z80 |> set_b z80.flags.a
-       -- case 0x48: C=B; break;
-       0x48 -> z80 |> set_c z80.main.b
-       --// case 0x49: break;
-       0x49 -> z80
-       -- case 0x4A: C=D; break;
-       0x4A -> z80 |> set_c z80.main.d
-       -- case 0x4B: C=E; break;
-       0x4B -> z80 |> set_c z80.main.e
-       -- case 0x4C: C=HL>>>8; break;
-       0x4C -> z80 |> set_c (get_h ixiyhl z80)
-       -- case 0x4D: C=HL&0xFF; break;
-       0x4D -> z80 |> set_c (get_l ixiyhl z80)
-       -- case 0x4E: C=env.mem(HL); time+=3; break;
-       0x4E -> let
+                  value.z80 |> set_e value.value
+      -- case 0x5F: E=A; break;
+       0x5F -> z80 |> set_e z80.flags.a
+       -- case 0x60: HL=HL&0xFF|B<<8; break;
+       -- case 0x60: xy=xy&0xFF|B<<8; break;
+       0x60 -> z80 |> set_h z80.main.b ixiyhl
+       -- case 0x61: HL=HL&0xFF|C<<8; break;
+       -- case 0x61: xy=xy&0xFF|C<<8; break;
+       0x61 -> z80 |> set_h z80.main.c ixiyhl
+       -- case 0x62: HL=HL&0xFF|D<<8; break;
+       -- case 0x62: xy=xy&0xFF|D<<8; break;
+       0x62 -> z80 |> set_h z80.main.d ixiyhl
+       -- case 0x63: HL=HL&0xFF|E<<8; break;
+       -- case 0x63: xy=xy&0xFF|E<<8; break;
+       0x63 -> z80 |> set_h z80.main.e ixiyhl
+       -- case 0x64: break;
+       0x64 -> z80
+       -- case 0x65: HL=HL&0xFF|(HL&0xFF)<<8; break;
+       -- case 0x65: xy=xy&0xFF|(xy&0xFF)<<8; break;
+       0x65 -> z80 |> set_h (get_l ixiyhl z80) ixiyhl
+       -- case 0x66: HL=HL&0xFF|env.mem(HL)<<8; time+=3; break;
+       -- case 0x66: HL=HL&0xFF|env.mem(getd(xy))<<8; time+=3; break;
+       0x66 -> let
                   value = hl_deref_with_z80 ixiyhl z80
                in
-                  value.z80 |> set_c value.value
-       -- case 0x4F: C=A; break;
-       0x4F -> z80 |> set_c z80.flags.a
+                  value.z80 |> set_h value.value HL |> add_cpu_time 3
+       -- case 0x67: HL=HL&0xFF|A<<8; break;
+       -- case 0x67: xy=xy&0xFF|A<<8; break;
+       0x67 -> z80 |> set_h z80.flags.a ixiyhl
+
        _ -> executegt40ltC0slow c ixiyhl z80
 
 executegt40ltC0slow: Int -> IXIYHL -> Z80 -> Z80
@@ -1404,62 +1469,7 @@ executegt40ltC0slow c ixiyhl z80 =
    let
       shiftRight3 =  shiftRightBy 3 (c - 0x40)
    in
-      -- case 0x50: D=B; break;
-      -- case 0x51: D=C; break;
-      --// case 0x52: break;
-      -- case 0x53: D=E; break;
-      -- case 0x54: D=HL>>>8; break;
-      -- case 0x55: D=HL&0xFF; break;
-      -- case 0x56: D=env.mem(HL); time+=3; break;
-      -- case 0x57: D=A; break;
-      -- case 0x58: E=B; break;
-      -- case 0x59: E=C; break;
-      -- case 0x5A: E=D; break;
-      --// case 0x5B: break;
-      -- case 0x5C: E=HL>>>8; break;
-      -- case 0x5D: E=HL&0xFF; break;
-      -- case 0x5E: E=env.mem(HL); time+=3; break;
-      -- case 0x5F: E=A; break;
       case shiftRight3 of
-         --0x01 ->
-         --   let
-         --       value = load408bit c ixiyhl z80
-         --   in
-         --       set408bit shiftRight3 value.value ixiyhl value.z80
-         0x02 ->
-            let
-                value = load408bit c ixiyhl z80
-            in
-                set408bit shiftRight3 value.value ixiyhl value.z80
-         0x03 ->
-            let
-                value = load408bit c ixiyhl z80
-            in
-                set408bit shiftRight3 value.value ixiyhl value.z80
-         -- case 0x60: HL=HL&0xFF|B<<8; break;
-         -- case 0x60: xy=xy&0xFF|B<<8; break;
-         -- case 0x61: HL=HL&0xFF|C<<8; break;
-         -- case 0x61: xy=xy&0xFF|C<<8; break;
-         -- case 0x62: HL=HL&0xFF|D<<8; break;
-         -- case 0x62: xy=xy&0xFF|D<<8; break;
-         -- case 0x63: HL=HL&0xFF|E<<8; break;
-         -- case 0x63: xy=xy&0xFF|E<<8; break;
-         --// case 0x64: break;
-         -- case 0x65: HL=HL&0xFF|(HL&0xFF)<<8; break;
-         -- case 0x65: xy=xy&0xFF|(xy&0xFF)<<8; break;
-         -- case 0x66: HL=HL&0xFF|env.mem(HL)<<8; time+=3; break;
-         -- case 0x66: HL=HL&0xFF|env.mem(getd(xy))<<8; time+=3; break;
-         -- case 0x67: HL=HL&0xFF|A<<8; break;
-         -- case 0x67: xy=xy&0xFF|A<<8; break;
-         0x04 ->
-            let
-              value = load408bit c ixiyhl z80
-              new_z80 = value.z80
-            in
-              if c == 0x66 || ixiyhl == HL then
-                set_h value.value HL new_z80
-              else
-                set_h value.value ixiyhl new_z80
          -- case 0x68: HL=HL&0xFF00|B; break;
          -- case 0x68: xy=xy&0xFF00|B; break;
          -- case 0x69: HL=HL&0xFF00|C; break;
@@ -1749,8 +1759,8 @@ set408bit c value ixiyhl z80 =
       case (and c 0x07) of
          0 -> z80 |> set_b value
          1 -> z80 |> set_c value
-         2 -> { z80 | main = { z80_main | d = value } }
-         3 -> { z80 | main = { z80_main | e = value } }
+         2 -> z80 |> set_d value
+         3 -> z80 |> set_e value
          4 -> set_h value ixiyhl z80
          5 -> set_l value ixiyhl z80
          6 -> { z80 | env = set_mem z80_main.hl value z80.env }
@@ -1769,6 +1779,20 @@ set_c value z80 =
       z80_main = z80.main
    in
     { z80 | main = { z80_main | c = value } }
+
+set_d: Int -> Z80 -> Z80
+set_d value z80 =
+   let
+      z80_main = z80.main
+   in
+    { z80 | main = { z80_main | d = value } }
+
+set_e: Int -> Z80 -> Z80
+set_e value z80 =
+   let
+      z80_main = z80.main
+   in
+    { z80 | main = { z80_main | e = value } }
 
 execute_gtc0: Int -> IXIYHL -> Z80 -> Z80
 execute_gtc0 c ixiyhl z80 =
