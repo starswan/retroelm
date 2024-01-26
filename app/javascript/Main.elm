@@ -40,7 +40,8 @@ type alias Model =
     tickInterval: Int,
     count: Int,
     elapsed_millis: Int,
-    time: Maybe Time.Posix
+    time: Maybe Time.Posix,
+    svglines: List (Svg Message)
   }
 
 init : String -> (Model, Cmd Message)
@@ -49,7 +50,7 @@ init data =
       params = valid_params data
       (newQaop, cmd) = Qaop.init params |> Qaop.run
    in
-      ((Model newQaop c_TICKTIME 0 0 Nothing), cmd)
+      ((Model newQaop c_TICKTIME 0 0 Nothing []), cmd)
 
 c_DECIMAL_PLACES = 3
 
@@ -91,7 +92,10 @@ lineListToSvg y_index linelist =
 view : Model -> Html Message
 view model =
    let
-      lines = model.qaop.spectrum.cpu.env.ram.screen |> screenLines
+      --lines = model.qaop.spectrum.cpu.env.ram.screen |> screenLines
+      --svglines = List.indexedMap lineListToSvg lines |> List.concat
+      --svglines = List.indexedMap lineListToSvg model.lines |> List.concat
+      svglines = model.svglines
    in
      -- The inline style is being used for example purposes in order to keep this example simple and
      -- avoid loading additional resources. Use a proper stylesheet when building your own app.
@@ -103,7 +107,7 @@ view model =
             div [] [text (String.fromInt model.count), text " in ", text (model |> time_display), span [id "hz"] [text (model |> speed_in_hz)], text " Hz"]
            ,button [ onClick Pause ] [ text (if model.qaop.spectrum.paused then "Unpause" else "Pause") ]
         ]
-        ,svg [height (192 * c_SCALEFACTOR |> String.fromInt), width (256 * c_SCALEFACTOR |> String.fromInt), viewBox "0 0 256 192"] (List.indexedMap lineListToSvg lines |> List.concat)
+        ,svg [height (192 * c_SCALEFACTOR |> String.fromInt), width (256 * c_SCALEFACTOR |> String.fromInt), viewBox "0 0 256 192"] svglines
         --,svg [style "height" "192px", style "width" "256px"] (List.indexedMap lineListToSvg lines |> List.concat)
      ]
 
@@ -157,8 +161,17 @@ update message model =
                            (q, cmd) = model.qaop |> Qaop.run
                         in
                            { qaop = q, cmd = cmd, count = model.count + 1, elapsed = elapsed }
+             svglines = if model.qaop.spectrum.paused then
+                        model.svglines
+                     else if (model.count |> modBy 10) /= 0 then
+                        model.svglines
+                     else
+                        let
+                            lines = model.qaop.spectrum.cpu.env.ram.screen |> screenLines
+                        in
+                            List.indexedMap lineListToSvg lines |> List.concat
           in
-            ({ model | count = state.count, elapsed_millis = model.elapsed_millis + state.elapsed, time = Just posix, qaop = state.qaop }, state.cmd)
+            ({ model | count = state.count, svglines = svglines, elapsed_millis = model.elapsed_millis + state.elapsed, time = Just posix, qaop = state.qaop }, state.cmd)
        Pause ->
           ({ model | time = Nothing, qaop = (model.qaop |> pause (not model.qaop.spectrum.paused))}, Cmd.none)
        CharacterKey char ->
