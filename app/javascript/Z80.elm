@@ -1461,6 +1461,32 @@ executegt40ltC0 c ixiyhl z80 =
        -- case 0x67: HL=HL&0xFF|A<<8; break;
        -- case 0x67: xy=xy&0xFF|A<<8; break;
        0x67 -> z80 |> set_h z80.flags.a ixiyhl
+       -- case 0x68: HL=HL&0xFF00|B; break;
+       -- case 0x68: xy=xy&0xFF00|B; break;
+       0x68 -> z80 |> set_l z80.main.b ixiyhl
+       -- case 0x69: HL=HL&0xFF00|C; break;
+       -- case 0x69: xy=xy&0xFF00|C; break;
+       0x69 -> z80 |> set_l z80.main.c ixiyhl
+       -- case 0x6A: HL=HL&0xFF00|D; break;
+       -- case 0x6A: xy=xy&0xFF00|D; break;
+       0x6A -> z80 |> set_l z80.main.d ixiyhl
+       -- case 0x6B: HL=HL&0xFF00|E; break;
+       -- case 0x6B: xy=xy&0xFF00|E; break;
+       0x6B -> z80 |> set_l z80.main.e ixiyhl
+       -- case 0x6C: HL=HL&0xFF00|HL>>>8; break;
+       -- case 0x6C: xy=xy&0xFF00|xy>>>8; break;
+       0x6C -> z80 |> set_l (get_h ixiyhl z80) ixiyhl
+       -- case 0x6D: break;
+       0x6D -> z80
+       -- case 0x6E: HL=HL&0xFF00|env.mem(HL); time+=3; break;
+       -- case 0x6E: HL=HL&0xFF00|env.mem(getd(xy)); time+=3; break;
+       0x6E -> let
+                  value = hl_deref_with_z80 ixiyhl z80
+               in
+                  value.z80 |> set_l value.value HL |> add_cpu_time 3
+       -- case 0x6F: HL=HL&0xFF00|A; break;
+       -- case 0x6F: xy=xy&0xFF00|A; break;
+       0x6F -> z80 |> set_l z80.flags.a ixiyhl
 
        _ -> executegt40ltC0slow c ixiyhl z80
 
@@ -1470,30 +1496,6 @@ executegt40ltC0slow c ixiyhl z80 =
       shiftRight3 =  shiftRightBy 3 (c - 0x40)
    in
       case shiftRight3 of
-         -- case 0x68: HL=HL&0xFF00|B; break;
-         -- case 0x68: xy=xy&0xFF00|B; break;
-         -- case 0x69: HL=HL&0xFF00|C; break;
-         -- case 0x69: xy=xy&0xFF00|C; break;
-         -- case 0x6A: HL=HL&0xFF00|D; break;
-         -- case 0x6A: xy=xy&0xFF00|D; break;
-         -- case 0x6B: HL=HL&0xFF00|E; break;
-         -- case 0x6B: xy=xy&0xFF00|E; break;
-         -- case 0x6C: HL=HL&0xFF00|HL>>>8; break;
-         -- case 0x6C: xy=xy&0xFF00|xy>>>8; break;
-         --// case 0x6D: break;
-         -- case 0x6E: HL=HL&0xFF00|env.mem(HL); time+=3; break;
-         -- case 0x6E: HL=HL&0xFF00|env.mem(getd(xy)); time+=3; break;
-         -- case 0x6F: HL=HL&0xFF00|A; break;
-         -- case 0x6F: xy=xy&0xFF00|A; break;
-         0x05 ->
-            let
-                value = load408bit c ixiyhl z80
-                new_z80 = value.z80
-            in
-                if c == 0x6E || ixiyhl == HL then
-                  set_l value.value HL new_z80
-                else
-                  set_l value.value ixiyhl new_z80
          0x06 ->
          -- case 0x70: env.mem(HL,B); time+=3; break;
          -- case 0x70: env.mem(getd(xy),B); time+=3; break;
