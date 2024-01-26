@@ -11,15 +11,21 @@ RSpec.describe "Spectrum Emulator" do
     # check that Elm is running
     expect(page).to have_content 'Refresh Interval'
     # Test emulation speed in Hz
-    old = 0
-    new = page.find("#hz").text.to_f
+    low = 0
+    high = page.find("#hz").text.to_f
     # wait for speed to hit a steady state
-    while (new - old).abs > 0.01
-      sleep 1.5
-      old = new
-      new = page.find("#hz").text.to_f
+    while (high - low).abs > 0.01
+      sleep 0.5
+      f1 = page.find("#hz").text.to_f
+      sleep 0.5
+      f2 = page.find("#hz").text.to_f
+      sleep 0.5
+      f3 = page.find("#hz").text.to_f
+      sorted = [f1, f2, f3].sort
+      low = sorted.first
+      high = sorted.last
     end
-    expect(new).to be > 9.4
-    p "Speed #{new} Hz"
+    expect(high).to be > 9.4
+    p "Speed #{high} Hz"
   end
 end
