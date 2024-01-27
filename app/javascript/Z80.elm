@@ -373,6 +373,21 @@ imm16 z80 =
 --		MP = HL+1;
 --		time += 3;
 --	}
+rld: Z80 -> Z80
+rld z80 =
+    let
+        v_lhs_1 = z80.env |> mem(z80.main.hl)
+        v_rhs = and z80.flags.a 0x0F
+        v_lhs = v_lhs_1.value |> (shiftLeftBy 4)
+        v = or v_lhs v_rhs
+        a1 = and z80.flags.a 0xF0
+        new_a = or a1 (shiftRightBy8 v)
+        flags = z80.flags
+        new_flags = { flags | a = new_a }
+        z80_1 = z80 |> f_szh0n0p new_a
+        env_1 = v_lhs_1.env |> set_mem z80_1.main.hl (and v 0xFF)
+    in
+        z80_1 |> set_flag_regs new_flags |> set_env env_1 |> add_cpu_time 10
 --
 --	private void ld_a_ir(int v)
 --	{
@@ -2307,6 +2322,8 @@ group_ed z80_0 =
                  z80 |> sbc_hl bc
       -- case 0x72: sbc_hl(SP); break;
       0x72 -> z80 |> sbc_hl z80.sp
+      -- case 0x6F: rld(); break;
+      0x6F -> z80 |> rld
       ---- case 0x6A: adc_hl(HL); break;
       --0x6A -> z80 |> adc_hl z80.main.hl
       ---- case 0x5A: adc_hl(D<<8|E); break;
@@ -2358,7 +2375,6 @@ group_ed z80_0 =
 -- case 0x57: ld_a_ir(IR>>>8); break;
 -- case 0x5F: ld_a_ir(r()); break;
 -- case 0x67: rrd(); break;
--- case 0x6F: rld(); break;
 -- case 0x78: MP=(v=B<<8|C)+1; f_szh0n0p(A=env.in(v)); time+=4; break;
 -- case 0x41: env.out(B<<8|C,B); time+=4; break;
 -- case 0x49: env.out(B<<8|C,C); time+=4; break;
