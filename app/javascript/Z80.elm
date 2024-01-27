@@ -1617,7 +1617,29 @@ executegt40ltC0 c ixiyhl z80 =
                in
                   value.z80 |> set_flag_regs (adc value.value z80.flags)
          -- case 0x8F: adc(A); break;
-       0x8F -> z80 |> set_flag_regs (adc z80.flags.a z80.flags)
+       0x8F -> z80 |> set_flag_regs (z80_sub z80.flags.a z80.flags)
+         -- case 0x90: sub(B); break;
+       0x90 -> z80 |> set_flag_regs (z80_sub z80.main.b z80.flags)
+         -- case 0x91: sub(C); break;
+       0x91 -> z80 |> set_flag_regs (z80_sub z80.main.c z80.flags)
+         -- case 0x92: sub(D); break;
+       0x92 -> z80 |> set_flag_regs (z80_sub z80.main.d z80.flags)
+         -- case 0x93: sub(E); break;
+       0x93 -> z80 |> set_flag_regs (z80_sub z80.main.e z80.flags)
+         -- case 0x94: sub(HL>>>8); break;
+         -- case 0x94: sub(xy>>>8); break;
+       0x94 -> z80 |> set_flag_regs (z80_sub (get_h ixiyhl z80) z80.flags)
+         -- case 0x95: sub(HL&0xFF); break;
+         -- case 0x95: sub(xy&0xFF); break;
+       0x95 -> z80 |> set_flag_regs (z80_sub (get_l ixiyhl z80) z80.flags)
+         -- case 0x96: sub(env.mem(HL)); time+=3; break;
+         -- case 0x96: sub(env.mem(getd(xy))); time+=3; break;
+       0x96 -> let
+                  value = hl_deref_with_z80 ixiyhl z80
+               in
+                  value.z80 |> set_flag_regs (z80_sub value.value z80.flags)
+         -- case 0x97: sub(A); break;
+       0x97 -> z80 |> set_flag_regs (z80_sub z80.flags.a z80.flags)
 
        _ -> executegt40ltC0slow c ixiyhl z80
 
@@ -1634,24 +1656,6 @@ executegt40ltC0slow c ixiyhl z80 =
       shiftRight3 =  shiftRightBy 3 (c - 0x40)
    in
       case shiftRight3 of
-         -- case 0x90: sub(B); break;
-         -- case 0x91: sub(C); break;
-         -- case 0x92: sub(D); break;
-         -- case 0x93: sub(E); break;
-         -- case 0x94: sub(HL>>>8); break;
-         -- case 0x94: sub(xy>>>8); break;
-         -- case 0x95: sub(HL&0xFF); break;
-         -- case 0x95: sub(xy&0xFF); break;
-         -- case 0x96: sub(env.mem(HL)); time+=3; break;
-         -- case 0x96: sub(env.mem(getd(xy))); time+=3; break;
-         -- case 0x97: sub(A); break;
-         0x0A ->
-            let
-                value = load408bit c ixiyhl z80
-                newish_z80 = value.z80
-                new_flags = z80_sub value.value newish_z80.flags
-            in
-                { newish_z80 | flags = new_flags }
          -- case 0x98: sbc(B); break;
          -- case 0x99: sbc(C); break;
          -- case 0x9A: sbc(D); break;
