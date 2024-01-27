@@ -1148,6 +1148,19 @@ suite =
                   mem_value = mem 0x6545 new_z80.env
                in
                   Expect.equal ((addr + 3), 0x25) (new_z80.pc, mem_value.value)
+            ,test "0xDD 0x74 LD (IX+m),H" <|
+            \_ ->
+               let
+                  new_env = z80env
+                               |> set_mem addr 0xDD
+                               |> set_mem (addr + 1) 0x74
+                               |> set_mem (addr + 2) 0x02
+                               |> set_mem 0x6545 0x78
+                  new_z80 = execute_instruction { z80 | env = new_env, sp = 0x8765, ix = 0x6543,
+                                                        main = { z80main | hl = 0x2545, b = 0xA5 }, flags = { flags | a = 0x39 } }
+                  mem_value = mem 0x6545 new_z80.env
+               in
+                  Expect.equal ((addr + 3), 0x25) (new_z80.pc, mem_value.value)
          ],
          describe "0xB8 - -xBF CP"
          [
