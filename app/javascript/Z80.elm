@@ -1640,15 +1640,53 @@ executegt40ltC0 c ixiyhl z80 =
                   value.z80 |> set_flag_regs (z80_sub value.value z80.flags)
          -- case 0x97: sub(A); break;
        0x97 -> z80 |> set_flag_regs (z80_sub z80.flags.a z80.flags)
+         -- case 0x98: sbc(B); break;
+       0x98 -> z80 |> set_flag_regs (sbc z80.main.b z80.flags)
+         -- case 0x99: sbc(C); break;
+       0x99 -> z80 |> set_flag_regs (sbc z80.main.c z80.flags)
+         -- case 0x9A: sbc(D); break;
+       0x9A -> z80 |> set_flag_regs (sbc z80.main.d z80.flags)
+         -- case 0x9B: sbc(E); break;
+       0x9B -> z80 |> set_flag_regs (sbc z80.main.e z80.flags)
+         -- case 0x9C: sbc(HL>>>8); break;
+         -- case 0x9C: sbc(xy>>>8); break;
+       0x9C -> z80 |> set_flag_regs (sbc (get_h ixiyhl z80) z80.flags)
+         -- case 0x9D: sbc(HL&0xFF); break;
+         -- case 0x9D: sbc(xy&0xFF); break;
+       0x9D -> z80 |> set_flag_regs (sbc (get_l ixiyhl z80) z80.flags)
+         -- case 0x9E: sbc(env.mem(HL)); time+=3; break;
+         -- case 0x9E: sbc(env.mem(getd(xy))); time+=3; break;
+       0x9E -> let
+                  value = hl_deref_with_z80 ixiyhl z80
+               in
+                  value.z80 |> set_flag_regs (sbc value.value z80.flags)
+       -- case 0x9F: sbc(A); break;
+       0x9F -> z80 |> set_flag_regs (sbc z80.flags.a z80.flags)
+       -- case 0xA0: and(B); break;
+       0xA0 -> z80 |> set_flag_regs (z80_and z80.main.b z80.flags)
+       -- case 0xA1: and(C); break;
+       0xA1 -> z80 |> set_flag_regs (z80_and z80.main.c z80.flags)
+       -- case 0xA2: and(D); break;
+       0xA2 -> z80 |> set_flag_regs (z80_and z80.main.d z80.flags)
+       -- case 0xA3: and(E); break;
+       0xA3 -> z80 |> set_flag_regs (z80_and z80.main.e z80.flags)
+       -- case 0xA4: and(HL>>>8); break;
+       -- case 0xA4: and(xy>>>8); break;
+       0xA4 -> z80 |> set_flag_regs (z80_and (get_h ixiyhl z80) z80.flags)
+       -- case 0xA5: and(HL&0xFF); break;
+       -- case 0xA5: and(xy&0xFF); break;
+       0xA5 -> z80 |> set_flag_regs (z80_and (get_l ixiyhl z80) z80.flags)
+       -- case 0xA6: and(env.mem(HL)); time+=3; break;
+       -- case 0xA6: and(env.mem(getd(xy))); time+=3; break;
+       0xA6 -> let
+                  value = hl_deref_with_z80 ixiyhl z80
+               in
+                  value.z80 |> set_flag_regs (z80_and value.value z80.flags)
+       -- case 0xA7: Fa=~(Ff=Fr=A); Fb=0; break;
+       -- and a is correct - I guess the above is a faster implementation
+       0xA7 -> z80 |> set_flag_regs (z80_and z80.flags.a z80.flags)
 
        _ -> executegt40ltC0slow c ixiyhl z80
-
-set_a: Int -> Z80 -> Z80
-set_a value z80 =
-    let
-        z80_flags = z80.flags
-    in
-       { z80 | flags = { z80_flags | a = value } }
 
 executegt40ltC0slow: Int -> IXIYHL -> Z80 -> Z80
 executegt40ltC0slow c ixiyhl z80 =
@@ -1656,41 +1694,6 @@ executegt40ltC0slow c ixiyhl z80 =
       shiftRight3 =  shiftRightBy 3 (c - 0x40)
    in
       case shiftRight3 of
-         -- case 0x98: sbc(B); break;
-         -- case 0x99: sbc(C); break;
-         -- case 0x9A: sbc(D); break;
-         -- case 0x9B: sbc(E); break;
-         -- case 0x9C: sbc(HL>>>8); break;
-         -- case 0x9C: sbc(xy>>>8); break;
-         -- case 0x9D: sbc(HL&0xFF); break;
-         -- case 0x9D: sbc(xy&0xFF); break;
-         -- case 0x9E: sbc(env.mem(HL)); time+=3; break;
-         -- case 0x9E: sbc(env.mem(getd(xy))); time+=3; break;
-         -- case 0x9F: sbc(A); break;
-         0x0B ->
-            let
-                value = load408bit c ixiyhl z80
-                newish_z80 = value.z80
-            in
-                { newish_z80 | flags = newish_z80.flags |> sbc value.value }
-         -- case 0xA0: and(B); break;
-         -- case 0xA1: and(C); break;
-         -- case 0xA2: and(D); break;
-         -- case 0xA3: and(E); break;
-         -- case 0xA4: and(HL>>>8); break;
-         -- case 0xA4: and(xy>>>8); break;
-         -- case 0xA5: and(HL&0xFF); break;
-         -- case 0xA5: and(xy&0xFF); break;
-         -- case 0xA6: and(env.mem(HL)); time+=3; break;
-         -- case 0xA6: and(env.mem(getd(xy))); time+=3; break;
-         -- case 0xA7: Fa=~(Ff=Fr=A); Fb=0; break;
-         0x0C ->
-            let
-                value = load408bit c ixiyhl z80
-                newish_z80 = value.z80
-                new_flags = z80_and value.value newish_z80.flags
-            in
-                { newish_z80 | flags = new_flags }
          -- case 0xA8: xor(B); break;
          -- case 0xA9: xor(C); break;
          -- case 0xAA: xor(D); break;
@@ -1745,6 +1748,13 @@ executegt40ltC0slow c ixiyhl z80 =
                 { z80_1 | flags = z80_1.flags |> cp value.value }
          _ ->
              debug_todo "executegt40ltC0slow" (c |> String.fromInt) z80
+
+set_a: Int -> Z80 -> Z80
+set_a value z80 =
+    let
+        z80_flags = z80.flags
+    in
+       { z80 | flags = { z80_flags | a = value } }
 
 -- There appear to be many situations where we already know that we don't need all
 -- this complexity as we're just doing LD A,B or something similar - so stop using it in those cases
