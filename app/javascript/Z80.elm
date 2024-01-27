@@ -727,7 +727,17 @@ lt40_dict_lite = Dict.fromList
           -- case 0x53: D=E; break;
           (0x53, (\z80-> z80 |> set_d z80.main.e)),
           -- case 0x57: D=A; break;
-          (0x57, (\z80 -> z80 |> set_d z80.flags.a))
+          (0x57, (\z80 -> z80 |> set_d z80.flags.a)),
+          -- case 0x58: E=B; break;
+          (0x58, (\z80 -> z80 |> set_e z80.main.b)),
+          -- case 0x59: E=C; break;
+          (0x59, (\z80 -> z80 |> set_e z80.main.c)),
+          -- case 0x5A: E=D; break;
+          (0x5A, (\z80 -> z80 |> set_e z80.main.d)),
+          -- case 0x5B: break;
+          (0x5B, (\z80 -> z80)),
+          -- case 0x5F: E=A; break;
+          (0x5F, (\z80 -> z80 |> set_e z80.flags.a))
     ]
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
@@ -779,7 +789,16 @@ lt40_dict = Dict.fromList
           (0x56, (\ixiyhl z80 -> let
                                     value = hl_deref_with_z80 ixiyhl z80
                                  in
-                                    value.z80 |> set_d value.value))
+                                    value.z80 |> set_d value.value)),
+          -- case 0x5C: E=HL>>>8; break;
+          (0x5C, (\ixiyhl z80 -> z80 |> set_e (get_h ixiyhl z80))),
+          -- case 0x5D: E=HL&0xFF; break;
+          (0x5D, (\ixiyhl z80 -> z80 |> set_e (get_l ixiyhl z80))),
+          -- case 0x5E: E=env.mem(HL); time+=3; break;
+          (0x5E, (\ixiyhl z80 -> let
+                                    value = hl_deref_with_z80 ixiyhl z80
+                                 in
+                                    value.z80 |> set_e value.value))
     ]
 
 execute_0x10: Z80 -> Z80
@@ -1430,25 +1449,6 @@ execute_0x3F z80 =
 executegt40ltC0: Int -> IXIYHL -> Z80 -> Z80
 executegt40ltC0 c ixiyhl z80 =
     case c of
-      -- case 0x58: E=B; break;
-       0x58 -> z80 |> set_e z80.main.b
-      -- case 0x59: E=C; break;
-       0x59 -> z80 |> set_e z80.main.c
-      -- case 0x5A: E=D; break;
-       0x5A -> z80 |> set_e z80.main.d
-      --// case 0x5B: break;
-       0x5B -> z80
-      -- case 0x5C: E=HL>>>8; break;
-       0x5C -> z80 |> set_e (get_h ixiyhl z80)
-      -- case 0x5D: E=HL&0xFF; break;
-       0x5D -> z80 |> set_e (get_l ixiyhl z80)
-      -- case 0x5E: E=env.mem(HL); time+=3; break;
-       0x5E -> let
-                  value = hl_deref_with_z80 ixiyhl z80
-               in
-                  value.z80 |> set_e value.value
-      -- case 0x5F: E=A; break;
-       0x5F -> z80 |> set_e z80.flags.a
        -- case 0x60: HL=HL&0xFF|B<<8; break;
        -- case 0x60: xy=xy&0xFF|B<<8; break;
        0x60 -> z80 |> set_h z80.main.b ixiyhl
