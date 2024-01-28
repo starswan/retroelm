@@ -1709,6 +1709,29 @@ executegt40ltC0 c ixiyhl z80 =
          -- case 0xAF: A=Ff=Fr=Fb=0; Fa=0x100; break;
        0xAF -> z80 |> set_flag_regs (z80_xor z80.flags.a z80.flags)
 
+         -- case 0xB0: or(B); break;
+       0xB0 -> z80 |> set_flag_regs (z80_or z80.main.b z80.flags)
+         -- case 0xB1: or(C); break;
+       0xB1 -> z80 |> set_flag_regs (z80_or z80.main.c z80.flags)
+         -- case 0xB2: or(D); break;
+       0xB2 -> z80 |> set_flag_regs (z80_or z80.main.d z80.flags)
+         -- case 0xB3: or(E); break;
+       0xB3 -> z80 |> set_flag_regs (z80_or z80.main.e z80.flags)
+         -- case 0xB4: or(HL>>>8); break;
+         -- case 0xB4: or(xy>>>8); break;
+       0xB4 -> z80 |> set_flag_regs (z80_or (get_h ixiyhl z80) z80.flags)
+         -- case 0xB5: or(HL&0xFF); break;
+         -- case 0xB5: or(xy&0xFF); break;
+       0xB5 -> z80 |> set_flag_regs (z80_or (get_l ixiyhl z80) z80.flags)
+         -- case 0xB6: or(env.mem(HL)); time+=3; break;
+         -- case 0xB6: or(env.mem(getd(xy))); time+=3; break;
+       0xB6 -> let
+                 value = hl_deref_with_z80 ixiyhl z80
+               in
+                 value.z80 |> set_flag_regs (z80_or value.value z80.flags)
+         -- case 0xB7: or(A); break;
+       0xB7 -> z80 |> set_flag_regs (z80_or z80.flags.a z80.flags)
+
        _ -> executegt40ltC0slow c ixiyhl z80
 
 executegt40ltC0slow: Int -> IXIYHL -> Z80 -> Z80
@@ -1717,23 +1740,12 @@ executegt40ltC0slow c ixiyhl z80 =
       shiftRight3 =  shiftRightBy 3 (c - 0x40)
    in
       case shiftRight3 of
-         -- case 0xB0: or(B); break;
-         -- case 0xB1: or(C); break;
-         -- case 0xB2: or(D); break;
-         -- case 0xB3: or(E); break;
-         -- case 0xB4: or(HL>>>8); break;
-         -- case 0xB4: or(xy>>>8); break;
-         -- case 0xB5: or(HL&0xFF); break;
-         -- case 0xB5: or(xy&0xFF); break;
-         -- case 0xB6: or(env.mem(HL)); time+=3; break;
-         -- case 0xB6: or(env.mem(getd(xy))); time+=3; break;
-         -- case 0xB7: or(A); break;
-         0x0E ->
-            let
-                value = load408bit c ixiyhl z80
-                z80_1 = value.z80
-            in
-                { z80_1 | flags = z80_1.flags |> z80_or value.value }
+         --0x0E ->
+         --   let
+         --       value = load408bit c ixiyhl z80
+         --       z80_1 = value.z80
+         --   in
+         --       { z80_1 | flags = z80_1.flags |> z80_or value.value }
          -- case 0xB8: cp(B); break;
          -- case 0xB9: cp(C); break;
          -- case 0xBA: cp(D); break;
