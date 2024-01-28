@@ -8,7 +8,8 @@ import Z80Memory exposing (Z80Memory, getValue)
 
 type alias Z80Screen =
     {
-        screen: Z80Memory
+        screen: Z80Memory,
+        border: Int
     }
 
 constructor: Z80Screen
@@ -20,7 +21,7 @@ constructor =
 
       screen = List.concat [startrange, whiterange] |> Z80Memory.constructor
    in
-      Z80Screen screen
+      Z80Screen screen 7
 
 set_value: Int -> Int -> Z80Screen -> Z80Screen
 set_value addr value z80screen =
@@ -129,10 +130,15 @@ runCounts item list =
       Nothing ->
          (RunCount 0 item 1) :: list
 
+-- need to work out how to filter out lines of background colour
+-- This isn't quite right - the colour is the attribute value
+--single_line |> List.filter (\item -> item.colour /= z80env.border)
+-- screenline is start length colour (0-7) and flash
 toDrawn: ScreenData -> List ScreenLine -> List ScreenLine
 toDrawn screendata linelist =
    let
-      new_list = screendata.data |> intsToBools |> List.foldl runCounts [] |> List.reverse |> List.map (pairToColour screendata.colour)
+      run_counts = screendata.data |> intsToBools |> List.foldl runCounts []
+      new_list = run_counts |> List.reverse |> List.map (pairToColour screendata.colour)
    in
       new_list :: List.singleton(linelist) |> List.concat
 
@@ -169,12 +175,19 @@ mapScreen line_num z80env_ram index  =
       { colour=colour,data=data }
 
 range031 = List.range 0 31
+
+singleScreenLine: Int -> Z80Screen -> List RawScreenData
+singleScreenLine line_num z80env =
+    let
+       single_line = List.map (mapScreen line_num z80env) range031
+    in
+       single_line
+
 range0192 = List.range 0 191
 
 screenLines: Z80Screen -> List (List ScreenLine)
 screenLines z80env =
     let
-        rawlines = List.map (\line_num -> List.map (mapScreen line_num z80env) range031) range0192
+        rawlines = List.map (\line_num -> singleScreenLine line_num z80env) range0192
     in
         List.map rawToLines rawlines
-
