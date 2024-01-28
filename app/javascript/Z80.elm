@@ -1640,8 +1640,122 @@ executegt40ltC0 c ixiyhl z80 =
                   value.z80 |> set_flag_regs (z80_sub value.value z80.flags)
          -- case 0x97: sub(A); break;
        0x97 -> z80 |> set_flag_regs (z80_sub z80.flags.a z80.flags)
+         -- case 0x98: sbc(B); break;
+       0x98 -> z80 |> set_flag_regs (sbc z80.main.b z80.flags)
+         -- case 0x99: sbc(C); break;
+       0x99 -> z80 |> set_flag_regs (sbc z80.main.c z80.flags)
+         -- case 0x9A: sbc(D); break;
+       0x9A -> z80 |> set_flag_regs (sbc z80.main.d z80.flags)
+         -- case 0x9B: sbc(E); break;
+       0x9B -> z80 |> set_flag_regs (sbc z80.main.e z80.flags)
+         -- case 0x9C: sbc(HL>>>8); break;
+         -- case 0x9C: sbc(xy>>>8); break;
+       0x9C -> z80 |> set_flag_regs (sbc (get_h ixiyhl z80) z80.flags)
+         -- case 0x9D: sbc(HL&0xFF); break;
+         -- case 0x9D: sbc(xy&0xFF); break;
+       0x9D -> z80 |> set_flag_regs (sbc (get_l ixiyhl z80) z80.flags)
+         -- case 0x9E: sbc(env.mem(HL)); time+=3; break;
+         -- case 0x9E: sbc(env.mem(getd(xy))); time+=3; break;
+       0x9E -> let
+                  value = hl_deref_with_z80 ixiyhl z80
+               in
+                  value.z80 |> set_flag_regs (sbc value.value z80.flags)
+       -- case 0x9F: sbc(A); break;
+       0x9F -> z80 |> set_flag_regs (sbc z80.flags.a z80.flags)
+       -- case 0xA0: and(B); break;
+       0xA0 -> z80 |> set_flag_regs (z80_and z80.main.b z80.flags)
+       -- case 0xA1: and(C); break;
+       0xA1 -> z80 |> set_flag_regs (z80_and z80.main.c z80.flags)
+       -- case 0xA2: and(D); break;
+       0xA2 -> z80 |> set_flag_regs (z80_and z80.main.d z80.flags)
+       -- case 0xA3: and(E); break;
+       0xA3 -> z80 |> set_flag_regs (z80_and z80.main.e z80.flags)
+       -- case 0xA4: and(HL>>>8); break;
+       -- case 0xA4: and(xy>>>8); break;
+       0xA4 -> z80 |> set_flag_regs (z80_and (get_h ixiyhl z80) z80.flags)
+       -- case 0xA5: and(HL&0xFF); break;
+       -- case 0xA5: and(xy&0xFF); break;
+       0xA5 -> z80 |> set_flag_regs (z80_and (get_l ixiyhl z80) z80.flags)
+       -- case 0xA6: and(env.mem(HL)); time+=3; break;
+       -- case 0xA6: and(env.mem(getd(xy))); time+=3; break;
+       0xA6 -> let
+                  value = hl_deref_with_z80 ixiyhl z80
+               in
+                  value.z80 |> set_flag_regs (z80_and value.value z80.flags)
+       -- case 0xA7: Fa=~(Ff=Fr=A); Fb=0; break;
+       -- and a is correct - I guess the above is a faster implementation
+       0xA7 -> z80 |> set_flag_regs (z80_and z80.flags.a z80.flags)
 
-       _ -> executegt40ltC0slow c ixiyhl z80
+         -- case 0xA8: xor(B); break;
+       0xA8 -> z80 |> set_flag_regs (z80_xor z80.main.b z80.flags)
+         -- case 0xA9: xor(C); break;
+       0xA9 -> z80 |> set_flag_regs (z80_xor z80.main.c z80.flags)
+         -- case 0xAA: xor(D); break;
+       0xAA -> z80 |> set_flag_regs (z80_xor z80.main.d z80.flags)
+         -- case 0xAB: xor(E); break;
+       0xAB -> z80 |> set_flag_regs (z80_xor z80.main.e z80.flags)
+         -- case 0xAC: xor(HL>>>8); break;
+         -- case 0xAC: xor(xy>>>8); break;
+       0xAC -> z80 |> set_flag_regs (z80_xor (get_h ixiyhl z80) z80.flags)
+         -- case 0xAD: xor(HL&0xFF); break;
+         -- case 0xAD: xor(xy&0xFF); break;
+       0xAD -> z80 |> set_flag_regs (z80_xor (get_l ixiyhl z80) z80.flags)
+         -- case 0xAE: xor(env.mem(HL)); time+=3; break;
+         -- case 0xAE: xor(env.mem(getd(xy))); time+=3; break;
+       0xAE -> let
+                 value = hl_deref_with_z80 ixiyhl z80
+               in
+                 value.z80 |> set_flag_regs (z80_xor value.value z80.flags)
+         -- case 0xAF: A=Ff=Fr=Fb=0; Fa=0x100; break;
+       0xAF -> z80 |> set_flag_regs (z80_xor z80.flags.a z80.flags)
+
+         -- case 0xB0: or(B); break;
+       0xB0 -> z80 |> set_flag_regs (z80_or z80.main.b z80.flags)
+         -- case 0xB1: or(C); break;
+       0xB1 -> z80 |> set_flag_regs (z80_or z80.main.c z80.flags)
+         -- case 0xB2: or(D); break;
+       0xB2 -> z80 |> set_flag_regs (z80_or z80.main.d z80.flags)
+         -- case 0xB3: or(E); break;
+       0xB3 -> z80 |> set_flag_regs (z80_or z80.main.e z80.flags)
+         -- case 0xB4: or(HL>>>8); break;
+         -- case 0xB4: or(xy>>>8); break;
+       0xB4 -> z80 |> set_flag_regs (z80_or (get_h ixiyhl z80) z80.flags)
+         -- case 0xB5: or(HL&0xFF); break;
+         -- case 0xB5: or(xy&0xFF); break;
+       0xB5 -> z80 |> set_flag_regs (z80_or (get_l ixiyhl z80) z80.flags)
+         -- case 0xB6: or(env.mem(HL)); time+=3; break;
+         -- case 0xB6: or(env.mem(getd(xy))); time+=3; break;
+       0xB6 -> let
+                 value = hl_deref_with_z80 ixiyhl z80
+               in
+                 value.z80 |> set_flag_regs (z80_or value.value z80.flags)
+         -- case 0xB7: or(A); break;
+       0xB7 -> z80 |> set_flag_regs (z80_or z80.flags.a z80.flags)
+
+         -- case 0xB8: cp(B); break;
+       0xB8 -> z80 |> set_flag_regs (cp z80.main.b z80.flags)
+         -- case 0xB9: cp(C); break;
+       0xB9 -> z80 |> set_flag_regs (cp z80.main.c z80.flags)
+         -- case 0xBA: cp(D); break;
+       0xBA -> z80 |> set_flag_regs (cp z80.main.d z80.flags)
+         -- case 0xBB: cp(E); break;
+       0xBB -> z80 |> set_flag_regs (cp z80.main.e z80.flags)
+         -- case 0xBC: cp(HL>>>8); break;
+         -- case 0xBC: cp(xy>>>8); break;
+       0xBC -> z80 |> set_flag_regs (cp (get_h ixiyhl z80) z80.flags)
+         -- case 0xBD: cp(HL&0xFF); break;
+         -- case 0xBD: cp(xy&0xFF); break;
+       0xBD -> z80 |> set_flag_regs (cp (get_l ixiyhl z80) z80.flags)
+         -- case 0xBE: cp(env.mem(HL)); time+=3; break;
+         -- case 0xBE: cp(env.mem(getd(xy))); time+=3; break;
+       0xBE -> let
+                 value = hl_deref_with_z80 ixiyhl z80
+               in
+                 value.z80 |> set_flag_regs (cp value.value z80.flags)
+         -- case 0xBF: cp(A); break;
+       0xBF -> z80 |> set_flag_regs (cp z80.flags.a z80.flags)
+
+       _ ->  debug_todo "executegt40ltC0" (c |> String.fromInt) z80
 
 set_a: Int -> Z80 -> Z80
 set_a value z80 =
@@ -1649,102 +1763,6 @@ set_a value z80 =
         z80_flags = z80.flags
     in
        { z80 | flags = { z80_flags | a = value } }
-
-executegt40ltC0slow: Int -> IXIYHL -> Z80 -> Z80
-executegt40ltC0slow c ixiyhl z80 =
-   let
-      shiftRight3 =  shiftRightBy 3 (c - 0x40)
-   in
-      case shiftRight3 of
-         -- case 0x98: sbc(B); break;
-         -- case 0x99: sbc(C); break;
-         -- case 0x9A: sbc(D); break;
-         -- case 0x9B: sbc(E); break;
-         -- case 0x9C: sbc(HL>>>8); break;
-         -- case 0x9C: sbc(xy>>>8); break;
-         -- case 0x9D: sbc(HL&0xFF); break;
-         -- case 0x9D: sbc(xy&0xFF); break;
-         -- case 0x9E: sbc(env.mem(HL)); time+=3; break;
-         -- case 0x9E: sbc(env.mem(getd(xy))); time+=3; break;
-         -- case 0x9F: sbc(A); break;
-         0x0B ->
-            let
-                value = load408bit c ixiyhl z80
-                newish_z80 = value.z80
-            in
-                { newish_z80 | flags = newish_z80.flags |> sbc value.value }
-         -- case 0xA0: and(B); break;
-         -- case 0xA1: and(C); break;
-         -- case 0xA2: and(D); break;
-         -- case 0xA3: and(E); break;
-         -- case 0xA4: and(HL>>>8); break;
-         -- case 0xA4: and(xy>>>8); break;
-         -- case 0xA5: and(HL&0xFF); break;
-         -- case 0xA5: and(xy&0xFF); break;
-         -- case 0xA6: and(env.mem(HL)); time+=3; break;
-         -- case 0xA6: and(env.mem(getd(xy))); time+=3; break;
-         -- case 0xA7: Fa=~(Ff=Fr=A); Fb=0; break;
-         0x0C ->
-            let
-                value = load408bit c ixiyhl z80
-                newish_z80 = value.z80
-                new_flags = z80_and value.value newish_z80.flags
-            in
-                { newish_z80 | flags = new_flags }
-         -- case 0xA8: xor(B); break;
-         -- case 0xA9: xor(C); break;
-         -- case 0xAA: xor(D); break;
-         -- case 0xAB: xor(E); break;
-         -- case 0xAC: xor(HL>>>8); break;
-         -- case 0xAC: xor(xy>>>8); break;
-         -- case 0xAD: xor(HL&0xFF); break;
-         -- case 0xAD: xor(xy&0xFF); break;
-         -- case 0xAE: xor(env.mem(HL)); time+=3; break;
-         -- case 0xAE: xor(env.mem(getd(xy))); time+=3; break;
-         -- case 0xAF: A=Ff=Fr=Fb=0; Fa=0x100; break;
-         0x0D ->
-            let
-                value = load408bit c ixiyhl z80
-                newish_z80 = value.z80
-                new_flags = z80_xor value.value newish_z80.flags
-            in
-                { newish_z80 | flags = new_flags }
-         -- case 0xB0: or(B); break;
-         -- case 0xB1: or(C); break;
-         -- case 0xB2: or(D); break;
-         -- case 0xB3: or(E); break;
-         -- case 0xB4: or(HL>>>8); break;
-         -- case 0xB4: or(xy>>>8); break;
-         -- case 0xB5: or(HL&0xFF); break;
-         -- case 0xB5: or(xy&0xFF); break;
-         -- case 0xB6: or(env.mem(HL)); time+=3; break;
-         -- case 0xB6: or(env.mem(getd(xy))); time+=3; break;
-         -- case 0xB7: or(A); break;
-         0x0E ->
-            let
-                value = load408bit c ixiyhl z80
-                z80_1 = value.z80
-            in
-                { z80_1 | flags = z80_1.flags |> z80_or value.value }
-         -- case 0xB8: cp(B); break;
-         -- case 0xB9: cp(C); break;
-         -- case 0xBA: cp(D); break;
-         -- case 0xBB: cp(E); break;
-         -- case 0xBC: cp(HL>>>8); break;
-         -- case 0xBC: cp(xy>>>8); break;
-         -- case 0xBD: cp(HL&0xFF); break;
-         -- case 0xBD: cp(xy&0xFF); break;
-         -- case 0xBE: cp(env.mem(HL)); time+=3; break;
-         -- case 0xBE: cp(env.mem(getd(xy))); time+=3; break;
-         -- case 0xBF: cp(A); break;
-         0x0F ->
-            let
-                value = load408bit c ixiyhl z80
-                z80_1 = value.z80
-            in
-                { z80_1 | flags = z80_1.flags |> cp value.value }
-         _ ->
-             debug_todo "executegt40ltC0slow" (c |> String.fromInt) z80
 
 -- There appear to be many situations where we already know that we don't need all
 -- this complexity as we're just doing LD A,B or something similar - so stop using it in those cases
