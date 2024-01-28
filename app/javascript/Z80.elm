@@ -1740,12 +1740,6 @@ executegt40ltC0slow c ixiyhl z80 =
       shiftRight3 =  shiftRightBy 3 (c - 0x40)
    in
       case shiftRight3 of
-         --0x0E ->
-         --   let
-         --       value = load408bit c ixiyhl z80
-         --       z80_1 = value.z80
-         --   in
-         --       { z80_1 | flags = z80_1.flags |> z80_or value.value }
          -- case 0xB8: cp(B); break;
          -- case 0xB9: cp(C); break;
          -- case 0xBA: cp(D); break;
