@@ -18,7 +18,7 @@ RSpec.describe "Spectrum Emulator" do
     # wait for speed to hit a steady state
     while (high - low).abs > 0.01
       times = 1.upto(6).map do
-        sleep 0.15
+        sleep 0.2
         page.find("#hz").text.to_f
       end
       sorted = times.sort

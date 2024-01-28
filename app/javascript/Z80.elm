@@ -1732,33 +1732,30 @@ executegt40ltC0 c ixiyhl z80 =
          -- case 0xB7: or(A); break;
        0xB7 -> z80 |> set_flag_regs (z80_or z80.flags.a z80.flags)
 
-       _ -> executegt40ltC0slow c ixiyhl z80
-
-executegt40ltC0slow: Int -> IXIYHL -> Z80 -> Z80
-executegt40ltC0slow c ixiyhl z80 =
-   let
-      shiftRight3 =  shiftRightBy 3 (c - 0x40)
-   in
-      case shiftRight3 of
          -- case 0xB8: cp(B); break;
+       0xB8 -> z80 |> set_flag_regs (cp z80.main.b z80.flags)
          -- case 0xB9: cp(C); break;
+       0xB9 -> z80 |> set_flag_regs (cp z80.main.c z80.flags)
          -- case 0xBA: cp(D); break;
+       0xBA -> z80 |> set_flag_regs (cp z80.main.d z80.flags)
          -- case 0xBB: cp(E); break;
+       0xBB -> z80 |> set_flag_regs (cp z80.main.e z80.flags)
          -- case 0xBC: cp(HL>>>8); break;
          -- case 0xBC: cp(xy>>>8); break;
+       0xBC -> z80 |> set_flag_regs (cp (get_h ixiyhl z80) z80.flags)
          -- case 0xBD: cp(HL&0xFF); break;
          -- case 0xBD: cp(xy&0xFF); break;
+       0xBD -> z80 |> set_flag_regs (cp (get_l ixiyhl z80) z80.flags)
          -- case 0xBE: cp(env.mem(HL)); time+=3; break;
          -- case 0xBE: cp(env.mem(getd(xy))); time+=3; break;
+       0xBE -> let
+                 value = hl_deref_with_z80 ixiyhl z80
+               in
+                 value.z80 |> set_flag_regs (cp value.value z80.flags)
          -- case 0xBF: cp(A); break;
-         0x0F ->
-            let
-                value = load408bit c ixiyhl z80
-                z80_1 = value.z80
-            in
-                { z80_1 | flags = z80_1.flags |> cp value.value }
-         _ ->
-             debug_todo "executegt40ltC0slow" (c |> String.fromInt) z80
+       0xBF -> z80 |> set_flag_regs (cp z80.flags.a z80.flags)
+
+       _ ->  debug_todo "executegt40ltC0" (c |> String.fromInt) z80
 
 set_a: Int -> Z80 -> Z80
 set_a value z80 =
