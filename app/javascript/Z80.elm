@@ -634,23 +634,23 @@ execute_without_hl c z80 =
          Just f_without_ixiyhl -> Just (z80 |> f_without_ixiyhl)
          Nothing -> Nothing
 
+execute_with_ixiyhl: Int -> IXIYHL -> Z80 -> Maybe Z80
+execute_with_ixiyhl c ixiyhl z80 =
+   let
+       func = lt40_dict |> Dict.get c
+   in
+      case func of
+         Just f -> Just (z80 |> f ixiyhl)
+         Nothing -> Nothing
+
 execute_ltC0: Int -> IXIYHL -> Z80 -> Z80
 execute_ltC0 c ixiyhl z80 =
       case z80 |> execute_without_hl c of
          Just z_80 -> z_80
          Nothing ->
-            let
-               func = lt40_dict |> Dict.get c
-            in
-               case func of
-                   Just f -> f ixiyhl z80
-                   Nothing ->
-                      if c < 0x40 then
-                         debug_todo "lt40" (c |> toHexString) z80
-                      else if c < 0xC0 then
-                         z80 |> executegt40ltC0 c ixiyhl
-                      else
-                         z80
+             case z80 |> execute_with_ixiyhl c ixiyhl of
+                 Just a_z80 -> a_z80
+                 Nothing -> z80 |> executegt40ltC0 c ixiyhl
 
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
