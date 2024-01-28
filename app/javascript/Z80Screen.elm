@@ -137,7 +137,8 @@ runCounts item list =
 toDrawn: ScreenData -> List ScreenLine -> List ScreenLine
 toDrawn screendata linelist =
    let
-      new_list = screendata.data |> intsToBools |> List.foldl runCounts [] |> List.reverse |> List.map (pairToColour screendata.colour)
+      run_counts = screendata.data |> intsToBools |> List.foldl runCounts []
+      new_list = run_counts |> List.reverse |> List.map (pairToColour screendata.colour)
    in
       new_list :: List.singleton(linelist) |> List.concat
 
