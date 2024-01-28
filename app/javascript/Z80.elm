@@ -1686,6 +1686,29 @@ executegt40ltC0 c ixiyhl z80 =
        -- and a is correct - I guess the above is a faster implementation
        0xA7 -> z80 |> set_flag_regs (z80_and z80.flags.a z80.flags)
 
+         -- case 0xA8: xor(B); break;
+       0xA8 -> z80 |> set_flag_regs (z80_xor z80.main.b z80.flags)
+         -- case 0xA9: xor(C); break;
+       0xA9 -> z80 |> set_flag_regs (z80_xor z80.main.c z80.flags)
+         -- case 0xAA: xor(D); break;
+       0xAA -> z80 |> set_flag_regs (z80_xor z80.main.d z80.flags)
+         -- case 0xAB: xor(E); break;
+       0xAB -> z80 |> set_flag_regs (z80_xor z80.main.e z80.flags)
+         -- case 0xAC: xor(HL>>>8); break;
+         -- case 0xAC: xor(xy>>>8); break;
+       0xAC -> z80 |> set_flag_regs (z80_xor (get_h ixiyhl z80) z80.flags)
+         -- case 0xAD: xor(HL&0xFF); break;
+         -- case 0xAD: xor(xy&0xFF); break;
+       0xAD -> z80 |> set_flag_regs (z80_xor (get_l ixiyhl z80) z80.flags)
+         -- case 0xAE: xor(env.mem(HL)); time+=3; break;
+         -- case 0xAE: xor(env.mem(getd(xy))); time+=3; break;
+       0xAE -> let
+                 value = hl_deref_with_z80 ixiyhl z80
+               in
+                 value.z80 |> set_flag_regs (z80_xor value.value z80.flags)
+         -- case 0xAF: A=Ff=Fr=Fb=0; Fa=0x100; break;
+       0xAF -> z80 |> set_flag_regs (z80_xor z80.flags.a z80.flags)
+
        _ -> executegt40ltC0slow c ixiyhl z80
 
 executegt40ltC0slow: Int -> IXIYHL -> Z80 -> Z80
@@ -1694,24 +1717,6 @@ executegt40ltC0slow c ixiyhl z80 =
       shiftRight3 =  shiftRightBy 3 (c - 0x40)
    in
       case shiftRight3 of
-         -- case 0xA8: xor(B); break;
-         -- case 0xA9: xor(C); break;
-         -- case 0xAA: xor(D); break;
-         -- case 0xAB: xor(E); break;
-         -- case 0xAC: xor(HL>>>8); break;
-         -- case 0xAC: xor(xy>>>8); break;
-         -- case 0xAD: xor(HL&0xFF); break;
-         -- case 0xAD: xor(xy&0xFF); break;
-         -- case 0xAE: xor(env.mem(HL)); time+=3; break;
-         -- case 0xAE: xor(env.mem(getd(xy))); time+=3; break;
-         -- case 0xAF: A=Ff=Fr=Fb=0; Fa=0x100; break;
-         0x0D ->
-            let
-                value = load408bit c ixiyhl z80
-                newish_z80 = value.z80
-                new_flags = z80_xor value.value newish_z80.flags
-            in
-                { newish_z80 | flags = new_flags }
          -- case 0xB0: or(B); break;
          -- case 0xB1: or(C); break;
          -- case 0xB2: or(D); break;
