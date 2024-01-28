@@ -14,7 +14,7 @@ import Json.Decode as Decode
 import Z80Screen exposing (ScreenLine, screenLines, spectrumColour)
 import Spectrum exposing (set_rom)
 import Svg exposing (Svg, line, rect, svg)
-import Svg.Attributes exposing (fill, height, stroke, viewBox, width, x1, x2, y1, y2)
+import Svg.Attributes exposing (fill, height, rx, stroke, viewBox, width, x1, x2, y1, y2)
 import Time exposing (posixToMillis)
 import Html exposing (Html, button, div, h2, span, text)
 import Html.Attributes exposing (id, style)
@@ -96,7 +96,7 @@ view model =
       screen_data = List.indexedMap lineListToSvg lines
       -- border colour is never bright
       border_colour = spectrumColour screen.border False
-      background = [rect [height "100%", width "100%", fill border_colour] []]
+      background = [rect [height "100%", width "100%", fill border_colour, rx "15"] []]
       screen_data_list = background :: screen_data |> List.concat
    in
      -- The inline style is being used for example purposes in order to keep this example simple and
