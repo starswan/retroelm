@@ -11,10 +11,10 @@ import Html.Events exposing (onClick)
 import Http
 import Http.Detailed
 import Json.Decode as Decode
-import Z80Screen exposing (ScreenLine, screenLines)
+import Z80Screen exposing (ScreenLine, screenLines, spectrumColour)
 import Spectrum exposing (set_rom)
-import Svg exposing (Svg, line, svg)
-import Svg.Attributes exposing (height, stroke, viewBox, width, x1, x2, y1, y2)
+import Svg exposing (Svg, line, rect, svg)
+import Svg.Attributes exposing (fill, height, stroke, viewBox, width, x1, x2, y1, y2)
 import Time exposing (posixToMillis)
 import Html exposing (Html, button, div, h2, span, text)
 import Html.Attributes exposing (id, style)
@@ -31,7 +31,7 @@ c_TICKTIME = 33
 -- I'm currently unsure whether scaling the display results in a significant slowdown or not
 -- what it does show is that changing the screen makes everything slower, which probably means in practice
 -- that the display code will need some optimisation
-c_SCALEFACTOR = 3
+c_SCALEFACTOR = 2
 
 type alias Model =
   {
@@ -76,10 +76,10 @@ speed_in_hz model =
 lineToSvg: Int -> ScreenLine -> Svg Message
 lineToSvg y_index linedata =
    line [
-         x1 (linedata.start |> String.fromInt) ,
-         y1 (y_index |> String.fromInt),
-         x2 ((linedata.start + linedata.length) |> String.fromInt),
-         y2 (y_index |> String.fromInt),
+         x1 (48 + linedata.start |> String.fromInt) ,
+         y1 (40 + y_index |> String.fromInt),
+         x2 ((48 + linedata.start + linedata.length) |> String.fromInt),
+         y2 (40 + y_index |> String.fromInt),
          stroke linedata.colour
          ]
          []
@@ -91,7 +91,13 @@ lineListToSvg y_index linelist =
 view : Model -> Html Message
 view model =
    let
-      lines = model.qaop.spectrum.cpu.env.ram.screen |> screenLines
+      screen = model.qaop.spectrum.cpu.env.ram.screen
+      lines = screen |> screenLines
+      screen_data = List.indexedMap lineListToSvg lines
+      -- border colour is never bright
+      border_colour = spectrumColour screen.border False
+      background = [rect [height "100%", width "100%", fill border_colour] []]
+      screen_data_list = background :: screen_data |> List.concat
    in
      -- The inline style is being used for example purposes in order to keep this example simple and
      -- avoid loading additional resources. Use a proper stylesheet when building your own app.
@@ -103,7 +109,10 @@ view model =
             div [] [text (String.fromInt model.count), text " in ", text (model |> time_display), span [id "hz"] [text (model |> speed_in_hz)], text " Hz"]
            ,button [ onClick Pause ] [ text (if model.qaop.spectrum.paused then "Unpause" else "Pause") ]
         ]
-        ,svg [height (192 * c_SCALEFACTOR |> String.fromInt), width (256 * c_SCALEFACTOR |> String.fromInt), viewBox "0 0 256 192"] (List.indexedMap lineListToSvg lines |> List.concat)
+        ,svg
+         [height (272 * c_SCALEFACTOR |> String.fromInt), width (352 * c_SCALEFACTOR |> String.fromInt), viewBox "0 0 352 272"]
+         --<rect width="100%" height="100%" fill="green" />
+         screen_data_list
         --,svg [style "height" "192px", style "width" "256px"] (List.indexedMap lineListToSvg lines |> List.concat)
      ]
 
