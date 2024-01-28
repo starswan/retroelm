@@ -737,7 +737,23 @@ lt40_dict_lite = Dict.fromList
           -- case 0x5B: break;
           (0x5B, (\z80 -> z80)),
           -- case 0x5F: E=A; break;
-          (0x5F, (\z80 -> z80 |> set_e z80.flags.a))
+          (0x5F, (\z80 -> z80 |> set_e z80.flags.a)),
+          -- case 0x64: break;
+          (0x64, (\z80 -> z80)),
+          -- case 0x6D: break;
+          (0x6D, (\z80 -> z80)),
+          -- case 0x76: halt(); break;
+          (0x76, (\z80 ->  z80 |> halt)),
+          -- case 0x78: A=B; break;
+          (0x78, (\z80 -> z80 |> set_a z80.main.b)),
+          -- case 0x79: A=C; break;
+          (0x79, (\z80 -> z80 |> set_a z80.main.c)),
+          -- case 0x7A: A=D; break;
+          (0x7A, (\z80 -> z80 |> set_a z80.main.d)),
+          -- case 0x7B: A=E; break;
+          (0x7B, (\z80 -> z80 |> set_a z80.main.e)),
+          -- case 0x7F: break;
+          (0x7F, (\z80 -> z80))
     ]
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
@@ -798,7 +814,116 @@ lt40_dict = Dict.fromList
           (0x5E, (\ixiyhl z80 -> let
                                     value = hl_deref_with_z80 ixiyhl z80
                                  in
-                                    value.z80 |> set_e value.value))
+                                    value.z80 |> set_e value.value)),
+          -- case 0x60: HL=HL&0xFF|B<<8; break;
+          -- case 0x60: xy=xy&0xFF|B<<8; break;
+          (0x60, (\ixiyhl z80 -> z80 |> set_h z80.main.b ixiyhl)),
+          -- case 0x61: HL=HL&0xFF|C<<8; break;
+          -- case 0x61: xy=xy&0xFF|C<<8; break;
+          (0x61, (\ixiyhl z80 -> z80 |> set_h z80.main.c ixiyhl)),
+          -- case 0x62: HL=HL&0xFF|D<<8; break;
+          -- case 0x62: xy=xy&0xFF|D<<8; break;
+          (0x62, (\ixiyhl z80 -> z80 |> set_h z80.main.d ixiyhl)),
+          -- case 0x63: HL=HL&0xFF|E<<8; break;
+          -- case 0x63: xy=xy&0xFF|E<<8; break;
+          (0x63, (\ixiyhl z80 -> z80 |> set_h z80.main.e ixiyhl)),
+          -- case 0x65: HL=HL&0xFF|(HL&0xFF)<<8; break;
+          -- case 0x65: xy=xy&0xFF|(xy&0xFF)<<8; break;
+          (0x65, (\ixiyhl z80 -> z80 |> set_h (get_l ixiyhl z80) ixiyhl)),
+          -- case 0x66: HL=HL&0xFF|env.mem(HL)<<8; time+=3; break;
+          -- case 0x66: HL=HL&0xFF|env.mem(getd(xy))<<8; time+=3; break;
+          (0x66, (\ixiyhl z80 -> let
+                                    value = hl_deref_with_z80 ixiyhl z80
+                                 in
+                                    value.z80 |> set_h value.value HL |> add_cpu_time 3)),
+          -- case 0x67: HL=HL&0xFF|A<<8; break;
+          -- case 0x67: xy=xy&0xFF|A<<8; break;
+          (0x67, (\ixiyhl z80 -> z80 |> set_h z80.flags.a ixiyhl)),
+          -- case 0x68: HL=HL&0xFF00|B; break;
+          -- case 0x68: xy=xy&0xFF00|B; break;
+          (0x68, (\ixiyhl z80 -> z80 |> set_l z80.main.b ixiyhl)),
+          -- case 0x69: HL=HL&0xFF00|C; break;
+          -- case 0x69: xy=xy&0xFF00|C; break;
+          (0x69, (\ixiyhl z80 -> z80 |> set_l z80.main.c ixiyhl)),
+          -- case 0x6A: HL=HL&0xFF00|D; break;
+          -- case 0x6A: xy=xy&0xFF00|D; break;
+          (0x6A, (\ixiyhl z80 -> z80 |> set_l z80.main.d ixiyhl)),
+          -- case 0x6B: HL=HL&0xFF00|E; break;
+          -- case 0x6B: xy=xy&0xFF00|E; break;
+          (0x6B, (\ixiyhl z80 -> z80 |> set_l z80.main.e ixiyhl)),
+          -- case 0x6C: HL=HL&0xFF00|HL>>>8; break;
+          -- case 0x6C: xy=xy&0xFF00|xy>>>8; break;
+          (0x6C, (\ixiyhl z80 -> z80 |> set_l (get_h ixiyhl z80) ixiyhl)),
+          -- case 0x6E: HL=HL&0xFF00|env.mem(HL); time+=3; break;
+          -- case 0x6E: HL=HL&0xFF00|env.mem(getd(xy)); time+=3; break;
+          (0x6E, (\ixiyhl z80 -> let
+                                    value = hl_deref_with_z80 ixiyhl z80
+                                 in
+                                    value.z80 |> set_l value.value HL |> add_cpu_time 3)),
+          -- case 0x6F: HL=HL&0xFF00|A; break;
+          -- case 0x6F: xy=xy&0xFF00|A; break;
+          (0x6F, (\ixiyhl z80 -> z80 |> set_l z80.flags.a ixiyhl)),
+          -- case 0x70: env.mem(HL,B); time+=3; break;
+          -- case 0x70: env.mem(getd(xy),B); time+=3; break;
+          (0x70, (\ixiyhl z80 -> let
+                                    mem_target = z80 |> env_mem_hl ixiyhl
+                                    new_env = mem_target.z80.env |> set_mem mem_target.value z80.main.b
+                                 in
+                                    mem_target.z80 |> set_env new_env |> add_cpu_time 3)),
+          -- case 0x71: env.mem(HL,C); time+=3; break;
+          -- case 0x71: env.mem(getd(xy),C); time+=3; break;
+          (0x71, (\ixiyhl z80 -> let
+                                    mem_target = z80 |> env_mem_hl ixiyhl
+                                    new_env = mem_target.z80.env |> set_mem mem_target.value z80.main.c
+                                 in
+                                    mem_target.z80 |> set_env new_env |> add_cpu_time 3)),
+          -- case 0x72: env.mem(HL,D); time+=3; break;
+          -- case 0x72: env.mem(getd(xy),D); time+=3; break;
+          (0x72, (\ixiyhl z80 -> let
+                                    mem_target = z80 |> env_mem_hl ixiyhl
+                                    new_env = mem_target.z80.env |> set_mem mem_target.value z80.main.d
+                                 in
+                                    mem_target.z80 |> set_env new_env |> add_cpu_time 3)),
+          -- case 0x73: env.mem(HL,E); time+=3; break;
+          -- case 0x73: env.mem(getd(xy),E); time+=3; break;
+          (0x73, (\ixiyhl z80 -> let
+                                    mem_target = z80 |> env_mem_hl ixiyhl
+                                    new_env = mem_target.z80.env |> set_mem mem_target.value z80.main.e
+                                 in
+                                    mem_target.z80 |> set_env new_env |> add_cpu_time 3)),
+          -- case 0x74: env.mem(HL,HL>>>8); time+=3; break;
+          -- case 0x74: env.mem(getd(xy),HL>>>8); time+=3; break;
+          (0x74, (\ixiyhl z80 -> let
+                                    mem_target = z80 |> env_mem_hl ixiyhl
+                                    new_env = mem_target.z80.env |> set_mem mem_target.value (get_h HL mem_target.z80)
+                                 in
+                                    mem_target.z80 |> set_env new_env |> add_cpu_time 3)),
+          -- case 0x75: env.mem(HL,HL&0xFF); time+=3; break;
+          -- case 0x75: env.mem(getd(xy),HL&0xFF); time+=3; break;
+          (0x75, (\ixiyhl z80 -> let
+                                    mem_target = z80 |> env_mem_hl ixiyhl
+                                    new_env = mem_target.z80.env |> set_mem mem_target.value (get_l HL z80)
+                                 in
+                                    mem_target.z80 |> set_env new_env |> add_cpu_time 3)),
+          -- case 0x77: env.mem(HL,A); time+=3; break;
+          -- case 0x77: env.mem(getd(xy),A); time+=3; break;
+          (0x77, (\ixiyhl z80 -> let
+                                    mem_target = z80 |> env_mem_hl ixiyhl
+                                    new_env = mem_target.z80.env |> set_mem mem_target.value z80.flags.a
+                                 in
+                                    mem_target.z80 |> set_env new_env |> add_cpu_time 3)),
+          -- case 0x7C: A=HL>>>8; break;
+          -- case 0x7C: A=xy>>>8; break;
+          (0x7C, (\ixiyhl z80 -> z80 |> set_a (get_h ixiyhl z80))),
+          -- case 0x7D: A=HL&0xFF; break;
+          -- case 0x7D: A=xy&0xFF; break;
+          (0x7D, (\ixiyhl z80 -> z80 |> set_a (get_l ixiyhl z80))),
+          -- case 0x7E: A=env.mem(HL); time+=3; break;
+          -- case 0x7E: A=env.mem(getd(xy)); time+=3; break;
+          (0x7E, (\ixiyhl z80 -> let
+                                    value = hl_deref_with_z80 ixiyhl z80
+                                 in
+                                    value.z80 |> set_a value.value))
     ]
 
 execute_0x10: Z80 -> Z80
@@ -1090,47 +1215,41 @@ execute_0x04: Z80 -> Z80
 execute_0x04 z80 =
    -- case 0x04: B=inc(B); break;
    let
-      z80_main = z80.main
       new_b = inc z80.main.b z80.flags
    in
-      { z80 | flags = new_b.flags, main = { z80_main | b = new_b.value } }
+      z80 |> set_flag_regs new_b.flags |> set_b new_b.value
 
 execute_0x05: Z80 -> Z80
 execute_0x05 z80 =
    -- case 0x05: B=dec(B); break;
    let
-      z80_main = z80.main
       new_b = dec z80.main.b z80.flags
    in
-      { z80 | flags = new_b.flags, main = { z80_main | b = new_b.value } }
+      z80 |> set_flag_regs new_b.flags |> set_b new_b.value
 
 execute_0x06: Z80 -> Z80
 execute_0x06 z80 =
    -- case 0x06: B=imm8(); break;
    let
-      z80_main = z80.main
       new_b = imm8 z80
-      new_z80 = new_b.z80
    in
-      { new_z80 | main = { z80_main | b = new_b.value } }
+      new_b.z80 |> set_b new_b.value
 
 execute_0x0C: Z80 -> Z80
 execute_0x0C z80 =
    -- case 0x0C: C=inc(C); break;
    let
-      z80_main = z80.main
       new_c = inc z80.main.c z80.flags
    in
-      { z80 | flags = new_c.flags, main = { z80_main | c = new_c.value } }
+      z80 |> set_flag_regs new_c.flags |> set_c new_c.value
 
 execute_0x0D: Z80 -> Z80
 execute_0x0D z80 =
    -- case 0x0D: C=dec(C); break;
    let
-      z80_main = z80.main
       new_c = dec z80.main.c z80.flags
    in
-      { z80 | flags = new_c.flags, main = { z80_main | c = new_c.value } }
+      z80 |> set_flag_regs new_c.flags |> set_c new_c.value
 
 execute_0x0E: Z80 -> Z80
 execute_0x0E z80 =
@@ -1449,131 +1568,6 @@ execute_0x3F z80 =
 executegt40ltC0: Int -> IXIYHL -> Z80 -> Z80
 executegt40ltC0 c ixiyhl z80 =
     case c of
-       -- case 0x60: HL=HL&0xFF|B<<8; break;
-       -- case 0x60: xy=xy&0xFF|B<<8; break;
-       0x60 -> z80 |> set_h z80.main.b ixiyhl
-       -- case 0x61: HL=HL&0xFF|C<<8; break;
-       -- case 0x61: xy=xy&0xFF|C<<8; break;
-       0x61 -> z80 |> set_h z80.main.c ixiyhl
-       -- case 0x62: HL=HL&0xFF|D<<8; break;
-       -- case 0x62: xy=xy&0xFF|D<<8; break;
-       0x62 -> z80 |> set_h z80.main.d ixiyhl
-       -- case 0x63: HL=HL&0xFF|E<<8; break;
-       -- case 0x63: xy=xy&0xFF|E<<8; break;
-       0x63 -> z80 |> set_h z80.main.e ixiyhl
-       -- case 0x64: break;
-       0x64 -> z80
-       -- case 0x65: HL=HL&0xFF|(HL&0xFF)<<8; break;
-       -- case 0x65: xy=xy&0xFF|(xy&0xFF)<<8; break;
-       0x65 -> z80 |> set_h (get_l ixiyhl z80) ixiyhl
-       -- case 0x66: HL=HL&0xFF|env.mem(HL)<<8; time+=3; break;
-       -- case 0x66: HL=HL&0xFF|env.mem(getd(xy))<<8; time+=3; break;
-       0x66 -> let
-                  value = hl_deref_with_z80 ixiyhl z80
-               in
-                  value.z80 |> set_h value.value HL |> add_cpu_time 3
-       -- case 0x67: HL=HL&0xFF|A<<8; break;
-       -- case 0x67: xy=xy&0xFF|A<<8; break;
-       0x67 -> z80 |> set_h z80.flags.a ixiyhl
-       -- case 0x68: HL=HL&0xFF00|B; break;
-       -- case 0x68: xy=xy&0xFF00|B; break;
-       0x68 -> z80 |> set_l z80.main.b ixiyhl
-       -- case 0x69: HL=HL&0xFF00|C; break;
-       -- case 0x69: xy=xy&0xFF00|C; break;
-       0x69 -> z80 |> set_l z80.main.c ixiyhl
-       -- case 0x6A: HL=HL&0xFF00|D; break;
-       -- case 0x6A: xy=xy&0xFF00|D; break;
-       0x6A -> z80 |> set_l z80.main.d ixiyhl
-       -- case 0x6B: HL=HL&0xFF00|E; break;
-       -- case 0x6B: xy=xy&0xFF00|E; break;
-       0x6B -> z80 |> set_l z80.main.e ixiyhl
-       -- case 0x6C: HL=HL&0xFF00|HL>>>8; break;
-       -- case 0x6C: xy=xy&0xFF00|xy>>>8; break;
-       0x6C -> z80 |> set_l (get_h ixiyhl z80) ixiyhl
-       -- case 0x6D: break;
-       0x6D -> z80
-       -- case 0x6E: HL=HL&0xFF00|env.mem(HL); time+=3; break;
-       -- case 0x6E: HL=HL&0xFF00|env.mem(getd(xy)); time+=3; break;
-       0x6E -> let
-                  value = hl_deref_with_z80 ixiyhl z80
-               in
-                  value.z80 |> set_l value.value HL |> add_cpu_time 3
-       -- case 0x6F: HL=HL&0xFF00|A; break;
-       -- case 0x6F: xy=xy&0xFF00|A; break;
-       0x6F -> z80 |> set_l z80.flags.a ixiyhl
-       -- case 0x70: env.mem(HL,B); time+=3; break;
-       -- case 0x70: env.mem(getd(xy),B); time+=3; break;
-       0x70 -> let
-                  mem_target = z80 |> env_mem_hl ixiyhl
-                  new_env = mem_target.z80.env |> set_mem mem_target.value z80.main.b
-               in
-                  mem_target.z80 |> set_env new_env |> add_cpu_time 3
-       -- case 0x71: env.mem(HL,C); time+=3; break;
-       -- case 0x71: env.mem(getd(xy),C); time+=3; break;
-       0x71 -> let
-                  mem_target = z80 |> env_mem_hl ixiyhl
-                  new_env = mem_target.z80.env |> set_mem mem_target.value z80.main.c
-               in
-                  mem_target.z80 |> set_env new_env |> add_cpu_time 3
-       -- case 0x72: env.mem(HL,D); time+=3; break;
-       -- case 0x72: env.mem(getd(xy),D); time+=3; break;
-       0x72 -> let
-                  mem_target = z80 |> env_mem_hl ixiyhl
-                  new_env = mem_target.z80.env |> set_mem mem_target.value z80.main.d
-               in
-                  mem_target.z80 |> set_env new_env |> add_cpu_time 3
-       -- case 0x73: env.mem(HL,E); time+=3; break;
-       -- case 0x73: env.mem(getd(xy),E); time+=3; break;
-       0x73 -> let
-                  mem_target = z80 |> env_mem_hl ixiyhl
-                  new_env = mem_target.z80.env |> set_mem mem_target.value z80.main.e
-               in
-                  mem_target.z80 |> set_env new_env |> add_cpu_time 3
-       -- case 0x74: env.mem(HL,HL>>>8); time+=3; break;
-       -- case 0x74: env.mem(getd(xy),HL>>>8); time+=3; break;
-       0x74 -> let
-                  mem_target = z80 |> env_mem_hl ixiyhl
-                  new_env = mem_target.z80.env |> set_mem mem_target.value (get_h HL mem_target.z80)
-               in
-                  mem_target.z80 |> set_env new_env |> add_cpu_time 3
-       -- case 0x75: env.mem(HL,HL&0xFF); time+=3; break;
-       -- case 0x75: env.mem(getd(xy),HL&0xFF); time+=3; break;
-       0x75 -> let
-                  mem_target = z80 |> env_mem_hl ixiyhl
-                  new_env = mem_target.z80.env |> set_mem mem_target.value (get_l HL z80)
-               in
-                  mem_target.z80 |> set_env new_env |> add_cpu_time 3
-       -- case 0x76: halt(); break;
-       0x76 ->  z80 |> halt
-       -- case 0x77: env.mem(HL,A); time+=3; break;
-       -- case 0x77: env.mem(getd(xy),A); time+=3; break;
-       0x77 -> let
-                  mem_target = z80 |> env_mem_hl ixiyhl
-                  new_env = mem_target.z80.env |> set_mem mem_target.value z80.flags.a
-               in
-                  mem_target.z80 |> set_env new_env |> add_cpu_time 3
-       -- case 0x78: A=B; break;
-       0x78 -> z80 |> set_a z80.main.b
-       -- case 0x79: A=C; break;
-       0x79 -> z80 |> set_a z80.main.c
-       -- case 0x7A: A=D; break;
-       0x7A -> z80 |> set_a z80.main.d
-       -- case 0x7B: A=E; break;
-       0x7B -> z80 |> set_a z80.main.e
-       -- case 0x7C: A=HL>>>8; break;
-       -- case 0x7C: A=xy>>>8; break;
-       0x7C -> z80 |> set_a (get_h ixiyhl z80)
-       -- case 0x7D: A=HL&0xFF; break;
-       -- case 0x7D: A=xy&0xFF; break;
-       0x7D -> z80 |> set_a (get_l ixiyhl z80)
-       -- case 0x7E: A=env.mem(HL); time+=3; break;
-       -- case 0x7E: A=env.mem(getd(xy)); time+=3; break;
-       0x7E -> let
-                   value = hl_deref_with_z80 ixiyhl z80
-                in
-                   value.z80 |> set_a value.value
-       -- case 0x7F: break;
-       0x7F -> z80
        -- case 0x80: add(B); break;
        0x80 -> z80 |> set_flag_regs (z80_add z80.main.b z80.flags)
          -- case 0x81: add(C); break;
