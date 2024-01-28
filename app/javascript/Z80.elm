@@ -625,13 +625,19 @@ set_l value ixiyhl z80 =
    in
      set_xy (or (and xy 0xFF00) value) ixiyhl z80
 
-execute_ltC0: Int -> IXIYHL -> Z80 -> Z80
-execute_ltC0 c ixiyhl z80 =
+execute_without_hl: Int -> Z80 -> Maybe Z80
+execute_without_hl c z80 =
    let
       litefunc = lt40_dict_lite |> Dict.get c
    in
       case litefunc of
-         Just f_without_ixiyhl -> z80 |> f_without_ixiyhl
+         Just f_without_ixiyhl -> Just (z80 |> f_without_ixiyhl)
+         Nothing -> Nothing
+
+execute_ltC0: Int -> IXIYHL -> Z80 -> Z80
+execute_ltC0 c ixiyhl z80 =
+      case z80 |> execute_without_hl c of
+         Just z_80 -> z_80
          Nothing ->
             let
                func = lt40_dict |> Dict.get c
