@@ -761,7 +761,17 @@ lt40_dict_lite = Dict.fromList
           -- case 0x7B: A=E; break;
           (0x7B, (\z80 -> z80 |> set_a z80.main.e)),
           -- case 0x7F: break;
-          (0x7F, (\z80 -> z80))
+          (0x7F, (\z80 -> z80)),
+          -- case 0x80: add(B); break;
+          (0x80, (\z80 -> z80 |> set_flag_regs (z80_add z80.main.b z80.flags))),
+          -- case 0x81: add(C); break;
+          (0x81, (\z80 -> z80 |> set_flag_regs (z80_add z80.main.c z80.flags))),
+          -- case 0x82: add(D); break;
+          (0x82,  (\z80 -> z80 |> set_flag_regs (z80_add z80.main.d z80.flags))),
+          -- case 0x83: add(E); break;
+          (0x83,  (\z80 -> z80 |> set_flag_regs (z80_add z80.main.e z80.flags))),
+          -- case 0x87: add(A); break;
+          (0x87,  (\z80 -> z80 |> set_flag_regs (z80_add z80.flags.a z80.flags)))
     ]
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
@@ -931,7 +941,19 @@ lt40_dict = Dict.fromList
           (0x7E, (\ixiyhl z80 -> let
                                     value = hl_deref_with_z80 ixiyhl z80
                                  in
-                                    value.z80 |> set_a value.value))
+                                    value.z80 |> set_a value.value)),
+          -- case 0x84: add(HL>>>8); break;
+          -- case 0x84: add(xy>>>8); break;
+          (0x84, (\ixiyhl z80 -> z80 |> set_flag_regs (z80_add (get_h ixiyhl z80) z80.flags))),
+          -- case 0x85: add(HL&0xFF); break;
+          -- case 0x85: add(xy&0xFF); break;
+          (0x85,  (\ixiyhl z80 -> z80 |> set_flag_regs (z80_add (get_l ixiyhl z80) z80.flags))),
+          -- case 0x86: add(env.mem(HL)); time+=3; break;
+          -- case 0x86: add(env.mem(getd(xy))); time+=3; break;
+          (0x86, (\ixiyhl z80 -> let
+                                    value = hl_deref_with_z80 ixiyhl z80
+                                  in
+                                     value.z80 |> set_flag_regs (z80_add value.value value.z80.flags)))
     ]
 
 execute_0x10: Z80 -> Z80
@@ -1576,28 +1598,6 @@ execute_0x3F z80 =
 executegt40ltC0: Int -> IXIYHL -> Z80 -> Z80
 executegt40ltC0 c ixiyhl z80 =
     case c of
-       -- case 0x80: add(B); break;
-       0x80 -> z80 |> set_flag_regs (z80_add z80.main.b z80.flags)
-         -- case 0x81: add(C); break;
-       0x81 -> z80 |> set_flag_regs (z80_add z80.main.c z80.flags)
-         -- case 0x82: add(D); break;
-       0x82 -> z80 |> set_flag_regs (z80_add z80.main.d z80.flags)
-         -- case 0x83: add(E); break;
-       0x83 -> z80 |> set_flag_regs (z80_add z80.main.e z80.flags)
-         -- case 0x84: add(HL>>>8); break;
-         -- case 0x84: add(xy>>>8); break;
-       0x84 -> z80 |> set_flag_regs (z80_add (get_h ixiyhl z80) z80.flags)
-         -- case 0x85: add(HL&0xFF); break;
-         -- case 0x85: add(xy&0xFF); break;
-       0x85 -> z80 |> set_flag_regs (z80_add (get_l ixiyhl z80) z80.flags)
-       -- case 0x86: add(env.mem(HL)); time+=3; break;
-       -- case 0x86: add(env.mem(getd(xy))); time+=3; break;
-       0x86 -> let
-                  value = hl_deref_with_z80 ixiyhl z80
-               in
-                  value.z80 |> set_flag_regs (z80_add value.value value.z80.flags)
-       -- case 0x87: add(A); break;
-       0x87 -> z80 |> set_flag_regs (z80_add z80.flags.a z80.flags)
          -- case 0x88: adc(B); break;
        0x88 -> z80 |> set_flag_regs (adc z80.main.b z80.flags)
          -- case 0x89: adc(C); break;
