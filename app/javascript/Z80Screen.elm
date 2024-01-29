@@ -1,8 +1,9 @@
 module Z80Screen exposing (..)
 
+import Array exposing (Array)
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Byte exposing (Byte, getBit)
-import Dict
+import Dict exposing (Dict)
 import Maybe exposing (withDefault)
 import Z80Memory exposing (Z80Memory, getValue)
 
@@ -112,9 +113,18 @@ pairToColour raw_colour runcount =
    in
       ScreenLine runcount.start runcount.count (spectrumColour colour bright) (colour_byte |> getBit 7)
 
+bytes0to255 = List.range 0 255 |> List.map Byte.fromInt
+
+-- optimization of intToBools
+intToBoolsCache: Array (List Bool)
+intToBoolsCache =
+    List.map bitsToLines bytes0to255 |> Array.fromList
+
 intsToBools: List Int -> List Bool
 intsToBools data =
-   data |> List.map Byte.fromInt |> List.map bitsToLines |> List.concat
+   data |> List.map (\index -> Array.get index intToBoolsCache)
+        |> List.map (Maybe.withDefault [])
+        |> List.concat
 
 runCounts: Bool -> List RunCount -> List RunCount
 runCounts item list =
