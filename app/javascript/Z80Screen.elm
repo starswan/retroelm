@@ -51,21 +51,6 @@ type alias ScreenLine =
       flash: Bool
    }
 
--- convert a row of data, colour into a combo of repeated blocks
-foldUp: RawScreenData -> List ScreenData -> List ScreenData
-foldUp raw list =
-   case (List.head list) of
-      Just head ->
-         if head.colour == raw.colour then
-            let
-               tail = withDefault [] (List.tail list)
-            in
-               (ScreenData raw.colour (raw.data :: head.data)) :: tail
-         else
-            (ScreenData raw.colour [raw.data]) :: list
-      Nothing ->
-         (ScreenData raw.colour [raw.data]) :: list
-
 isBitSet: Byte -> Int -> Bool
 isBitSet value shift =
    getBit shift value
@@ -128,17 +113,14 @@ intsToBools data =
 
 runCounts: Bool -> List RunCount -> List RunCount
 runCounts item list =
-   case (List.head list) of
-      Just (runcount) ->
+   case list of
+       runcount :: tail ->
          if item == runcount.value then
-            let
-               tail = (List.tail list) |> withDefault []
-            in
-               (RunCount runcount.start runcount.value (runcount.count + 1)) :: tail
+            (RunCount runcount.start runcount.value (runcount.count + 1)) :: tail
          else
             (RunCount (runcount.start + runcount.count) item 1) :: list
-      Nothing ->
-         (RunCount 0 item 1) :: list
+       _ ->
+         [RunCount 0 item 1]
 
 -- need to work out how to filter out lines of background colour
 -- This isn't quite right - the colour is the attribute value
@@ -147,10 +129,23 @@ runCounts item list =
 toDrawn: ScreenData -> List ScreenLine -> List ScreenLine
 toDrawn screendata linelist =
    let
-      run_counts = screendata.data |> intsToBools |> List.foldl runCounts []
+      bools = screendata.data |> intsToBools
+      run_counts = bools |> List.foldl runCounts []
       new_list = run_counts |> List.reverse |> List.map (pairToColour screendata.colour)
    in
       new_list :: List.singleton(linelist) |> List.concat
+
+-- convert a row of data, colour into a combo of repeated blocks
+foldUp: RawScreenData -> List ScreenData -> List ScreenData
+foldUp raw list =
+   case list of
+       head :: tail ->
+         if head.colour == raw.colour then
+            (ScreenData raw.colour (raw.data :: head.data)) :: tail
+         else
+            (ScreenData raw.colour [raw.data]) :: list
+       _ ->
+         [ScreenData raw.colour [raw.data]]
 
 lines: List RawScreenData -> List ScreenData
 lines screen =
