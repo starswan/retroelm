@@ -12,6 +12,7 @@ RSpec.describe "Spectrum Emulator" do
     click_on 'Match Day'
     # check that Elm is running
     expect(page).to have_content 'Refresh Interval'
+    sleep 1
     # Test emulation speed in Hz
     low = 0
     high = page.find("#hz").text.to_f
