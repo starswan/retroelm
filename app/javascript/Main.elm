@@ -26,7 +26,7 @@ import Utils exposing (digitToString)
 -- arthur timings:
 -- Chromium debug 74.2ms(13.4 Hz) live 37.8ms(26.4 Hz)
 -- firefox debug 104.6ms (9.5 Hz) live 59.9ms(16.6 Hz)
-c_TICKTIME = 33
+c_TICKTIME = 20
 
 -- I'm currently unsure whether scaling the display results in a significant slowdown or not
 -- what it does show is that changing the screen makes everything slower, which probably means in practice
