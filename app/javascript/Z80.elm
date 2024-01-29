@@ -657,10 +657,14 @@ execute_ltC0 c ixiyhl z80 =
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
+          -- case 0x01: v=imm16(); B=v>>>8; C=v&0xFF; break;
+          (0x01, (\z80 -> let
+                             v = imm16 z80
+                          in
+                             v.z80 |> set_bc v.value)),
           (0x08, (\z80 -> z80 |> ex_af)),
           (0x10, execute_0x10),
           (0x18, execute_0x18),
-          (0x01, execute_0x01),
           (0x11, execute_0x11),
           (0x31, execute_0x31),
           -- case 0x33: SP=(char)(SP+1); time+=2; break;
@@ -761,7 +765,47 @@ lt40_dict_lite = Dict.fromList
           -- case 0x7B: A=E; break;
           (0x7B, (\z80 -> z80 |> set_a z80.main.e)),
           -- case 0x7F: break;
-          (0x7F, (\z80 -> z80))
+          (0x7F, (\z80 -> z80)),
+          -- case 0x80: add(B); break;
+          (0x80, (\z80 -> z80 |> set_flag_regs (z80_add z80.main.b z80.flags))),
+          -- case 0x81: add(C); break;
+          (0x81, (\z80 -> z80 |> set_flag_regs (z80_add z80.main.c z80.flags))),
+          -- case 0x82: add(D); break;
+          (0x82, (\z80 -> z80 |> set_flag_regs (z80_add z80.main.d z80.flags))),
+          -- case 0x83: add(E); break;
+          (0x83, (\z80 -> z80 |> set_flag_regs (z80_add z80.main.e z80.flags))),
+          -- case 0x87: add(A); break;
+          (0x87, (\z80 -> z80 |> set_flag_regs (z80_add z80.flags.a z80.flags))),
+          -- case 0x88: adc(B); break;
+          (0x88, (\z80 -> z80 |> set_flag_regs (adc z80.main.b z80.flags))),
+          -- case 0x89: adc(C); break;
+          (0x89, (\z80 -> z80 |> set_flag_regs (adc z80.main.c z80.flags))),
+          -- case 0x8A: adc(D); break;
+          (0x8A, (\z80 -> z80 |> set_flag_regs (adc z80.main.d z80.flags))),
+          -- case 0x8B: adc(E); break;
+          (0x8B, (\z80 -> z80 |> set_flag_regs (adc z80.main.e z80.flags))),
+          -- case 0x8F: adc(A); break;
+          (0x8F, (\z80 -> z80 |> set_flag_regs (z80_sub z80.flags.a z80.flags))),
+          -- case 0x90: sub(B); break;
+          (0x90, (\z80 -> z80 |> set_flag_regs (z80_sub z80.main.b z80.flags))),
+          -- case 0x91: sub(C); break;
+          (0x91, (\z80 -> z80 |> set_flag_regs (z80_sub z80.main.c z80.flags))),
+          -- case 0x92: sub(D); break;
+          (0x92, (\z80 -> z80 |> set_flag_regs (z80_sub z80.main.d z80.flags))),
+           -- case 0x93: sub(E); break;
+          (0x93, (\z80 -> z80 |> set_flag_regs (z80_sub z80.main.e z80.flags))),
+          -- case 0x97: sub(A); break;
+          (0x97, (\z80 -> z80 |> set_flag_regs (z80_sub z80.flags.a z80.flags))),
+         -- case 0x98: sbc(B); break;
+          (0x98, (\z80 -> z80 |> set_flag_regs (sbc z80.main.b z80.flags))),
+           -- case 0x99: sbc(C); break;
+          (0x99, (\z80 -> z80 |> set_flag_regs (sbc z80.main.c z80.flags))),
+           -- case 0x9A: sbc(D); break;
+          (0x9A, (\z80 -> z80 |> set_flag_regs (sbc z80.main.d z80.flags))),
+           -- case 0x9B: sbc(E); break;
+          (0x9B, (\z80 -> z80 |> set_flag_regs (sbc z80.main.e z80.flags))),
+          -- case 0x9F: sbc(A); break;
+          (0x9F, (\z80 -> z80 |> set_flag_regs (sbc z80.flags.a z80.flags)))
     ]
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
@@ -784,9 +828,7 @@ lt40_dict = Dict.fromList
           (0x34, execute_0x34),
           (0x35, execute_0x35),
           (0x36, execute_0x36),
-          -- case 0x44: B=HL>>>8; break;
-          -- case 0x44: B=xy>>>8; break;
-          (0x44, (\ixiyhl z80 -> z80 |> set_b (get_h ixiyhl z80))),
+          (0x44, execute_0x44),
           -- case 0x45: B=HL&0xFF; break;
           -- case 0x45: B=xy&0xFF; break;
           (0x45, (\ixiyhl z80 -> z80 |> set_b (get_l ixiyhl z80))),
@@ -931,8 +973,62 @@ lt40_dict = Dict.fromList
           (0x7E, (\ixiyhl z80 -> let
                                     value = hl_deref_with_z80 ixiyhl z80
                                  in
-                                    value.z80 |> set_a value.value))
+                                    value.z80 |> set_a value.value)),
+          -- case 0x84: add(HL>>>8); break;
+          -- case 0x84: add(xy>>>8); break;
+          (0x84, (\ixiyhl z80 -> z80 |> set_flag_regs (z80_add (get_h ixiyhl z80) z80.flags))),
+          -- case 0x85: add(HL&0xFF); break;
+          -- case 0x85: add(xy&0xFF); break;
+          (0x85,  (\ixiyhl z80 -> z80 |> set_flag_regs (z80_add (get_l ixiyhl z80) z80.flags))),
+          -- case 0x86: add(env.mem(HL)); time+=3; break;
+          -- case 0x86: add(env.mem(getd(xy))); time+=3; break;
+          (0x86, (\ixiyhl z80 -> let
+                                    value = hl_deref_with_z80 ixiyhl z80
+                                  in
+                                     value.z80 |> set_flag_regs (z80_add value.value value.z80.flags))),
+          -- case 0x8C: adc(HL>>>8); break;
+          -- case 0x8C: adc(xy>>>8); break;
+          (0x8C, (\ixiyhl z80 -> z80 |> set_flag_regs (adc (get_h ixiyhl z80) z80.flags))),
+          -- case 0x8D: adc(HL&0xFF); break;
+          -- case 0x8D: adc(xy&0xFF); break;
+          (0x8D, (\ixiyhl z80 -> z80 |> set_flag_regs (adc (get_l ixiyhl z80) z80.flags))),
+          -- case 0x8E: adc(env.mem(HL)); time+=3; break;
+          -- case 0x8E: adc(env.mem(getd(xy))); time+=3; break;
+          (0x8E, (\ixiyhl z80 -> let
+                                    value = hl_deref_with_z80 ixiyhl z80
+                                 in
+                                    value.z80 |> set_flag_regs (adc value.value z80.flags))),
+          -- case 0x94: sub(HL>>>8); break;
+          -- case 0x94: sub(xy>>>8); break;
+          (0x94, (\ixiyhl z80 -> z80 |> set_flag_regs (z80_sub (get_h ixiyhl z80) z80.flags))),
+          -- case 0x95: sub(HL&0xFF); break;
+          -- case 0x95: sub(xy&0xFF); break;
+          (0x95, (\ixiyhl z80 -> z80 |> set_flag_regs (z80_sub (get_l ixiyhl z80) z80.flags))),
+          -- case 0x96: sub(env.mem(HL)); time+=3; break;
+          -- case 0x96: sub(env.mem(getd(xy))); time+=3; break;
+          (0x96, (\ixiyhl z80 -> let
+                                      value = hl_deref_with_z80 ixiyhl z80
+                                  in
+                                      value.z80 |> set_flag_regs (z80_sub value.value z80.flags))),
+           -- case 0x9C: sbc(HL>>>8); break;
+           -- case 0x9C: sbc(xy>>>8); break;
+           (0x9C, (\ixiyhl z80 -> z80 |> set_flag_regs (sbc (get_h ixiyhl z80) z80.flags))),
+           -- case 0x9D: sbc(HL&0xFF); break;
+           -- case 0x9D: sbc(xy&0xFF); break;
+           (0x9D, (\ixiyhl z80 -> z80 |> set_flag_regs (sbc (get_l ixiyhl z80) z80.flags))),
+           -- case 0x9E: sbc(env.mem(HL)); time+=3; break;
+           -- case 0x9E: sbc(env.mem(getd(xy))); time+=3; break;
+           (0x9E, (\ixiyhl z80 -> let
+                                     value = hl_deref_with_z80 ixiyhl z80
+                                  in
+                                     value.z80 |> set_flag_regs (sbc value.value z80.flags)))
     ]
+
+execute_0x44: IXIYHL -> Z80 -> Z80
+execute_0x44 ixiyhl z80 =
+    -- case 0x44: B=HL>>>8; break;
+    -- case 0x44: B=xy>>>8; break;
+    z80 |> set_b (get_h ixiyhl z80)
 
 execute_0x10: Z80 -> Z80
 execute_0x10 z80 =
@@ -1019,15 +1115,6 @@ execute_0x39 ixiyhl z80 =
      new_z80 = set_xy new_xy.value ixiyhl z80
   in
      { new_z80 | flags = new_xy.flags }  |> add_cpu_time new_xy.time
-
-execute_0x01: Z80 -> Z80
-execute_0x01 z80 =
-  -- case 0x01: v=imm16(); B=v>>>8; C=v&0xFF; break;
-  let
-     v = imm16 z80
-      --x = debug_log ("LD BC," ++ (new_z80 |> get_bc |> toHexString)) "" Nothing
-  in
-     v.z80 |> set_bc v.value
 
 execute_0x11: Z80 -> Z80
 execute_0x11 z80 =
@@ -1576,94 +1663,6 @@ execute_0x3F z80 =
 executegt40ltC0: Int -> IXIYHL -> Z80 -> Z80
 executegt40ltC0 c ixiyhl z80 =
     case c of
-       -- case 0x80: add(B); break;
-       0x80 -> z80 |> set_flag_regs (z80_add z80.main.b z80.flags)
-         -- case 0x81: add(C); break;
-       0x81 -> z80 |> set_flag_regs (z80_add z80.main.c z80.flags)
-         -- case 0x82: add(D); break;
-       0x82 -> z80 |> set_flag_regs (z80_add z80.main.d z80.flags)
-         -- case 0x83: add(E); break;
-       0x83 -> z80 |> set_flag_regs (z80_add z80.main.e z80.flags)
-         -- case 0x84: add(HL>>>8); break;
-         -- case 0x84: add(xy>>>8); break;
-       0x84 -> z80 |> set_flag_regs (z80_add (get_h ixiyhl z80) z80.flags)
-         -- case 0x85: add(HL&0xFF); break;
-         -- case 0x85: add(xy&0xFF); break;
-       0x85 -> z80 |> set_flag_regs (z80_add (get_l ixiyhl z80) z80.flags)
-       -- case 0x86: add(env.mem(HL)); time+=3; break;
-       -- case 0x86: add(env.mem(getd(xy))); time+=3; break;
-       0x86 -> let
-                  value = hl_deref_with_z80 ixiyhl z80
-               in
-                  value.z80 |> set_flag_regs (z80_add value.value value.z80.flags)
-       -- case 0x87: add(A); break;
-       0x87 -> z80 |> set_flag_regs (z80_add z80.flags.a z80.flags)
-         -- case 0x88: adc(B); break;
-       0x88 -> z80 |> set_flag_regs (adc z80.main.b z80.flags)
-         -- case 0x89: adc(C); break;
-       0x89 -> z80 |> set_flag_regs (adc z80.main.c z80.flags)
-         -- case 0x8A: adc(D); break;
-       0x8A -> z80 |> set_flag_regs (adc z80.main.d z80.flags)
-         -- case 0x8B: adc(E); break;
-       0x8B -> z80 |> set_flag_regs (adc z80.main.e z80.flags)
-         -- case 0x8C: adc(HL>>>8); break;
-         -- case 0x8C: adc(xy>>>8); break;
-       0x8C -> z80 |> set_flag_regs (adc (get_h ixiyhl z80) z80.flags)
-         -- case 0x8D: adc(HL&0xFF); break;
-         -- case 0x8D: adc(xy&0xFF); break;
-       0x8D -> z80 |> set_flag_regs (adc (get_l ixiyhl z80) z80.flags)
-         -- case 0x8E: adc(env.mem(HL)); time+=3; break;
-         -- case 0x8E: adc(env.mem(getd(xy))); time+=3; break;
-       0x8E -> let
-                  value = hl_deref_with_z80 ixiyhl z80
-               in
-                  value.z80 |> set_flag_regs (adc value.value z80.flags)
-         -- case 0x8F: adc(A); break;
-       0x8F -> z80 |> set_flag_regs (z80_sub z80.flags.a z80.flags)
-         -- case 0x90: sub(B); break;
-       0x90 -> z80 |> set_flag_regs (z80_sub z80.main.b z80.flags)
-         -- case 0x91: sub(C); break;
-       0x91 -> z80 |> set_flag_regs (z80_sub z80.main.c z80.flags)
-         -- case 0x92: sub(D); break;
-       0x92 -> z80 |> set_flag_regs (z80_sub z80.main.d z80.flags)
-         -- case 0x93: sub(E); break;
-       0x93 -> z80 |> set_flag_regs (z80_sub z80.main.e z80.flags)
-         -- case 0x94: sub(HL>>>8); break;
-         -- case 0x94: sub(xy>>>8); break;
-       0x94 -> z80 |> set_flag_regs (z80_sub (get_h ixiyhl z80) z80.flags)
-         -- case 0x95: sub(HL&0xFF); break;
-         -- case 0x95: sub(xy&0xFF); break;
-       0x95 -> z80 |> set_flag_regs (z80_sub (get_l ixiyhl z80) z80.flags)
-         -- case 0x96: sub(env.mem(HL)); time+=3; break;
-         -- case 0x96: sub(env.mem(getd(xy))); time+=3; break;
-       0x96 -> let
-                  value = hl_deref_with_z80 ixiyhl z80
-               in
-                  value.z80 |> set_flag_regs (z80_sub value.value z80.flags)
-         -- case 0x97: sub(A); break;
-       0x97 -> z80 |> set_flag_regs (z80_sub z80.flags.a z80.flags)
-         -- case 0x98: sbc(B); break;
-       0x98 -> z80 |> set_flag_regs (sbc z80.main.b z80.flags)
-         -- case 0x99: sbc(C); break;
-       0x99 -> z80 |> set_flag_regs (sbc z80.main.c z80.flags)
-         -- case 0x9A: sbc(D); break;
-       0x9A -> z80 |> set_flag_regs (sbc z80.main.d z80.flags)
-         -- case 0x9B: sbc(E); break;
-       0x9B -> z80 |> set_flag_regs (sbc z80.main.e z80.flags)
-         -- case 0x9C: sbc(HL>>>8); break;
-         -- case 0x9C: sbc(xy>>>8); break;
-       0x9C -> z80 |> set_flag_regs (sbc (get_h ixiyhl z80) z80.flags)
-         -- case 0x9D: sbc(HL&0xFF); break;
-         -- case 0x9D: sbc(xy&0xFF); break;
-       0x9D -> z80 |> set_flag_regs (sbc (get_l ixiyhl z80) z80.flags)
-         -- case 0x9E: sbc(env.mem(HL)); time+=3; break;
-         -- case 0x9E: sbc(env.mem(getd(xy))); time+=3; break;
-       0x9E -> let
-                  value = hl_deref_with_z80 ixiyhl z80
-               in
-                  value.z80 |> set_flag_regs (sbc value.value z80.flags)
-       -- case 0x9F: sbc(A); break;
-       0x9F -> z80 |> set_flag_regs (sbc z80.flags.a z80.flags)
        -- case 0xA0: and(B); break;
        0xA0 -> z80 |> set_flag_regs (z80_and z80.main.b z80.flags)
        -- case 0xA1: and(C); break;
