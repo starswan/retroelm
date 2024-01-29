@@ -123,8 +123,16 @@ mem base_addr z80env_ctime =
 --			return ram[0xBFFF] | rom[0]<<8;
 --		}
 --	}
-mem16impl: Int -> Int -> Z80Env -> Z80EnvWithValue
-mem16impl addr addr1 z80env =
+mem16: Int -> Z80Env -> Z80EnvWithValue
+mem16 addr z80env_ctime =
+    let
+       n = z80env_ctime.cpu_time - z80env_ctime.ctime
+       z80env = if n > 0 then
+                  z80env_ctime |> cont n
+                else
+                  z80env_ctime
+       addr1 = addr - 0x3FFF
+    in
    if and addr1 0x3FFF /= 0 then
       if addr1 < 0 then
         let
@@ -177,17 +185,6 @@ mem16impl addr addr1 z80env =
                 high = getRamValue 0 z80env.ram
             in
                 Z80EnvWithValue { z80env | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
-
-mem16: Int -> Z80Env -> Z80EnvWithValue
-mem16 addr z80env_ctime =
-    let
-       n = z80env_ctime.cpu_time - z80env_ctime.ctime
-       z80env = if n > 0 then
-                  z80env_ctime |> cont n
-                else
-                  z80env_ctime
-    in
-       z80env |> mem16impl addr (addr - 0x3FFF)
 --
 --public final void mem(int addr, int v) {
 --	int n = cpu.time - ctime;
