@@ -246,8 +246,10 @@ pop: Z80 -> IntWithZ80
 pop z80 =
    let
       v = z80.env |> mem16 z80.sp
+      z80_1 = { z80 | env = v.env }
+      z80_2 = z80_1 |> set_sp (z80.sp + 2) |> add_cpu_time 6
    in
-      IntWithZ80 v.value ({ z80 | env = v.env } |> set_sp (z80.sp + 2) |> add_cpu_time 6)
+      IntWithZ80 v.value z80_2
 
 f_szh0n0p: Int -> Z80 -> Z80
 f_szh0n0p r z80 =

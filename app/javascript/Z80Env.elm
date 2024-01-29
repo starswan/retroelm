@@ -123,61 +123,6 @@ mem base_addr z80env_ctime =
 --			return ram[0xBFFF] | rom[0]<<8;
 --		}
 --	}
-mem16impl: Int -> Int -> Z80Env -> Z80EnvWithValue
-mem16impl addr addr1 z80env =
-   if and addr1 0x3FFF /= 0 then
-      if addr1 < 0 then
-        let
-            low = getROMValue addr z80env.rom48k
-            high = getROMValue (addr1 + 0x4000) z80env.rom48k
-        in
-            Z80EnvWithValue { z80env | ctime = c_NOCONT } (Bitwise.or low (shiftLeftBy8 high))
-      else
-        let
-            low = getRamValue (addr - 0x4000) z80env.ram
-            high = getRamValue addr1 z80env.ram
-            z80env_1 = if addr1 < 0x4000 then
-                          let
-                             x = z80env
-                                 |> cont1 0
-                                 |> cont1 3
-                          in
-                             { x | cpu_time = x.cpu_time + 6 }
-                       else
-                          { z80env | ctime = c_NOCONT }
-        in
-            Z80EnvWithValue z80env_1 (Bitwise.or low (shiftLeftBy8 high))
-   else
-      let
-        addr1shift14 = shiftRightBy 14 addr1
-      in
-        if addr1shift14 == 0 then
-            let
-                new_z80 = cont1 3 z80env
-                low = new_z80.rom48k |> getROMValue addr
-                high = getRamValue 0 new_z80.ram
-            in
-                Z80EnvWithValue new_z80 (or low (shiftLeftBy8 high))
-        else if addr1shift14 == 1 then
-            let
-                new_env = z80env |> cont1 0
-                low = getRamValue (addr - 0x4000) new_env.ram
-                high = getRamValue addr1 new_env.ram
-            in
-                Z80EnvWithValue new_env (or low (shiftLeftBy8 high))
-        else if addr1shift14 == 2 then
-            let
-                low = getRamValue (addr - 0x4000) z80env.ram
-                high = getRamValue addr1 z80env.ram
-            in
-                Z80EnvWithValue { z80env | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
-        else
-            let
-                low = getRamValue 0xBFFF z80env.ram
-                high = getRamValue 0 z80env.ram
-            in
-                Z80EnvWithValue { z80env | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
-
 mem16: Int -> Z80Env -> Z80EnvWithValue
 mem16 addr z80env_ctime =
     let
@@ -186,8 +131,58 @@ mem16 addr z80env_ctime =
                   z80env_ctime |> cont n
                 else
                   z80env_ctime
+       addr1 = addr - 0x3FFF
     in
-       z80env |> mem16impl addr (addr - 0x3FFF)
+      if and addr1 0x3FFF /= 0 then
+         if addr1 < 0 then
+           let
+              low = getROMValue addr z80env.rom48k
+              high = getROMValue (addr1 + 0x4000) z80env.rom48k
+           in
+              Z80EnvWithValue { z80env | ctime = c_NOCONT } (Bitwise.or low (shiftLeftBy8 high))
+         else
+           let
+              low = getRamValue (addr - 0x4000) z80env.ram
+              high = getRamValue addr1 z80env.ram
+              z80env_1 = if addr1 < 0x4000 then
+                          let
+                             x = z80env |> cont1 0 |> cont1 3
+                          in
+                             { x | cpu_time = x.cpu_time + 6 }
+                       else
+                          { z80env | ctime = c_NOCONT }
+        in
+            Z80EnvWithValue z80env_1 (Bitwise.or low (shiftLeftBy8 high))
+      else
+       let
+         addr1shift14 = shiftRightBy 14 addr1
+       in
+         if addr1shift14 == 0 then
+            let
+                new_z80 = cont1 3 z80env
+                low = new_z80.rom48k |> getROMValue addr
+                high = getRamValue 0 new_z80.ram
+            in
+                Z80EnvWithValue new_z80 (or low (shiftLeftBy8 high))
+         else if addr1shift14 == 1 then
+            let
+                new_env = z80env |> cont1 0
+                low = getRamValue (addr - 0x4000) new_env.ram
+                high = getRamValue addr1 new_env.ram
+            in
+                Z80EnvWithValue new_env (or low (shiftLeftBy8 high))
+         else if addr1shift14 == 2 then
+            let
+                low = getRamValue (addr - 0x4000) z80env.ram
+                high = getRamValue addr1 z80env.ram
+            in
+                Z80EnvWithValue { z80env | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
+         else
+            let
+                low = getRamValue 0xBFFF z80env.ram
+                high = getRamValue 0 z80env.ram
+            in
+                Z80EnvWithValue { z80env | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
 --
 --public final void mem(int addr, int v) {
 --	int n = cpu.time - ctime;
