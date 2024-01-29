@@ -657,10 +657,14 @@ execute_ltC0 c ixiyhl z80 =
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
+          -- case 0x01: v=imm16(); B=v>>>8; C=v&0xFF; break;
+          (0x01, (\z80 -> let
+                             v = imm16 z80
+                          in
+                             v.z80 |> set_bc v.value)),
           (0x08, (\z80 -> z80 |> ex_af)),
           (0x10, execute_0x10),
           (0x18, execute_0x18),
-          (0x01, execute_0x01),
           (0x11, execute_0x11),
           (0x31, execute_0x31),
           -- case 0x33: SP=(char)(SP+1); time+=2; break;
@@ -1041,15 +1045,6 @@ execute_0x39 ixiyhl z80 =
      new_z80 = set_xy new_xy.value ixiyhl z80
   in
      { new_z80 | flags = new_xy.flags }  |> add_cpu_time new_xy.time
-
-execute_0x01: Z80 -> Z80
-execute_0x01 z80 =
-  -- case 0x01: v=imm16(); B=v>>>8; C=v&0xFF; break;
-  let
-     v = imm16 z80
-      --x = debug_log ("LD BC," ++ (new_z80 |> get_bc |> toHexString)) "" Nothing
-  in
-     v.z80 |> set_bc v.value
 
 execute_0x11: Z80 -> Z80
 execute_0x11 z80 =
