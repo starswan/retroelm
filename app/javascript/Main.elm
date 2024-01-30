@@ -55,21 +55,23 @@ init data =
 
 c_DECIMAL_PLACES = 3
 
+loop_time_in_ms: Model -> Int
+loop_time_in_ms model =
+    (10 ^ c_DECIMAL_PLACES) * model.elapsed_millis // model.count
+
 time_display: Model -> String
 time_display model =
    let
       elapsed_string = (model.elapsed_millis // 1000) |> String.fromInt
-      loop_time_in_ms = (10 ^ c_DECIMAL_PLACES) * model.elapsed_millis // model.count
-      time_string = loop_time_in_ms |> String.fromInt |> String.reverse |> String.toList |> List.drop c_DECIMAL_PLACES |> String.fromList |> String.reverse
-      last = loop_time_in_ms |> modBy (10 ^ c_DECIMAL_PLACES) |> digitToString c_DECIMAL_PLACES
+      time_string = model |> loop_time_in_ms |> String.fromInt |> String.reverse |> String.toList |> List.drop c_DECIMAL_PLACES |> String.fromList |> String.reverse
+      last = model |> loop_time_in_ms |> modBy (10 ^ c_DECIMAL_PLACES) |> digitToString c_DECIMAL_PLACES
    in
       elapsed_string ++ " sec, time " ++ time_string ++ "." ++ last ++ " ms "
 
 speed_in_hz: Model -> String
 speed_in_hz model =
    let
-      loop_time_in_ms = (10 ^ c_DECIMAL_PLACES) * model.elapsed_millis // model.count
-      speed_in_mhz = 1000000 / (loop_time_in_ms |> toFloat) * 1000 |> round
+      speed_in_mhz = 1000000 / (model |> loop_time_in_ms |> toFloat) * 1000 |> round
       speed_in_hz_mant = speed_in_mhz // 1000
       speed_in_hz_frac = speed_in_mhz |> modBy 1000
    in
