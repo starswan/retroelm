@@ -1864,26 +1864,37 @@ set_e value z80 =
    in
     { z80 | main = { z80_main | e = value } }
 
+execute_0xC0: Z80 -> Z80
+execute_0xC0 z80 =
+   -- case 0xC0: time++; if(Fr!=0) MP=PC=pop(); break;
+   let
+      z80_1 =  z80 |> add_cpu_time 1
+   in
+      if z80_1.flags.fr /= 0 then
+         let
+            result = z80_1 |> pop
+            x = debug_log "ret nz" (result.value |> subName) Nothing
+         in
+            result.z80 |> set_pc result.value
+      else
+         z80_1
+
+execute_0xC2: Z80 -> Z80
+execute_0xC2 z80 =
+  -- case 0xC2: jp(Fr!=0); break;
+  jp (z80.flags.fr /= 0) z80
+
+execute_0xC4: Z80 -> Z80
+execute_0xC4 z80 =
+      -- case 0xC4: call(Fr!=0); break;
+   call (z80.flags.fr /= 0) z80
+
 execute_gtc0: Int -> IXIYHL -> Z80 -> Z80
 execute_gtc0 c ixiyhl z80 =
    case c of
-   -- case 0xC0: time++; if(Fr!=0) MP=PC=pop(); break;
-      0xC0 ->
-         let
-            z80_1 =  z80 |> add_cpu_time 1
-         in
-            if z80_1.flags.fr /= 0 then
-               let
-                  result = z80_1 |> pop
-                  x = debug_log "ret nz" (result.value |> subName) Nothing
-               in
-                  result.z80 |> set_pc result.value
-            else
-               z80_1
-      -- case 0xC2: jp(Fr!=0); break;
-      0xC2 -> jp (z80.flags.fr /= 0) z80
-      -- case 0xC4: call(Fr!=0); break;
-      0xC4 -> call (z80.flags.fr /= 0) z80
+      0xC0 -> execute_0xC0 z80
+      0xC2 -> execute_0xC2 z80
+      0xC4 -> execute_0xC4 z80
       -- case 0xC8: time++; if(Fr==0) MP=PC=pop(); break;
       0xC8 ->
          let
