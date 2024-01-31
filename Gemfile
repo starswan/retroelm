@@ -27,10 +27,11 @@ gem 'nokogiri', '< 1.16'
 # Reduces boot times through caching; required in config/boot.rb
 # gem 'bootsnap', '>= 1.4.2', require: false
 gem 'matrix', require: false
-gem 'rexml', require: false
+
 # gem 'smtp'
 # This is something to do with ruby 3.1...?
 gem 'net-smtp', require: false
+gem 'rexml', require: false
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console

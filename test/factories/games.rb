@@ -9,5 +9,10 @@ FactoryBot.define do
       name { 'MyString' }
       tapfile { 'MyString' }
     end
+
+    trait :match_day do
+      name { 'Match Day' }
+      tapfile { 'MATCHDAY.tap' }
+    end
   end
 end

@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe "Spectrum Emulator" do
   before do
-    Game.create! :name => 'Match Day', :tapfile => 'MATCHDAY.tap'
+    create :game, :match_day
   end
 
   let(:expected_hz) { (ENV['HZ'] || "9.2").to_f }
