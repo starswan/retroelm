@@ -29,6 +29,7 @@ gem 'nokogiri', '< 1.17'
 # gem 'bootsnap', '>= 1.4.2', require: false
 gem 'matrix', require: false
 
+gem 'mini_magick'
 # gem 'smtp'
 # This is something to do with ruby 3.1...?
 gem 'net-smtp', require: false
