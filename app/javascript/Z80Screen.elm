@@ -25,8 +25,11 @@ constructor =
       Z80Screen screen 7
 
 set_value: Int -> Int -> Z80Screen -> Z80Screen
-set_value addr value z80screen =
-    { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
+set_value addr value z80s =
+    let
+        z80screen = z80s |> refresh_screen
+    in
+       { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
 
 -- colour data is bit 7 flash, bit 6 bright, bits 5-3 paper, bits 2-0 ink
 type alias RawScreenData =
@@ -196,3 +199,56 @@ screenLines z80env =
         rawlines = List.map (\line_num -> singleScreenLine line_num z80env) range0192
     in
         List.map rawToLines rawlines
+
+--private final void refresh_screen() {
+--	int ft = cpu.time;
+--	if(ft < refrs_t)
+--		return;
+--	final int flash = this.flash;
+--	int a = refrs_a, b = refrs_b;
+--	int t = refrs_t, s = refrs_s;
+--	do {
+--		int sch = 0;
+--
+--		int v = ram[a]<<8 | ram[b++];
+--		if(v>=0x8000) v ^= flash;
+--		v = canonic[v];
+--		if(v!=screen[s]) {
+--			screen[s] = v;
+--			sch = 1;
+--		}
+--
+--		v = ram[a+1]<<8 | ram[b++];
+--		if(v>=0x8000) v ^= flash;
+--		v = canonic[v];
+--		if(v!=screen[++s]) {
+--			screen[s] = v;
+--			sch += 2;
+--		}
+--
+--		if(sch!=0)
+--			scrchg[a-0x1800>>5] |= sch<<(a&31);
+--
+--		a+=2; t+=8; s++;
+--		if((a&31)!=0) continue;
+--		// next line
+--		t+=96; s+=2*Mh;
+--		a-=32; b+=256-32;
+--		if((b&0x700)!=0) continue;
+--		// next row
+--		a+=32; b+=32-0x800;
+--		if((b&0xE0)!=0) continue;
+--		// next segment
+--		b+=0x800-256;
+--		if(b>=6144) {
+--			t = REFRESH_END;
+--			break;
+--		}
+--	} while(ft >= t);
+--	refrs_a = a; refrs_b = b;
+--	refrs_t = t; refrs_s = s;
+--}
+refresh_screen: Z80Screen -> Z80Screen
+refresh_screen z80env =
+   z80env
+
