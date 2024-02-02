@@ -233,10 +233,7 @@ set_mem z80_addr value old_z80env =
                                   if ram_value == value then
                                      (z80env_1 , new_time)
                                   else
-                                     if addr < 6912 then
-                                        (z80env_1 |> refresh_screen |> set_ram addr value, new_time)
-                                     else
-                                        (z80env_1 |> set_ram addr value, new_time)
+                                     (z80env_1 |> set_ram addr value, new_time)
                          else
                             (z80env |> set_ram addr value, c_NOCONT)
    in
@@ -429,58 +426,6 @@ cont_port portn z80env =
                   { env4 | ctime = env4.cpu_time + 4 }
    in
       env2
-
---private final void refresh_screen() {
---	int ft = cpu.time;
---	if(ft < refrs_t)
---		return;
---	final int flash = this.flash;
---	int a = refrs_a, b = refrs_b;
---	int t = refrs_t, s = refrs_s;
---	do {
---		int sch = 0;
---
---		int v = ram[a]<<8 | ram[b++];
---		if(v>=0x8000) v ^= flash;
---		v = canonic[v];
---		if(v!=screen[s]) {
---			screen[s] = v;
---			sch = 1;
---		}
---
---		v = ram[a+1]<<8 | ram[b++];
---		if(v>=0x8000) v ^= flash;
---		v = canonic[v];
---		if(v!=screen[++s]) {
---			screen[s] = v;
---			sch += 2;
---		}
---
---		if(sch!=0)
---			scrchg[a-0x1800>>5] |= sch<<(a&31);
---
---		a+=2; t+=8; s++;
---		if((a&31)!=0) continue;
---		// next line
---		t+=96; s+=2*Mh;
---		a-=32; b+=256-32;
---		if((b&0x700)!=0) continue;
---		// next row
---		a+=32; b+=32-0x800;
---		if((b&0xE0)!=0) continue;
---		// next segment
---		b+=0x800-256;
---		if(b>=6144) {
---			t = REFRESH_END;
---			break;
---		}
---	} while(ft >= t);
---	refrs_a = a; refrs_b = b;
---	refrs_t = t; refrs_s = s;
---}
-refresh_screen: Z80Env -> Z80Env
-refresh_screen z80env =
-   z80env
 
 --	public void out(int port, int v)
 --	{
