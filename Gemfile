@@ -5,6 +5,7 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 gem 'rails', '~> 6.1'
 # Use sqlite3 as the database for Active Record
 gem 'sqlite3', '~> 1.4'
+
 # mysql in production
 gem 'mysql2'
 # Use Passenger as the app server
@@ -38,7 +39,12 @@ group :development, :test do
   gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
 
   gem "capybara"
-  # 4.9.1 has some incompatibility with capybara
+
+  gem "faraday", ">= 2"
+  # gem "faraday-follow-redirects"
+  gem "faraday-follow_redirects"
+  # gem "faraday_middleware"
+
   gem "selenium-webdriver", "<= 4.17"
   gem 'webdrivers'
 

@@ -9,10 +9,12 @@ import Keyboard exposing (KeyEvent, Keyboard, update_keyboard)
 import Z80 exposing (Z80, execute, interrupt)
 import Z80Debug exposing (debug_log)
 import Z80Env exposing (c_FRSTART, c_FRTIME)
+import Z80Tape exposing (Tapfile)
 
 type alias Audio =
     {
     }
+
 type alias Tape =
     {
         stop_loading: Bool,
@@ -54,9 +56,18 @@ new_border_refresh: BorderRefresh
 new_border_refresh =
     BorderRefresh 0 0 0 0
 
-new_tape: List Int -> Spectrum -> Spectrum
-new_tape tape_string spectrum =
-  { spectrum | tape = Just (Tape False tape_string 0 0 True True) }
+new_tape: List Tapfile -> Spectrum -> Spectrum
+new_tape tapfile_list spectrum =
+    let
+        x = debug_log "new_tape list" (tapfile_list |> List.length) Nothing
+    in
+      --  w/o this change, the code crashes with a recursion error
+      --{ spectrum | tape = Just (Z80Tape False tape_string 0 0 True True) }
+       spectrum
+  -- let
+  --    z80 = spectrum.cpu
+  -- in
+  --    { spectrum | cpu = { z80 | env = z80.env |> Z80Env.set_tape tape_string } }
 
 set_rom: Array Int -> Spectrum -> Spectrum
 set_rom romdata spectrum =

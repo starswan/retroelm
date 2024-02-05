@@ -1,32 +1,104 @@
 require "rails_helper"
 
+require "open-uri"
+
 RSpec.describe "Spectrum Emulator" do
   before do
-    create :game, :match_day
+    z80_game.save!
   end
 
   let(:expected_hz) { (ENV['HZ'] || "9.3").to_f }
 
-  it "loads the emulator", :js do
-    visit '/'
-    click_on 'Match Day'
-    # check that Elm is running
-    expect(page).to have_content 'Refresh Interval'
-    sleep 1
-    # Test emulation speed in Hz
-    low = 0
-    high = page.find("#hz").text.to_f
-    # wait for speed to hit a steady state
-    while (high - low).abs > 0.01
-      times = 1.upto(6).map do
-        sleep 0.2
-        page.find("#hz").text.to_f
+  xcontext "with match day" do
+    let(:z80_game) { build(:game, :match_day) }
+
+    it "loads the emulator", :js do
+      visit '/'
+      click_on z80_game.name
+      # check that Elm is running
+      expect(page).to have_content 'Refresh Interval'
+      sleep 5
+      # Test emulation speed in Hz
+      low = 0
+      high = page.find("#hz").text.to_f
+      # wait for speed to hit a steady state
+      while (high - low).abs > 0.01
+        times = 1.upto(6).map do
+          sleep 0.2
+          page.find("#hz").text.to_f
+        end
+        sorted = times.sort
+        low = sorted.first
+        high = sorted.last
       end
-      sorted = times.sort
-      low = sorted.first
-      high = sorted.last
+      expect(high).to be > expected_hz
+      p "Speed #{high} Hz"
     end
-    expect(high).to be > expected_hz
-    p "Speed #{high} Hz"
+  end
+
+  context "with z80_full_test" do
+    let(:z80_game) { build(:game, :z80_test_full) }
+    let(:z80_test_url) { "https://github.com/raxoft/z80test/releases/download/v1.2a/z80test-1.2a.zip" }
+    let(:faraday) {
+      Faraday.new do |f|
+        f.response :raise_error
+        f.response :follow_redirects
+        f.adapter Faraday.default_adapter
+      end
+    }
+    let(:z80full_directory) { Rails.root.join("public", "z80test") }
+
+    before do
+      unless File.exist? z80full_directory
+        load_tapfile z80_test_url, z80full_directory
+      end
+
+      visit '/'
+      click_on z80_game.name
+    end
+
+    it "loads the emulator", :js do
+      # check that Elm is running
+      expect(page).to have_content 'Refresh Interval'
+      sleep 1
+      # Test emulation speed in Hz
+      low = 0
+      high = page.find("#hz").text.to_f
+      # wait for speed to hit a steady state
+      while (high - low).abs > 0.01
+        times = 1.upto(6).map do
+          sleep 0.2
+          page.find("#hz").text.to_f
+        end
+        sorted = times.sort
+        low = sorted.first
+        high = sorted.last
+      end
+      expect(high).to be > expected_hz
+      p "Speed #{high} Hz"
+    end
+  end
+
+  def load_tapfile input_url, output_directory
+    zip_data = []
+    faraday.get(input_url) do |req|
+      req.options.on_data = Proc.new do |chunk, size|
+        zip_data  << chunk
+      end
+    end
+    zipdata = zip_data.join
+    zipfile = StringIO.new zipdata
+    Dir.mkdir output_directory
+    Zip::InputStream.open(zipfile) do |zip_stream|
+      while entry = zip_stream.get_next_entry
+        entry_filename = entry.name.split("/").last
+        if entry.name.ends_with?(".tap")
+          data = entry.get_input_stream.read
+          File.open("#{output_directory}/#{entry_filename}", "wb+") do |file|
+            file.write(data)
+          end
+        end
+      end
+    end
   end
 end

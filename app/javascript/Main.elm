@@ -11,8 +11,9 @@ import Html.Events exposing (onClick)
 import Http
 import Http.Detailed
 import Json.Decode as Decode
+import Z80Debug exposing (debug_log)
 import Z80Screen exposing (ScreenLine, screenLines, spectrumColour)
-import Spectrum exposing (set_rom)
+import Spectrum exposing (new_tape, set_rom)
 import Svg exposing (Svg, line, rect, svg)
 import Svg.Attributes exposing (fill, height, rx, stroke, viewBox, width, x1, x2, y1, y2)
 import Time exposing (posixToMillis)
@@ -20,7 +21,8 @@ import Html exposing (Html, button, div, h2, span, text)
 import Html.Attributes exposing (id, style)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Message(..), Qaop, ctrlKeyDownEvent, ctrlKeyUpEvent, keyDownEvent, keyUpEvent, pause)
-import Utils exposing (digitToString)
+import Utils exposing (delay, digitToString)
+import Z80Tape exposing (Tapfile)
 
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
@@ -143,9 +145,23 @@ gotRom qaop result =
         Err error ->
             (qaop, Cmd.none)
 
+gotTap: Qaop -> Result Http.Error (List Tapfile) -> (Qaop, Cmd Message)
+gotTap qaop result =
+    case result of
+      Ok value ->
+         { qaop | spectrum = qaop.spectrum |> new_tape value } |> Qaop.run
+      Err error ->
+         (qaop, Cmd.none)
+
 update : Message -> Model -> (Model, Cmd Message)
 update message model =
     case message of
+       LoadTape ->
+           let
+               x = debug_log "time to load the tape data into the model" "" Nothing
+               -- here we push the tapfile into Qoap and execute appropriately
+           in
+              (model, Cmd.none)
        GotRom result ->
             let
                (qaop, cmd) = gotRom model.qaop result
@@ -153,9 +169,10 @@ update message model =
                ({ model | qaop = qaop, count = model.count + 1 }, cmd)
        GotTAP result ->
             let
-                (qaop, cmd) = Qaop.gotTap model.qaop result
+                (qaop, cmd) = gotTap model.qaop result
+                run_after_30_sec = delay 30000 LoadTape
             in
-                ({ model | qaop = qaop, count = model.count + 1 }, cmd)
+                ({ model | qaop = qaop, count = model.count + 1 }, Cmd.batch [cmd, run_after_30_sec])
        Tick posix ->
           let
              state = if model.qaop.spectrum.paused then

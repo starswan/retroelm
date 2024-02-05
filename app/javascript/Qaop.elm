@@ -4,19 +4,20 @@
 module Qaop exposing (..)
 import Array exposing (Array)
 import Bitwise exposing (complement)
-import Bytes exposing (Bytes)
-import Bytes.Decode exposing (Decoder, Step(..), loop, map, succeed, unsignedInt8)
+import Bytes exposing (Bytes, Endianness(..), width)
+import Bytes.Decode exposing (Decoder, Step(..), andThen, loop, map, succeed, unsignedInt16, unsignedInt8)
 import Char exposing (toUpper)
 import Dict
 import Http exposing (Error, Expect, Metadata, Response)
 import Http.Detailed
 import Keyboard exposing (ControlKey(..), KeyEvent(..), c_CONTROL_KEY_MAP)
-import Loader exposing (LoadAction(..), Loader, trimActionList)
+import Loader exposing (LoadAction(..), Loader, paramHandler, trimActionList)
 import Params exposing (StringPair)
 import Spectrum exposing (Spectrum, frames, new_tape)
 import String exposing (fromChar)
+import Z80Tape exposing (Tapfile, parseTapFile)
 import Time
-import Utils exposing (compact)
+import Utils exposing (compact, delay)
 import Z80Debug exposing (debug_log)
 
 type alias Qaop =
@@ -83,15 +84,6 @@ ctrlKeyUpEvent string qaop =
    in
       { qaop | keys = newkeys }
 
-paramHandler: StringPair -> Maybe(LoadAction)
-paramHandler item =
-    if item.first == "rom" then
-       Just (LoadROM item.second)
-    else if item.first == "tape" then
-       Just (LoadTAP item.second)
-    else
-       Nothing
-
 init: List StringPair -> Qaop
 init params =
     let
@@ -103,7 +95,7 @@ init params =
         Qaop spectrum loader 0 []
 
 type Message
-  = GotTAP (Result Http.Error (List Int))
+  = GotTAP (Result Http.Error (List Tapfile))
   | GotRom (Result (Http.Detailed.Error Bytes) (Metadata, Array Int))
   | Tick Time.Posix
   | Pause
@@ -112,6 +104,7 @@ type Message
   | ControlKeyDown String
   | ControlUnKey String
   | KeyRepeat
+  | LoadTape
 
 list_decoder : Int -> Decoder Int -> Decoder (List Int)
 list_decoder size decoder =
@@ -135,16 +128,7 @@ arrayStep decoder (n, xs) =
    else
      map (\x -> Loop (n - 1, Array.push x xs)) decoder
 
-parseBody: Int -> Bytes -> List Int
-parseBody size bytes =
-   let
-      x = Bytes.Decode.decode (list_decoder size unsignedInt8) bytes
-   in
-      case x of
-         Just list -> list
-         Nothing -> []
-
-bytesToTap : Response Bytes -> Result Error (List Int)
+bytesToTap : Response Bytes -> Result Error (List(Tapfile))
 bytesToTap httpResponse =
     case httpResponse of
         Http.BadUrl_ url ->
@@ -163,9 +147,14 @@ bytesToTap httpResponse =
            let
               -- would be nice to parse headers - but we seem to get a
               -- gzipped body size not an actual size which makes things tough
-              x = debug_log "headers" metadata.headers Nothing
+              --x = debug_log "got tap headers" metadata.headers Nothing
+              --length = metadata.headers |> Dict.get "content-length" |> Maybe.withDefault "0" |> String.toInt |> Maybe.withDefault 0
+              -- This seems to be the gzip size which isn't that useful
+              length = body |> width
+              y = debug_log "TAP file size" length Nothing
+              --z = debug_log "received bytes of size" (body |> width) Nothing
            in
-              Ok (body |> parseBody 48175)
+              Ok (body |> parseTapFile)
 
 --loadRom: String -> Cmd Message
 --loadRom fileName =
@@ -182,7 +171,7 @@ loadRom url =
 -- Not sure if this is helping - we want to pick out 16384 from the metadata so we know how many bytes to consume
 -- as TAP files will not always be the same size...
 loadTap: String -> Cmd Message
-loadTap fileName =
+loadTap url =
     --Http.request { method = "GET",
     --               headers = [],
     --               body = emptyBody,
@@ -191,7 +180,7 @@ loadTap fileName =
     --               url = String.concat ["http://localhost:3000/", fileName],
     --               expect = Http.expectBytesResponse GotTAP convertResponse
     --          }
-    Http.get { url = String.concat ["http://localhost:3000/", fileName],
+    debug_log "loadTap" url Http.get { url = url,
                expect = Http.expectBytesResponse GotTAP bytesToTap
               }
 
@@ -207,13 +196,6 @@ maybeActionToCmd load =
         Nothing ->
             Cmd.none
 
-gotTap: Qaop -> Result Http.Error (List Int) -> (Qaop, Cmd Message)
-gotTap qaop result =
-    case result of
-      Ok value ->
-         { qaop | spectrum = qaop.spectrum |> new_tape value } |> run
-      Err error ->
-         (qaop, Cmd.none)
 --
 --	/* javascript interface */
 --

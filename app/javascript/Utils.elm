@@ -6,6 +6,8 @@ module Utils exposing (..)
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Dict exposing (Dict)
 import Hex
+import Process
+import Task
 
 compact list = List.filterMap identity list
 
@@ -55,3 +57,21 @@ toHexString value =
 toHexString2: Int -> String
 toHexString2 value =
    "0x" ++ (Hex.toString value |> String.toUpper |> (String.padLeft 2 '0'))
+
+--https://stackoverflow.com/questions/40599512/how-to-achieve-behavior-of-settimeout-in-elm
+--delay : Float -> msg -> Cmd msg
+--delay time msg =
+--    -- create a task that sleeps for `time`
+--    Process.sleep time
+--        |> -- once the sleep is over, ignore its output (using `always`)
+--           -- and then we create a new task that simply returns a success, and the msg
+--           Task.andThen (always <| Task.succeed msg)
+--        |> -- finally, we ask Elm to perform the Task, which
+--           -- takes the result of the above task and
+--           -- returns it to our update function
+--           Task.perform identity
+
+delay : Float -> msg -> Cmd msg
+delay time msg =
+  Process.sleep time
+  |> Task.perform (\_ -> msg)
