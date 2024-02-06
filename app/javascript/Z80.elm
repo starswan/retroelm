@@ -1717,6 +1717,26 @@ execute_0xA7 z80 =
     -- and a is correct - I guess the above is a faster implementation
     z80 |> set_flag_regs (z80_and z80.flags.a z80.flags)
 
+execute_0xA8: Z80 -> Z80
+execute_0xA8 z80 =
+         -- case 0xA8: xor(B); break;
+   z80 |> set_flag_regs (z80_xor z80.main.b z80.flags)
+
+execute_0xA9: Z80 -> Z80
+execute_0xA9 z80 =
+         -- case 0xA9: xor(C); break;
+   z80 |> set_flag_regs (z80_xor z80.main.c z80.flags)
+
+execute_0xAA: Z80 -> Z80
+execute_0xAA z80 =
+         -- case 0xAA: xor(D); break;
+   z80 |> set_flag_regs (z80_xor z80.main.d z80.flags)
+
+execute_0xAB: Z80 -> Z80
+execute_0xAB z80 =
+         -- case 0xAB: xor(E); break;
+   z80 |> set_flag_regs (z80_xor z80.main.e z80.flags)
+
 executegt40ltC0: Int -> IXIYHL -> Z80 -> Z80
 executegt40ltC0 c ixiyhl z80 =
     case c of
@@ -1728,14 +1748,10 @@ executegt40ltC0 c ixiyhl z80 =
        0xA5 -> z80 |> execute_0xA5 ixiyhl
        0xA6 -> z80 |> execute_0xA6 ixiyhl
        0xA7 -> z80 |> execute_0xA7
-         -- case 0xA8: xor(B); break;
-       0xA8 -> z80 |> set_flag_regs (z80_xor z80.main.b z80.flags)
-         -- case 0xA9: xor(C); break;
-       0xA9 -> z80 |> set_flag_regs (z80_xor z80.main.c z80.flags)
-         -- case 0xAA: xor(D); break;
-       0xAA -> z80 |> set_flag_regs (z80_xor z80.main.d z80.flags)
-         -- case 0xAB: xor(E); break;
-       0xAB -> z80 |> set_flag_regs (z80_xor z80.main.e z80.flags)
+       0xA8 -> z80 |> execute_0xA8
+       0xA9 -> z80 |> execute_0xA9
+       0xAA -> z80 |> execute_0xAA
+       0xAB -> z80 |> execute_0xAB
          -- case 0xAC: xor(HL>>>8); break;
          -- case 0xAC: xor(xy>>>8); break;
        0xAC -> z80 |> set_flag_regs (z80_xor (get_h ixiyhl z80) z80.flags)
