@@ -2164,6 +2164,41 @@ execute_0xD2 z80 =
    -- case 0xD2: jp((Ff&0x100)==0); break;
    z80 |> jp ((Bitwise.and z80.flags.ff 0x100) == 0)
 
+execute_0xD1: Z80 -> Z80
+execute_0xD1 z80 =
+   -- case 0xD1: v=pop(); D=v>>>8; E=v&0xFF; break;
+   let
+      v = z80 |> pop
+   in
+      v.z80 |> set_de v.value
+
+execute_0xDB: Z80 -> Z80
+execute_0xDB z80 =
+   -- case 0xDB: MP=(v=imm8()|A<<8)+1; A=env.in(v); time+=4; break;
+   let
+      imm8val = z80 |> imm8
+      z80_1 = imm8val.z80
+      v = or imm8val.value (shiftLeftBy8 z80_1.flags.a)
+      a = z80_1.env |> z80_in v
+      flags = z80_1.flags
+   in
+      { z80_1 | env = a.env, flags = { flags | a = a.value } }
+
+execute_0xF8: Z80 -> Z80
+execute_0xF8 z80 =
+    -- case 0xF8: time++; if((Ff&FS)!=0) MP=PC=pop(); break;
+    let
+       z80_1 = z80 |> add_cpu_time 1
+       z80_2 = if (and z80_1.flags.ff c_FS) /= 0 then
+                   let
+                       popped = z80_1 |> pop
+                   in
+                       popped.z80 |> set_pc popped.value
+               else
+                   z80_1
+    in
+       z80_2
+
 execute_gtc0: Int -> IXIYHL -> Z80 -> Z80
 execute_gtc0 c ixiyhl z80 =
    case c of
@@ -2215,32 +2250,9 @@ execute_gtc0 c ixiyhl z80 =
       0xD5 -> z80 |> execute_0xD5
       0xE9 -> z80 |> execute_0xE9 ixiyhl
       0xD2 -> z80 |> execute_0xD2
-      -- case 0xD1: v=pop(); D=v>>>8; E=v&0xFF; break;
-      0xD1 -> let
-                 v = z80 |> pop
-              in
-                 v.z80 |> set_de v.value
-      -- case 0xDB: MP=(v=imm8()|A<<8)+1; A=env.in(v); time+=4; break;
-      0xDB -> let
-                 imm8val = z80 |> imm8
-                 z80_1 = imm8val.z80
-                 v = or imm8val.value (shiftLeftBy8 z80_1.flags.a)
-                 a = z80_1.env |> z80_in v
-                 flags = z80_1.flags
-              in
-                 { z80_1 | env = a.env, flags = { flags | a = a.value } }
-      -- case 0xF8: time++; if((Ff&FS)!=0) MP=PC=pop(); break;
-      0xF8 -> let
-                 z80_1 = z80 |> add_cpu_time 1
-                 z80_2 = if (and z80_1.flags.ff c_FS) /= 0 then
-                           let
-                              popped = z80_1 |> pop
-                           in
-                              popped.z80 |> set_pc popped.value
-                         else
-                           z80_1
-              in
-                 z80_2
+      0xD1 -> z80 |> execute_0xD1
+      0xDB -> z80 |> execute_0xDB
+      0xF8 -> z80 |> execute_0xF8
       -- case 0xEE: xor(imm8()); break;
       0xEE -> let
                  v = z80 |> imm8
