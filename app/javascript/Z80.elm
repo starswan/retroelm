@@ -1755,7 +1755,6 @@ executegt40ltC0 c ixiyhl z80 =
                  value.z80 |> set_flag_regs (cp value.value z80.flags)
          -- case 0xBF: cp(A); break;
        0xBF -> z80 |> set_flag_regs (cp z80.flags.a z80.flags)
-
        _ ->  debug_todo "executegt40ltC0" (c |> String.fromInt) z80
 
 set_a: Int -> Z80 -> Z80
