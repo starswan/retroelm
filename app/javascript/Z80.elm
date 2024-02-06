@@ -2146,6 +2146,24 @@ execute_0xD5 z80 =
    -- case 0xD5: push(D<<8|E); break;
    z80 |> push (z80 |> get_de)
 
+execute_0xE9: IXIYHL -> Z80 -> Z80
+execute_0xE9 ixiyhl z80 =
+    -- case 0xE9: PC=HL; break;
+    -- case 0xE9: PC=xy; break;
+    let
+       xy = z80 |> get_xy ixiyhl
+      --a = if Dict.member xy Z80Rom.c_COMMON_NAMES then
+      --      Nothing
+      --    else
+      --      debug_log ("JP (" ++ (toString ixiyhl) ++ ")") (xy |> subName) Nothing
+    in
+       z80 |> set_pc xy
+
+execute_0xD2: Z80 -> Z80
+execute_0xD2 z80 =
+   -- case 0xD2: jp((Ff&0x100)==0); break;
+   z80 |> jp ((Bitwise.and z80.flags.ff 0x100) == 0)
+
 execute_gtc0: Int -> IXIYHL -> Z80 -> Z80
 execute_gtc0 c ixiyhl z80 =
    case c of
@@ -2195,18 +2213,8 @@ execute_gtc0 c ixiyhl z80 =
       0xFE -> z80 |> execute_0xFE
       0xD8 -> z80 |> execute_0xD8
       0xD5 -> z80 |> execute_0xD5
-      -- case 0xE9: PC=HL; break;
-      -- case 0xE9: PC=xy; break;
-      0xE9 -> let
-                  xy = z80 |> get_xy ixiyhl
-                  --a = if Dict.member xy Z80Rom.c_COMMON_NAMES then
-                  --      Nothing
-                  --    else
-                  --      debug_log ("JP (" ++ (toString ixiyhl) ++ ")") (xy |> subName) Nothing
-              in
-                 z80 |> set_pc xy
-      -- case 0xD2: jp((Ff&0x100)==0); break;
-      0xD2 -> z80 |> jp ((Bitwise.and z80.flags.ff 0x100) == 0)
+      0xE9 -> z80 |> execute_0xE9 ixiyhl
+      0xD2 -> z80 |> execute_0xD2
       -- case 0xD1: v=pop(); D=v>>>8; E=v&0xFF; break;
       0xD1 -> let
                  v = z80 |> pop
