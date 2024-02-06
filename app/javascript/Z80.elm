@@ -2199,6 +2199,25 @@ execute_0xF8 z80 =
     in
        z80_2
 
+execute_0xEE: Z80 -> Z80
+execute_0xEE z80 =
+   -- case 0xEE: xor(imm8()); break;
+   let
+      v = z80 |> imm8
+      z80_1 = v.z80
+      flags = z80_1.flags |> z80_xor v.value
+   in
+      { z80_1 | flags = flags }
+
+execute_0xD6: Z80 -> Z80
+execute_0xD6 z80 =
+   -- case 0xD6: sub(imm8()); break;
+   let
+      v = z80 |> imm8
+      flags = v.z80.flags |> z80_sub v.value
+   in
+      v.z80 |> set_flag_regs flags
+
 execute_gtc0: Int -> IXIYHL -> Z80 -> Z80
 execute_gtc0 c ixiyhl z80 =
    case c of
@@ -2253,19 +2272,8 @@ execute_gtc0 c ixiyhl z80 =
       0xD1 -> z80 |> execute_0xD1
       0xDB -> z80 |> execute_0xDB
       0xF8 -> z80 |> execute_0xF8
-      -- case 0xEE: xor(imm8()); break;
-      0xEE -> let
-                 v = z80 |> imm8
-                 z80_1 = v.z80
-                 flags = z80_1.flags |> z80_xor v.value
-              in
-                 { z80_1 | flags = flags }
-      -- case 0xD6: sub(imm8()); break;
-      0xD6 -> let
-                v = z80 |> imm8
-                flags = v.z80.flags |> z80_sub v.value
-              in
-                 v.z80 |> set_flag_regs flags
+      0xEE -> z80 |> execute_0xEE
+      0xD6 -> z80 |> execute_0xD6
       ---- case 0xDC: call((Ff&0x100)!=0); break;
       --0xDC -> z80 |> call (Bitwise.and z80.flags.ff 0x100 /= 0)
       ---- case 0xF2: jp((Ff&FS)==0); break;
