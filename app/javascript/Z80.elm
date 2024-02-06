@@ -1889,108 +1889,248 @@ execute_0xC4 z80 =
       -- case 0xC4: call(Fr!=0); break;
    call (z80.flags.fr /= 0) z80
 
+execute_0xC8: Z80 -> Z80
+execute_0xC8 z80 =
+    -- case 0xC8: time++; if(Fr==0) MP=PC=pop(); break;
+   let
+      z80_1 = z80 |> add_cpu_time 1
+   in
+      if z80_1.flags.fr == 0 then
+           let
+              popped = z80_1 |> pop
+           in
+              popped.z80 |> set_pc popped.value
+      else
+           z80_1
+
+execute_0xCA: Z80 -> Z80
+execute_0xCA z80 =
+    -- case 0xCA: jp(Fr==0); break;
+    jp (z80.flags.fr == 0) z80
+
+execute_0xCC: Z80 -> Z80
+execute_0xCC z80 =
+    -- case 0xCC: call(Fr==0); break;
+   call (z80.flags.fr == 0) z80
+
+execute_0xD0: Z80 -> Z80
+execute_0xD0 z80 =
+    -- case 0xD0: time++; if((Ff&0x100)==0) MP=PC=pop(); break;
+    let
+       z80_1 = z80 |> add_cpu_time 1
+    in
+       if (and z80.flags.ff 0x100) == 0 then
+          let
+             popped = z80_1 |> pop
+             --x = debug_log "ret nc" (popped.value |> subName) Nothing
+          in
+             popped.z80 |> set_pc popped.value
+       else
+          z80_1
+
+execute_0xF3: Z80 -> Z80
+execute_0xF3 z80 =
+   -- case 0xF3: IFF=0; break;
+   z80 |> set_iff 0
+
+execute_0xC3: Z80 -> Z80
+execute_0xC3 z80 =
+   -- case 0xC3: MP=PC=imm16(); break;
+   let
+      v = imm16 z80
+      --y = debug_log "jp" (v.value |> subName) Nothing
+   in
+      v.z80 |> set_pc v.value
+
+execute_0xD3: Z80 -> Z80
+execute_0xD3 z80 =
+    -- case 0xD3: env.out(v=imm8()|A<<8,A); MP=v+1&0xFF|v&0xFF00; time+=4; break;
+    let
+       value = imm8 z80
+       z80_1 = value.z80
+       v = or value.value (shiftLeftBy8 z80.flags.a)
+       env = out v z80.flags.a z80_1.env
+    in
+       { z80_1 | env = env } |> add_cpu_time 4
+
+execute_0xEB: Z80 -> Z80
+execute_0xEB z80 =
+   -- case 0xEB: v=HL; HL=D<<8|E; D=v>>>8; E=v&0xFF; break;
+   let
+      v = z80.main.hl
+      de = z80 |> get_de
+      --x = debug_log "EX DE,HL" ("DE " ++ (v |> toHexString) ++ " HL " ++ (de |> toHexString)) Nothing
+   in
+      z80 |> set_de v |> set_hl de
+
+execute_0xF9: Z80 -> Z80
+execute_0xF9 z80 =
+   -- case 0xF9: SP=HL; time+=2; break;
+   z80 |> set_sp z80.main.hl |> add_cpu_time 2
+
+execute_0xFB: Z80 -> Z80
+execute_0xFB z80 =
+    -- case 0xFB: IFF=3; break;
+   z80 |> set_iff 3
+
+execute_0xC6: Z80 -> Z80
+execute_0xC6 z80 =
+   -- case 0xC6: add(imm8()); break;
+   let
+      v = imm8 z80
+      z80_1 = v.z80
+   in
+      { z80_1 | flags = z80_1.flags |> z80_add v.value }
+
+execute_0xCD: Z80 -> Z80
+execute_0xCD z80 =
+   -- case 0xCD: v=imm16(); push(PC); MP=PC=v; break;
+   let
+      v = z80 |> imm16
+      --d = debug_log "call" ("from " ++ (v.z80.pc |> toHexString) ++ " to " ++ (v.value |> subName)) Nothing
+   in
+      v.z80 |> push v.z80.pc |> set_pc v.value
+
+execute_0xC5: Z80 -> Z80
+execute_0xC5 z80 =
+    -- case 0xC5: push(B<<8|C); break;
+    z80 |> push (z80 |> get_bc)
+
+execute_0xE6: Z80 -> Z80
+execute_0xE6 z80 =
+   -- case 0xE6: and(imm8()); break;
+   let
+      a = z80 |> imm8
+      z80_1 = a.z80
+      flags = z80_1.flags |> z80_and a.value
+   in
+      { z80_1 | flags = flags }
+
+execute_0xF6: Z80 -> Z80
+execute_0xF6 z80 =
+   -- case 0xF6: or(imm8()); break;
+   let
+      a = z80 |> imm8
+      z80_1 = a.z80
+      flags = z80_1.flags |> z80_or a.value
+   in
+      { z80_1 | flags = flags }
+
+execute_0xC9: Z80 -> Z80
+execute_0xC9 z80 =
+    -- case 0xC9: MP=PC=pop(); break;
+   let
+      a = z80 |> pop
+      --b = debug_log "ret" (a.value |> subName) Nothing
+   in
+      a.z80 |> set_pc a.value
+
+execute_0xF5: Z80 -> Z80
+execute_0xF5 z80 =
+   -- case 0xF5: push(A<<8|flags()); break;
+   let
+      a = z80 |> get_af
+   in
+      z80 |> push a
+
+execute_0xC7CFD7DFE7EFF7FF: Int -> Z80 -> Z80
+execute_0xC7CFD7DFE7EFF7FF c z80 =
+    z80 |> push z80.pc |> set_pc (c - 199)
+
+execute_0xE1: Z80 -> Z80
+execute_0xE1 z80 =
+   -- case 0xE1: HL=pop(); break;
+   let
+      hl = z80 |> pop
+   in
+      hl.z80 |> set_hl hl.value
+
+execute_0xE5: Z80 -> Z80
+execute_0xE5 z80 =
+   -- case 0xE5: push(HL); break;
+   z80 |> push z80.main.hl
+
+execute_0xC1: Z80 -> Z80
+execute_0xC1 z80 =
+   -- case 0xC1: v=pop(); B=v>>>8; C=v&0xFF; break;
+   let
+      v = z80 |> pop
+      --x = debug_log "pop_bc" (v.value |> toHexString) Nothing
+   in
+      v.z80 |> set_bc v.value
+
+execute_0xE3: Z80 -> Z80
+execute_0xE3 z80 =
+   -- case 0xE3: v=pop(); push(HL); MP=HL=v; time+=2; break;
+   let
+      v = z80 |> pop
+   in
+      v.z80 |> push v.z80.main.hl |> set_hl v.value |> add_cpu_time 2
+
+execute_0xF1: Z80 -> Z80
+execute_0xF1 z80 =
+    -- case 0xF1: af(pop()); break;
+   let
+      v = z80 |> pop
+   in
+      v.z80 |> set_af v.value
+
+execute_0xFE: Z80 -> Z80
+execute_0xFE z80 =
+   -- case 0xFE: cp(imm8()); break;
+   let
+      v = z80 |> imm8
+      flags = v.z80.flags |> cp v.value
+   in
+      v.z80 |> set_flag_regs flags
+
+execute_0xD8: Z80 -> Z80
+execute_0xD8 z80 =
+   -- case 0xD8: time++; if((Ff&0x100)!=0) MP=PC=pop(); break;
+   let
+      z80_1 = z80 |> add_cpu_time 1
+      z80_2 = if and z80_1.flags.ff 0x100 /= 0 then
+                 let
+                     v = z80_1 |> pop
+                     ret = v.z80 |> set_pc v.value
+                 in
+                    --debug_log "ret c" (v.value |> subName) ret
+                    ret
+              else
+                 z80_1
+   in
+      z80_2
+
+execute_0xD5: Z80 -> Z80
+execute_0xD5 z80 =
+   -- case 0xD5: push(D<<8|E); break;
+   z80 |> push (z80 |> get_de)
+
 execute_gtc0: Int -> IXIYHL -> Z80 -> Z80
 execute_gtc0 c ixiyhl z80 =
    case c of
       0xC0 -> execute_0xC0 z80
       0xC2 -> execute_0xC2 z80
       0xC4 -> execute_0xC4 z80
-      -- case 0xC8: time++; if(Fr==0) MP=PC=pop(); break;
-      0xC8 ->
-         let
-            z80_1 = z80 |> add_cpu_time 1
-         in
-            if z80_1.flags.fr == 0 then
-               let
-                  popped = z80_1 |> pop
-               in
-                  popped.z80 |> set_pc popped.value
-            else
-               z80_1
-      -- case 0xCA: jp(Fr==0); break;
-      0xCA -> jp (z80.flags.fr == 0) z80
-      -- case 0xCC: call(Fr==0); break;
-      0xCC -> call (z80.flags.fr == 0) z80
-      -- case 0xD0: time++; if((Ff&0x100)==0) MP=PC=pop(); break;
-      0xD0 -> let
-                 z80_1 = z80 |> add_cpu_time 1
-              in
-                 if (and z80.flags.ff 0x100) == 0 then
-                   let
-                     popped = z80_1 |> pop
-                     --x = debug_log "ret nc" (popped.value |> subName) Nothing
-                   in
-                     popped.z80 |> set_pc popped.value
-                 else
-                   z80_1
-      -- case 0xF3: IFF=0; break;
-      0xF3 -> z80 |> set_iff 0
-      -- case 0xC3: MP=PC=imm16(); break;
-      0xC3 -> let
-                  v = imm16 z80
-                  --y = debug_log "jp" (v.value |> subName) Nothing
-              in
-                  v.z80 |> set_pc v.value
-      -- case 0xD3: env.out(v=imm8()|A<<8,A); MP=v+1&0xFF|v&0xFF00; time+=4; break;
-      0xD3 -> let
-                  value = imm8 z80
-                  z80_1 = value.z80
-                  v = or value.value (shiftLeftBy8 z80.flags.a)
-                  env = out v z80.flags.a z80_1.env
-              in
-                  { z80_1 | env = env } |> add_cpu_time 4
+      0xC8 -> execute_0xC8 z80
+      0xCA -> execute_0xCA z80
+      0xCC -> execute_0xCC z80
+      0xD0 -> execute_0xD0 z80
+      0xF3 -> execute_0xF3 z80
+      0xC3 -> execute_0xC3 z80
+      0xD3 -> z80 |> execute_0xD3
       -- case 0xD9: exx(); break;
       0xD9 -> z80 |> exx
-      -- case 0xEB: v=HL; HL=D<<8|E; D=v>>>8; E=v&0xFF; break;
-      0xEB -> let
-                 v = z80.main.hl
-                 de = z80 |> get_de
-                 --x = debug_log "EX DE,HL" ("DE " ++ (v |> toHexString) ++ " HL " ++ (de |> toHexString)) Nothing
-              in
-                 z80 |> set_de v |> set_hl de
-      -- case 0xF9: SP=HL; time+=2; break;
-      0xF9 -> z80 |> set_sp z80.main.hl |> add_cpu_time 2
-      -- case 0xFB: IFF=3; break;
-      0xFB -> z80 |> set_iff 3
-      -- case 0xC6: add(imm8()); break;
-      0xC6 -> let
-                 v = imm8 z80
-                 z80_1 = v.z80
-              in
-                 { z80_1 | flags = z80_1.flags |> z80_add v.value }
-      -- case 0xCD: v=imm16(); push(PC); MP=PC=v; break;
-      0xCD -> let
-                v = z80 |> imm16
-                --d = debug_log "call" ("from " ++ (v.z80.pc |> toHexString) ++ " to " ++ (v.value |> subName)) Nothing
-              in
-                v.z80 |> push v.z80.pc |> set_pc v.value
-      -- case 0xC5: push(B<<8|C); break;
-      0xC5 -> z80 |> push (z80 |> get_bc)
-      -- case 0xE6: and(imm8()); break;
-      0xE6 -> let
-                 a = z80 |> imm8
-                 z80_1 = a.z80
-                 flags = z80_1.flags |> z80_and a.value
-              in
-                 { z80_1 | flags = flags }
-      -- case 0xF6: or(imm8()); break;
-      0xF6 -> let
-                 a = z80 |> imm8
-                 z80_1 = a.z80
-                 flags = z80_1.flags |> z80_or a.value
-              in
-                 { z80_1 | flags = flags }
-      -- case 0xC9: MP=PC=pop(); break;
-      0xC9 -> let
-                a = z80 |> pop
-                --b = debug_log "ret" (a.value |> subName) Nothing
-              in
-                a.z80 |> set_pc a.value
-      -- case 0xF5: push(A<<8|flags()); break;
-      0xF5 -> let
-                a = z80 |> get_af
-              in
-                z80 |> push a
+      0xEB -> execute_0xEB z80
+      0xF9 -> execute_0xF9 z80
+      0xFB -> z80 |> execute_0xFB
+      0xC6 -> execute_0xC6 z80
+      0xCD -> execute_0xCD z80
+      0xC5 -> execute_0xC5 z80
+      0xE6 -> execute_0xE6 z80
+      0xF6 -> execute_0xF6 z80
+      0xC9 -> execute_0xC9 z80
+      0xF5 -> execute_0xF5 z80
       -- case 0xC7:
       -- case 0xCF:
       -- case 0xD7:
@@ -1999,59 +2139,22 @@ execute_gtc0 c ixiyhl z80 =
       -- case 0xEF:
       -- case 0xF7:
       -- case 0xFF: push(PC); PC=c-199; break;
-      0xC7 -> z80 |> push z80.pc |> set_pc (c - 199)
-      0xCF -> z80 |> push z80.pc |> set_pc (c - 199)
-      0xD7 -> z80 |> push z80.pc |> set_pc (c - 199)
-      0xDF -> z80 |> push z80.pc |> set_pc (c - 199)
-      0xE7 -> z80 |> push z80.pc |> set_pc (c - 199)
-      0xEF -> z80 |> push z80.pc |> set_pc (c - 199)
-      0xF7 -> z80 |> push z80.pc |> set_pc (c - 199)
-      0xFF -> z80 |> push z80.pc |> set_pc (c - 199)
-      -- case 0xE1: HL=pop(); break;
-      0xE1 -> let
-                  hl = z80 |> pop
-              in
-                  hl.z80 |> set_hl hl.value
-      -- case 0xE5: push(HL); break;
-      0xE5 -> z80 |> push z80.main.hl
-      -- case 0xC1: v=pop(); B=v>>>8; C=v&0xFF; break;
-      0xC1 -> let
-                 v = z80 |> pop
-                 --x = debug_log "pop_bc" (v.value |> toHexString) Nothing
-              in
-                 v.z80 |> set_bc v.value
-      -- case 0xE3: v=pop(); push(HL); MP=HL=v; time+=2; break;
-      0xE3 -> let
-                 v = z80 |> pop
-              in
-                 v.z80 |> push v.z80.main.hl |> set_hl v.value |> add_cpu_time 2
-      -- case 0xF1: af(pop()); break;
-      0xF1 -> let
-                  v = z80 |> pop
-              in
-                  v.z80 |> set_af v.value
-      -- case 0xFE: cp(imm8()); break;
-      0xFE -> let
-                 v = z80 |> imm8
-                 flags = v.z80.flags |> cp v.value
-              in
-                 v.z80 |> set_flag_regs flags
-      -- case 0xD8: time++; if((Ff&0x100)!=0) MP=PC=pop(); break;
-      0xD8 -> let
-                 z80_1 = z80 |> add_cpu_time 1
-                 z80_2 = if and z80_1.flags.ff 0x100 /= 0 then
-                           let
-                              v = z80_1 |> pop
-                              ret = v.z80 |> set_pc v.value
-                           in
-                              --debug_log "ret c" (v.value |> subName) ret
-                              ret
-                         else
-                           z80_1
-              in
-                 z80_2
-      -- case 0xD5: push(D<<8|E); break;
-      0xD5 -> z80 |> push (z80 |> get_de)
+      0xC7 -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xC7
+      0xCF -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xCF
+      0xD7 -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xD7
+      0xDF -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xDF
+      0xE7 -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xE7
+      0xEF -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xEF
+      0xF7 -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xF7
+      0xFF -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xFF
+      0xE1 -> z80 |> execute_0xE1
+      0xE5 -> z80 |> execute_0xE5
+      0xC1 -> z80 |> execute_0xC1
+      0xE3 -> z80 |> execute_0xE3
+      0xF1 -> z80 |> execute_0xF1
+      0xFE -> z80 |> execute_0xFE
+      0xD8 -> z80 |> execute_0xD8
+      0xD5 -> z80 |> execute_0xD5
       -- case 0xE9: PC=HL; break;
       -- case 0xE9: PC=xy; break;
       0xE9 -> let
