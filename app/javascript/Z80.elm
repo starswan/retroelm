@@ -10,7 +10,6 @@ import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8, toHexString)
 import Z80Debug exposing (debug_log, debug_todo)
 import Z80Env exposing (Z80Env, c_FRSTART, m1, mem, mem16, out, set_mem, set_mem16, z80_in, z80env_constructor)
 import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
-import Z80Rom exposing (subName)
 
 type alias MainRegisters =
    {
@@ -187,9 +186,10 @@ set_pc pc z80 =
       --          debug_log "set_pc" ("from " ++ (z80.pc |> toHexString) ++
       --                           " to " ++ (pc |> subName) ++
       --                           " (sp " ++ (z80.sp |> toHexString) ++ ")") Nothing
-      t = 0
+      z80_1 =  { z80 | pc = Bitwise.and pc 0xFFFF }
    in
-    { z80 | pc = Bitwise.and pc 0xFFFF }
+      z80_1
+
 --	void sp(int v) {SP = v;}
 set_sp: Int -> Z80 -> Z80
 set_sp sp z80 =
@@ -443,9 +443,9 @@ call y z80 =
      if y then
       let
          --b = debug_log "call" (a.value |> subName) Nothing
-         j = 1
+         z80_1 = a.z80 |> push a.z80.pc |> set_pc a.value
       in
-         a.z80 |> push a.z80.pc |> set_pc a.value
+         z80_1
      else
        a.z80
 --
@@ -586,12 +586,12 @@ ldir i r z80 =
 -- problem currently being experienced in function group_xy
 type IXIYHL = IX | IY | HL
 
-toString: IXIYHL -> String
-toString ixiyhl =
-   case ixiyhl of
-      IX -> "IX"
-      IY -> "IY"
-      HL -> "HL"
+--toString: IXIYHL -> String
+--toString ixiyhl =
+--   case ixiyhl of
+--      IX -> "IX"
+--      IY -> "IY"
+--      HL -> "HL"
 
 get_xy: IXIYHL -> Z80 -> Int
 get_xy ixiyhl z80 =
@@ -603,10 +603,8 @@ get_xy ixiyhl z80 =
 set_xy: Int -> IXIYHL -> Z80 -> Z80
 set_xy value ixiyhl z80 =
    case ixiyhl of
-      IX ->
-         { z80 | ix = value }
-      IY ->
-         { z80 | iy = value }
+      IX -> { z80 | ix = value }
+      IY -> { z80 | iy = value }
       HL ->
          let
             main = z80.main
@@ -630,9 +628,9 @@ set_l value ixiyhl z80 =
 execute_without_hl: Int -> Z80 -> Maybe Z80
 execute_without_hl c z80 =
    let
-      litefunc = lt40_dict_lite |> Dict.get c
+      lite_entry = lt40_dict_lite |> Dict.get c
    in
-      case litefunc of
+      case lite_entry of
          Just f_without_ixiyhl -> Just (z80 |> f_without_ixiyhl)
          Nothing -> Nothing
 
@@ -654,23 +652,35 @@ execute_ltC0 c ixiyhl z80 =
                  Just a_z80 -> a_z80
                  Nothing -> z80 |> executegt40ltC0 c ixiyhl
 
+execute_0x01: Z80 -> Z80
+execute_0x01 z80 =
+   -- case 0x01: v=imm16(); B=v>>>8; C=v&0xFF; break;
+   let
+      v = imm16 z80
+   in
+      v.z80 |> set_bc v.value
+
+execute_0x33: Z80 -> Z80
+execute_0x33 z80 =
+   -- case 0x33: SP=(char)(SP+1); time+=2; break;
+   z80 |> set_sp (z80.sp + 1) |> add_cpu_time 2
+
+execute_0x3B: Z80 -> Z80
+execute_0x3B z80 =
+   -- case 0x3B: SP=(char)(SP-1); time+=2; break;
+   z80 |> set_sp (z80.sp - 1) |> add_cpu_time 2
+
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
-          -- case 0x01: v=imm16(); B=v>>>8; C=v&0xFF; break;
-          (0x01, (\z80 -> let
-                             v = imm16 z80
-                          in
-                             v.z80 |> set_bc v.value)),
-          (0x08, (\z80 -> z80 |> ex_af)),
+          (0x01, execute_0x01),
+          (0x08, ex_af),
           (0x10, execute_0x10),
           (0x18, execute_0x18),
           (0x11, execute_0x11),
           (0x31, execute_0x31),
-          -- case 0x33: SP=(char)(SP+1); time+=2; break;
-          (0x33, (\z80 -> z80 |> set_sp (z80.sp + 1) |> add_cpu_time 2)),
-          -- case 0x3B: SP=(char)(SP-1); time+=2; break;
-          (0x3B, (\z80 -> z80 |> set_sp (z80.sp - 1) |> add_cpu_time 2)),
+          (0x33, execute_0x33),
+          (0x3B, execute_0x3B),
           (0x02, execute_0x02),
           (0x0A, execute_0x0A),
           (0x12, execute_0x12),
@@ -1059,7 +1069,7 @@ execute_0x18 z80 =
      mem_value = mem z80.pc z80.env
      dest = z80.pc + 1 + (byte mem_value.value)
       --x = if (dest |> subName |> (String.startsWith "CALL-SUB")) then
-      --      -- HL still need to be indirected, so not a subroutine address yet
+      --      -- HL still need to be in-directed, so not a subroutine address yet
       --      let
       --         called = z80.env |> mem16 z80.main.hl
       --      in
@@ -1903,7 +1913,7 @@ execute_0xC0 z80 =
       if z80_1.flags.fr /= 0 then
          let
             result = z80_1 |> pop
-            x = debug_log "ret nz" (result.value |> subName) Nothing
+            --x = debug_log "ret nz" (result.value |> subName) Nothing
          in
             result.z80 |> set_pc result.value
       else
