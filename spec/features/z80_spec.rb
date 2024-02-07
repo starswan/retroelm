@@ -5,7 +5,7 @@ RSpec.describe "Spectrum Emulator" do
     create :game, :match_day
   end
 
-  let(:expected_hz) { (ENV['HZ'] || "9.2").to_f }
+  let(:expected_hz) { (ENV['HZ'] || "9.3").to_f }
 
   it "loads the emulator", :js do
     visit '/'
