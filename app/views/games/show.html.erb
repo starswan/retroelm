@@ -10,7 +10,8 @@
   <div>
     <%= content_tag :canvas, 'Game', width: 512, height: 384, id: 'applet',
                     class: 'applet', style: "border:1px solid #000000;",
-                    data: { load: @game.tapfile, rom: "http://#{request.host_with_port}/spectrum.rom" } %>
+                    data: { load: "#{request.protocol}#{request.host_with_port}/#{@game.tapfile}",
+                            rom: "#{request.protocol}#{request.host_with_port}/spectrum.rom" } %>
   </div>
   <!--<canvas id="myCanvas" width="200" height="100"></canvas>-->
   <!--<applet name="qaop" archive="/qaop.jar" code="Qaop" width="320" height="256" alt="Oh dear no applet">-->
