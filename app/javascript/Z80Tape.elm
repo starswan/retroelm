@@ -1,7 +1,7 @@
 module Z80Tape exposing (..)
 
 import Bytes exposing (Bytes, Endianness(..), width)
-import Bytes.Decode exposing (Decoder, Step(..), andThen, loop, map, map2, map3, map4, string, succeed, unsignedInt16, unsignedInt32, unsignedInt8)
+import Bytes.Decode exposing (Decoder, Step(..), andThen, fail, loop, map, map2, map3, map4, string, succeed, unsignedInt16, unsignedInt32, unsignedInt8)
 import Utils exposing (toHexString2)
 import Z80Debug exposing (debug_log)
 
@@ -14,11 +14,13 @@ parseTapFile bytes =
          Just list -> list
          Nothing -> []
 
+type HeaderType = PROGRAM | NUMBER_ARRAY | CHAR_ARRAY | CODE
+
 type alias TapeHeaderStart =
     {
         header_length: Int,
         flag_byte:     Int,
-        headerType:    Int,
+        header_type:   HeaderType,
         filename:      String
     }
 
@@ -91,9 +93,18 @@ grabWholeThing: TapfileHeader -> TapfileBlock -> Decoder Tapfile
 grabWholeThing tapfileheader tapfile_body =
     succeed (Tapfile tapfileheader tapfile_body)
 
+headerTypeFromInt: Int -> Decoder HeaderType
+headerTypeFromInt header_int =
+    case header_int of
+        0 -> succeed PROGRAM
+        1 -> succeed NUMBER_ARRAY
+        2 -> succeed CHAR_ARRAY
+        3 -> succeed CODE
+        _ -> fail
+
 tapeheaderStart: Decoder TapeHeaderStart
 tapeheaderStart =
-    map4 TapeHeaderStart spectrumUnsigned16Bit unsignedInt8 unsignedInt8 (string 10)
+    map4 TapeHeaderStart spectrumUnsigned16Bit unsignedInt8 (unsignedInt8 |> andThen headerTypeFromInt) (string 10)
 
 tapeheaderEnd: Decoder TapeHeaderEnd
 tapeheaderEnd =
