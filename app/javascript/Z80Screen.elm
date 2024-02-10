@@ -10,7 +10,12 @@ import Z80Memory exposing (Z80Memory, getValue)
 type alias Z80Screen =
     {
         screen: Z80Memory,
-        border: Int
+        border: Int,
+        flash: Int,
+        refrs_a: Int,
+        refrs_b: Int,
+        refrs_t: Int,
+        refrs_s: Int
     }
 
 constructor: Z80Screen
@@ -22,7 +27,7 @@ constructor =
 
       screen = List.concat [startrange, whiterange] |> Z80Memory.constructor
    in
-      Z80Screen screen 7
+      Z80Screen screen 7 0 0 0 0 0
 
 set_value: Int -> Int -> Z80Screen -> Z80Screen
 set_value addr value z80s =

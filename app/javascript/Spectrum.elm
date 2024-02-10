@@ -8,7 +8,8 @@ import Bitwise exposing (complement, shiftRightBy)
 import Keyboard exposing (KeyEvent, Keyboard, update_keyboard)
 import Z80 exposing (Z80, execute, interrupt)
 import Z80Debug exposing (debug_log)
-import Z80Env exposing (c_FRSTART, c_FRTIME)
+import Z80Env exposing (reset_cpu_time)
+import Z80Ram exposing (c_FRSTART, c_FRTIME)
 import Z80Tape exposing (Tapfile)
 
 type alias Audio =
@@ -220,10 +221,9 @@ frames keys speccy =
       --tap = 0
       --tend = False
       sz80 = speccy.cpu
-      env = sz80.env
+      env = sz80.env |> reset_cpu_time
       cpu = { sz80 | time_limit = c_FRSTART + c_FRTIME,
-                     env = { env | cpu_time = c_FRSTART,
-                                   keyboard = keys |> update_keyboard } } |> interrupt 0xFF |> execute
+                     env = { env | keyboard = keys |> update_keyboard } } |> interrupt 0xFF |> execute
       spectrum = { speccy | cpu = cpu }
       --x = if spectrum.paused then
       --       1

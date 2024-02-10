@@ -25,7 +25,7 @@ suite =
                      let
                         z80inc = { z80 | env = z80env |> set_mem addr 0x00 } |> Z80.execute_instruction
                      in
-                        Expect.equal ((addr + 1), 4) (z80inc.pc, z80inc.env.cpu_time - z80.env.cpu_time)
+                        Expect.equal ((addr + 1), 4) (z80inc.pc, z80inc.env.ram.cpu_time - z80.env.ram.cpu_time)
             ],
          describe "16 bit load immediate"
          [

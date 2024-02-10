@@ -8,8 +8,10 @@ import Dict exposing (Dict)
 import Loop
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8, toHexString)
 import Z80Debug exposing (debug_log, debug_todo)
-import Z80Env exposing (Z80Env, c_FRSTART, m1, mem, mem16, out, set_mem, set_mem16, z80_in, z80env_constructor)
+import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, set_mem, set_mem16, z80_in, z80env_constructor)
 import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
+import Z80Ram exposing (c_FRSTART)
+import Z80Rom exposing (subName)
 
 type alias MainRegisters =
    {
@@ -57,9 +59,9 @@ type alias Z80 =
 add_cpu_time: Int -> Z80 -> Z80
 add_cpu_time value z80 =
    let
-      env = z80.env
+      env = z80.env |> add_cpu_time_env value
    in
-      { z80 | env = { env | cpu_time = env.cpu_time + value } }
+      { z80 | env = env }
 
 constructor: Z80
 constructor =
@@ -462,7 +464,7 @@ halt: Z80 -> Z80
 halt z80 =
    let
       interrupts = z80.interrupts
-      n = shiftRightBy 2 (z80.time_limit - z80.env.cpu_time + 3)
+      n = shiftRightBy 2 (z80.time_limit - z80.env.ram.cpu_time + 3)
       z80_1 = if n > 0 then
                  -- turns out env.halt(n, r) just returns n...?
                  { z80 | interrupts = { interrupts | r = interrupts.r + n } } |> add_cpu_time (4 * n)
@@ -1256,9 +1258,9 @@ execute_0x12 z80 =
   let
       z80_main = z80.main
       addr = (shiftLeftBy8 z80_main.d) + z80_main.e
-      env = set_mem addr z80.flags.a z80.env
+      env = set_mem addr z80.flags.a z80.env |> add_cpu_time_env 3
   in
-    { z80 | env = { env | cpu_time = env.cpu_time + 3 } }
+    { z80 | env = env }
 
 execute_0x1A: Z80 -> Z80
 execute_0x1A z80 =
@@ -1533,8 +1535,8 @@ execute_0x35 ixiyhl z80 =
       value = mem a.value z80_1.env
       env_1 = value.env
       v = z80.flags |> dec value.value
-      new_env = { env_1 | cpu_time = env_1.cpu_time + 4 } |> set_mem a.value v.value
-      env_2 = { new_env | cpu_time = new_env.cpu_time + 3 }
+      new_env = env_1 |> add_cpu_time_env 4 |> set_mem a.value v.value
+      env_2 = new_env |> add_cpu_time_env 3
    in
       z80_1 |> set_env env_2 |> set_flag_regs v.flags
 
@@ -2342,7 +2344,7 @@ execute z80 =
     if z80.interrupts.halted then
         halt z80
     else
-        Loop.while (\x -> x.time_limit - x.env.cpu_time > 0) execute_instruction z80
+        Loop.while (\x -> x.time_limit - x.env.ram.cpu_time > 0) execute_instruction z80
 --	void execute()
 --	{
 --		if(halted) {
