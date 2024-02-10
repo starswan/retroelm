@@ -26,10 +26,14 @@ import Z80Tape exposing (Tapfile)
 
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
--- 29th Jan 2024 Chromium debug 69.9ms (14.3 Hz) 365 sec live 37.8ms(26.6 Hz)
--- 29th Jan 2024 Firefox  debug 95.1ms (10.5 Hz) live 59.3ms(16.8 Hz) 900sec
--- 22nd Jan 2024 Chromium debug 74.2ms (13.4 Hz) live 37.8ms(26.4 Hz)
--- 22nd Jan 2024 Firefox debug 104.6ms  (9.5 Hz) live 59.9ms(16.6 Hz)
+-- oh dear these appear to be worse than before
+-- 10th Feb 2024 Chromium debug 69.9ms (14.3 Hz) 365 sec live 38.6ms (25.9 Hz) 312 sec
+-- 10th Feb 2024 Firefox  debug 109.7ms (9.1 Hz) 390 sec live 74.1ms (13.5 Hz) 105 sec
+
+-- 29th Jan 2024 Chromium debug 69.9ms (14.3 Hz) 365 sec live 37.8ms (26.6 Hz)
+-- 29th Jan 2024 Firefox  debug 95.1ms (10.5 Hz)         live 59.3ms (16.8 Hz) 900 sec
+-- 22nd Jan 2024 Chromium debug 74.2ms (13.4 Hz)         live 37.8ms (26.4 Hz)
+-- 22nd Jan 2024 Firefox debug 104.6ms  (9.5 Hz)         live 59.9ms (16.6 Hz)
 c_TICKTIME = 40
 
 -- I'm currently unsure whether scaling the display results in a significant slowdown or not
