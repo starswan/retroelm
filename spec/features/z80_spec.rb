@@ -7,7 +7,7 @@ RSpec.describe "Spectrum Emulator" do
     z80_game.save!
   end
 
-  let(:expected_hz) { (ENV['HZ'] || "9.15").to_f }
+  let(:expected_hz) { (ENV['HZ'] || "9.25").to_f }
 
   # disable for now, as we ond't want to run the test twice really
   xcontext "with match day" do
@@ -55,19 +55,19 @@ RSpec.describe "Spectrum Emulator" do
   end
 
   def measure_speed_in_hz
-    sleep 1
+    sleep 12
     # Test emulation speed in Hz
     low = 0
     high = page.find("#hz").text.to_f
     # wait for speed to hit a steady state
-    while (high - low).abs > 0.01
-      times = 1.upto(6).map do
-        sleep 0.2
+    while (high - low).abs > 0.005
+      times = 1.upto(4).map do
+        sleep 0.9
         page.find("#hz").text.to_f
       end
-      sorted = times.sort
-      low = sorted.first
-      high = sorted.last
+      # p "Speed Times #{times.sort}"
+      low = times.min
+      high = times.max
     end
     high
   end
