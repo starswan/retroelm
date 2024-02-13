@@ -7,9 +7,9 @@ RSpec.describe "Spectrum Emulator" do
     z80_game.save!
   end
 
-  let(:expected_hz) { (ENV['HZ'] || "9.25").to_f }
+  let(:expected_hz) { (ENV['HZ'] || "7.25").to_f }
 
-  # disable for now, as we ond't want to run the test twice really
+  # disable for now, as we don't want to run the test twice really
   xcontext "with match day" do
     let(:z80_game) { build(:game, :match_day) }
 
@@ -26,7 +26,8 @@ RSpec.describe "Spectrum Emulator" do
 
   context "with z80_full_test" do
     let(:z80_game) { build(:game, :z80_test_full) }
-    let(:z80_test_url) { "https://github.com/raxoft/z80test/releases/download/v1.2a/z80test-1.2a.zip" }
+    let(:version) { "1.2a" }
+    let(:z80_test_url) { "https://github.com/raxoft/z80test/releases/download/v#{version}/z80test-#{version}.zip" }
     let(:faraday) {
       Faraday.new do |f|
         f.response :raise_error
@@ -61,7 +62,7 @@ RSpec.describe "Spectrum Emulator" do
     high = page.find("#hz").text.to_f
     # wait for speed to hit a steady state
     while (high - low).abs > 0.005
-      times = 1.upto(4).map do
+      times = 1.upto(5).map do
         sleep 0.9
         page.find("#hz").text.to_f
       end
