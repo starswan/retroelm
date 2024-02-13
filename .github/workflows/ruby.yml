@@ -41,8 +41,9 @@ jobs:
 
       - name: Yarn install
         run: yarn install
+      # Run elm tests for correctness before speed tests
+      - name: Run Elm tests
+        run: yarn run elm-test
       # Run ruby tests in headless mode
       - name: Ruby tests
         run: xvfb-run -a bundle exec rake spec
-      - name: Run Elm tests
-        run: yarn run elm-test
