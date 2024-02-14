@@ -74,9 +74,12 @@ new_tape tapfile_list spectrum =
 set_spectrum_rom: Array Int -> Spectrum -> Spectrum
 set_spectrum_rom romdata spectrum =
    let
-      z80 = spectrum.cpu
+      z80 = debug_log "about to" "set_rom" spectrum.cpu
+      env = z80.env |> Z80Env.set_rom romdata
+      env_1 = debug_log "after" "set_rom" env
+      z_80_1 = { z80 | env = env_1 }
    in
-      { spectrum | cpu = { z80 | env = z80.env |> Z80Env.set_rom romdata } }
+      { spectrum | cpu = z_80_1 }
 
 c_Mh = 6 -- margin
 c_Mv = 5

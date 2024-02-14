@@ -172,14 +172,6 @@ loadRom url =
 -- as TAP files will not always be the same size...
 loadTap: String -> Cmd Message
 loadTap url =
-    --Http.request { method = "GET",
-    --               headers = [],
-    --               body = emptyBody,
-    --               timeout = Nothing,
-    --               tracker = Nothing,
-    --               url = String.concat ["http://localhost:3000/", fileName],
-    --               expect = Http.expectBytesResponse GotTAP convertResponse
-    --          }
     debug_log "loadTap" url Http.get { url = url,
                expect = Http.expectBytesResponse GotTAP bytesToTap
               }

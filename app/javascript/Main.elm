@@ -146,7 +146,13 @@ gotRom: Qaop -> Result (Http.Detailed.Error Bytes) (Http.Metadata, Array Int) ->
 gotRom qaop result =
     case result of
         Ok (_, value) ->
-           { qaop | spectrum = qaop.spectrum |> set_spectrum_rom value } |> Qaop.run
+            let
+                speccy = qaop.spectrum |> set_spectrum_rom value
+                speccy2 = debug_log "gotRom" "thing" speccy
+                new_qaop = { qaop | spectrum = speccy2 }
+                qaop2 = debug_log "gotRom" "qqqqq" new_qaop
+            in
+                qaop2 |> Qaop.run
         Err _ ->
             (qaop, Cmd.none)
 
@@ -174,10 +180,12 @@ update message model =
                ({ model | qaop = qaop, count = model.count + 1 }, cmd)
        GotTAP result ->
             let
-                (qaop, cmd) = gotTap model.qaop result
+                q = debug_log "gottap" "now" model.qaop
+                (qaop, cmd) = gotTap q result
                 run_after_30_sec = delay 30000 LoadTape
             in
                 ({ model | qaop = qaop, count = model.count + 1 }, Cmd.batch [cmd, run_after_30_sec])
+                --({ model | qaop = qaop, count = model.count + 1 }, run_after_30_sec)
        Tick posix ->
           let
              state = if model.qaop.spectrum.paused then
