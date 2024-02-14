@@ -7,7 +7,7 @@ import Array exposing (Array)
 import Bitwise exposing (and, or, shiftLeftBy, shiftRightBy)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (listToDict, shiftLeftBy8, shiftRightBy8)
-import Z80Ram exposing (Z80Ram, add_cpu_time_ram, c_FRSTART, getRamValue)
+import Z80Ram exposing (Z80Ram, add_cpu_time_ram, c_FRSTART, getRam16Value, getRamValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
 
 -- changing this to an array results in a recursion error in the browser :-(
@@ -446,7 +446,7 @@ cont_port portn z80env =
 --		}
 --	}
 out: Int -> Int -> Z80Env -> Z80Env
-out portnum value env_in =
+out portnum _ env_in =
    let
       env = env_in |> cont_port portnum
    in
