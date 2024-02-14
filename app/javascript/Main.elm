@@ -38,7 +38,7 @@ import Z80Tape exposing (Tapfile)
 c_TICKTIME = 40
 
 -- I'm currently unsure whether scaling the display results in a significant slowdown or not
--- what it does show is that changing the screen makes everything slower, which probably means in practice
+-- what it does show is that2393 changing the screen makes everything slower, which probably means in practice
 -- that the display code will need some optimisation
 c_SCALEFACTOR = 2
 
