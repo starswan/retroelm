@@ -456,14 +456,15 @@ jp y z80 =
 --		byte d = (byte)env.mem(pc); time += 8;
 --		MP = PC = (char)(pc+d+1);
 --	}
-jr: Z80 -> Z80
+jr: Z80 -> EnvWithRegister
 jr z80 =
    let
       mempc = mem z80.pc z80.env
       d = byte mempc.value
       --x = Debug.log "jr" ((String.fromInt d.value) ++ " " ++ (String.fromInt (byte d.value)))
    in
-      z80 |> set_env mempc.env |> add_cpu_time 8 |> set_pc (z80.pc + d + 1)
+      --z80 |> set_env mempc.env |> add_cpu_time 8 |> set_pc (z80.pc + d + 1)
+      EnvWithRegister (z80.pc + d + 1) (mempc.env |> add_cpu_time_env 8)
 --
 --	private void call(boolean y)
 --	{
@@ -663,32 +664,26 @@ set_l value ixiyhl z80 =
    in
      set_xy (or (and xy 0xFF00) value) ixiyhl z80
 
-execute_without_hl: Int -> Z80 -> Maybe Z80
-execute_without_hl c z80 =
-   let
-      lite_entry = lt40_dict_lite |> Dict.get c
-   in
-      case lite_entry of
-         Just f_without_ixiyhl -> Just (z80 |> f_without_ixiyhl)
-         Nothing -> Nothing
-
-execute_with_ixiyhl: Int -> IXIYHL -> Z80 -> Maybe Z80
-execute_with_ixiyhl c ixiyhl z80 =
-   let
-       func = lt40_dict |> Dict.get c
-   in
-      case func of
-         Just f -> Just (z80 |> f ixiyhl)
-         Nothing -> Nothing
-
-execute_ltC0: Int -> IXIYHL -> Z80 -> Z80
+execute_ltC0: Int -> IXIYHL -> Z80 -> Maybe Z80
 execute_ltC0 c ixiyhl z80 =
-      case z80 |> execute_without_hl c of
-         Just z_80 -> z_80
-         Nothing ->
-             case z80 |> execute_with_ixiyhl c ixiyhl of
-                 Just a_z80 -> a_z80
-                 Nothing -> z80 |> executegt40ltC0 c ixiyhl
+   let
+      maybe_func = lt40_array |> Array.get c
+   in
+      case maybe_func of
+          Nothing -> Nothing
+          Just func ->
+              case func of
+                  Just f -> Just (z80 |> f ixiyhl)
+                  Nothing ->
+                      let
+                         lite_entry = lt40_array_lite |> Array.get c
+                      in
+                         case lite_entry of
+                             Just maybe_f ->
+                                 case maybe_f of
+                                    Just f_without_ixiyhl -> Just (z80 |> f_without_ixiyhl)
+                                    Nothing -> Just (z80 |> executegt40ltC0 c ixiyhl)
+                             Nothing -> Nothing
 
 execute_0x01: Z80 -> Z80
 execute_0x01 z80 =
@@ -1659,7 +1654,10 @@ execute_0x20: Z80 -> Z80
 execute_0x20 z80 =
    -- case 0x20: if(Fr!=0) jr(); else imm8(); break;
    if z80.flags.fr /= 0 then
-      jr z80
+      let
+        x = jr z80
+      in
+        { z80 | pc = x.register_value, env = x.env }
    else
       (imm8 z80).z80
 
@@ -1667,7 +1665,10 @@ execute_0x28: Z80 -> Z80
 execute_0x28 z80 =
    -- case 0x28: if(Fr==0) jr(); else imm8(); break;
    if z80.flags.fr == 0 then
-      jr z80
+      let
+         x = jr z80
+      in
+         { z80 | env = x.env, pc = x.register_value }
    else
       (imm8 z80).z80
 
@@ -1675,7 +1676,10 @@ execute_0x30: Z80 -> Z80
 execute_0x30 z80 =
    -- case 0x30: if((Ff&0x100)==0) jr(); else imm8(); break;
    if (and z80.flags.ff 0x100) == 0 then
-      jr z80
+      let
+         x = jr z80
+      in
+         { z80 | env = x.env, pc = x.register_value }
    else
       let
          v = imm8 z80
@@ -1686,7 +1690,10 @@ execute_0x38: Z80 -> Z80
 execute_0x38 z80 =
    -- case 0x38: if((Ff&0x100)!=0) jr(); else imm8(); break;
    if (and z80.flags.ff 0x100) /= 0 then
-      jr z80
+      let
+         x = jr z80
+      in
+         { z80 | env = x.env, pc = x.register_value }
    else
       let
          v = imm8 z80
@@ -1799,7 +1806,7 @@ execute_0xAA z80 =
 
 execute_0xAB: Z80 -> Z80
 execute_0xAB z80 =
-         -- case 0xAB: xor(E); break;
+   -- case 0xAB: xor(E); break;
    z80 |> set_flag_regs (z80_xor z80.main.e z80.flags)
 
 executegt40ltC0: Int -> IXIYHL -> Z80 -> Z80
@@ -2409,7 +2416,9 @@ execute_instruction tmp_z80 =
        z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
     in
       if c.value < 0xC0 then
-         execute_ltC0 c.value HL z80
+        case execute_ltC0 c.value HL z80 of
+            Just a_z80 -> a_z80
+            Nothing -> z80 |> executegt40ltC0 c.value HL
       else
          case c.value of
             0xDD -> group_xy IX z80
@@ -2481,7 +2490,9 @@ group_xy ixiy old_z80 =
       z80 = { z80_1 | pc = new_pc } |> add_cpu_time 4
    in
       if c.value < 0xC0 then
-         execute_ltC0 c.value ixiy z80
+        case execute_ltC0 c.value ixiy z80 of
+            Just a_z80 -> a_z80
+            Nothing -> z80 |> executegt40ltC0 c.value ixiy
       -- case 0xDD:
       -- case 0xFD: c0=c; continue;
       else
