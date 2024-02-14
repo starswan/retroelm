@@ -463,7 +463,6 @@ jr z80 =
       d = byte mempc.value
       --x = Debug.log "jr" ((String.fromInt d.value) ++ " " ++ (String.fromInt (byte d.value)))
    in
-      --z80 |> set_env mempc.env |> add_cpu_time 8 |> set_pc (z80.pc + d + 1)
       EnvWithRegister (z80.pc + d + 1) (mempc.env |> add_cpu_time_env 8)
 --
 --	private void call(boolean y)
@@ -478,15 +477,13 @@ call y z80 =
       z80_2 = { z80 | pc = a.register_value, env = a.env }
    in
      if y then
-      let
-         --b = debug_log "call" (a.value |> subName) Nothing
-         --z80_1 = z80_2 |> push z80_2.pc |> set_pc a.value
-         pushed = z80_2 |> push z80_2.pc
-         z80_1 = { z80_2 | sp = pushed.register_value, env = pushed.env, pc = a.value }
-      in
-         z80_1
+        let
+           --b = debug_log "call" (a.value |> subName) Nothing
+           pushed = z80_2 |> push z80_2.pc
+        in
+           { z80_2 | sp = pushed.register_value, env = pushed.env, pc = a.value }
      else
-       z80_2
+        z80_2
 --
 --	private void halt()
 --	{
