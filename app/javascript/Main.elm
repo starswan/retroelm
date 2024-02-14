@@ -26,10 +26,13 @@ import Z80Tape exposing (Tapfile)
 
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
--- 29th Jan 2024 Chromium debug 69.9ms (14.3 Hz) 365 sec live 37.8ms(26.6 Hz)
--- 29th Jan 2024 Firefox  debug 95.1ms (10.5 Hz) live 59.3ms(16.8 Hz) 900sec
--- 22nd Jan 2024 Chromium debug 74.2ms (13.4 Hz) live 37.8ms(26.4 Hz)
--- 22nd Jan 2024 Firefox debug 104.6ms  (9.5 Hz) live 59.9ms(16.6 Hz)
+-- 14th Feb 2024 Chromium debug  53.4ms (18.7 Hz) 140 sec live 42.1ms (23.7 Hz)  73 sec
+-- 14th Feb 2024 Firefox  debug 104.7ms  (9.6 Hz) 390 sec live 72.0ms (13.9 Hz) 355 sec
+
+-- 29th Jan 2024 Chromium debug 69.9ms (14.3 Hz) 365 sec live 37.8ms (26.6 Hz)
+-- 29th Jan 2024 Firefox  debug 95.1ms (10.5 Hz)         live 59.3ms (16.8 Hz) 900 sec
+-- 22nd Jan 2024 Chromium debug 74.2ms (13.4 Hz)         live 37.8ms (26.4 Hz)
+-- 22nd Jan 2024 Firefox debug 104.6ms  (9.5 Hz)         live 59.9ms (16.6 Hz)
 c_TICKTIME = 40
 
 -- I'm currently unsure whether scaling the display results in a significant slowdown or not
@@ -140,9 +143,9 @@ view model =
 gotRom: Qaop -> Result (Http.Detailed.Error Bytes) (Http.Metadata, Array Int) -> (Qaop, Cmd Message)
 gotRom qaop result =
     case result of
-        Ok (metadata, value) ->
+        Ok (_, value) ->
            { qaop | spectrum = qaop.spectrum |> set_rom value } |> Qaop.run
-        Err error ->
+        Err _ ->
             (qaop, Cmd.none)
 
 gotTap: Qaop -> Result Http.Error (List Tapfile) -> (Qaop, Cmd Message)
@@ -150,7 +153,7 @@ gotTap qaop result =
     case result of
       Ok value ->
          { qaop | spectrum = qaop.spectrum |> new_tape value } |> Qaop.run
-      Err error ->
+      Err _ ->
          (qaop, Cmd.none)
 
 update : Message -> Model -> (Model, Cmd Message)
@@ -158,10 +161,10 @@ update message model =
     case message of
        LoadTape ->
            let
-               x = debug_log "time to load the tape data into the model" "" Nothing
+               newmodel = debug_log "load_tape" "into model" model
                -- here we push the tapfile into Qoap and execute appropriately
            in
-              (model, Cmd.none)
+              (newmodel, Cmd.none)
        GotRom result ->
             let
                (qaop, cmd) = gotRom model.qaop result
