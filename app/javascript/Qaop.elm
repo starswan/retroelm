@@ -5,7 +5,7 @@ module Qaop exposing (..)
 import Array exposing (Array)
 import Bitwise exposing (complement)
 import Bytes exposing (Bytes, Endianness(..), width)
-import Bytes.Decode exposing (Decoder, Step(..), andThen, loop, map, succeed, unsignedInt16, unsignedInt8)
+import Bytes.Decode exposing (Decoder, Step(..), loop, map, succeed, unsignedInt8)
 import Char exposing (toUpper)
 import Dict
 import Http exposing (Error, Expect, Metadata, Response)
@@ -13,11 +13,11 @@ import Http.Detailed
 import Keyboard exposing (ControlKey(..), KeyEvent(..), c_CONTROL_KEY_MAP)
 import Loader exposing (LoadAction(..), Loader, paramHandler, trimActionList)
 import Params exposing (StringPair)
-import Spectrum exposing (Spectrum, frames, new_tape)
+import Spectrum exposing (Spectrum, frames)
 import String exposing (fromChar)
 import Z80Tape exposing (Tapfile, parseTapFile)
 import Time
-import Utils exposing (compact, delay)
+import Utils exposing (compact)
 import Z80Debug exposing (debug_log)
 
 type alias Qaop =
@@ -96,7 +96,7 @@ init params =
 
 type Message
   = GotTAP (Result Http.Error (List Tapfile))
-  | GotRom (Result (Http.Detailed.Error Bytes) (Metadata, Array Int))
+  | GotRom (Result Http.Error (Array Int))
   | Tick Time.Posix
   | Pause
   | CharacterKey Char
@@ -156,6 +156,43 @@ bytesToTap httpResponse =
            in
               Ok (body |> parseTapFile)
 
+bytesToRom : Response Bytes -> Result Error (Array Int)
+bytesToRom httpResponse =
+    case httpResponse of
+        Http.BadUrl_ url ->
+            Err (Http.BadUrl url)
+
+        Http.Timeout_ ->
+            Err Http.Timeout
+
+        Http.NetworkError_ ->
+            Err Http.NetworkError
+
+        Http.BadStatus_ metadata body ->
+            Err (Http.BadStatus metadata.statusCode)
+
+        Http.GoodStatus_ metadata body ->
+           let
+              -- would be nice to parse headers - but we seem to get a
+              -- gzipped body size not an actual size which makes things tough
+              --x = debug_log "got tap headers" metadata.headers Nothing
+              --length = metadata.headers |> Dict.get "content-length" |> Maybe.withDefault "0" |> String.toInt |> Maybe.withDefault 0
+              -- This seems to be the gzip size which isn't that useful
+              length = body |> width
+              y = debug_log "TAP file size" length Nothing
+              --z = debug_log "received bytes of size" (body |> width) Nothing
+           in
+              Ok (body |> parseRomFile)
+
+parseRomFile: Bytes -> Array Int
+parseRomFile bytes =
+   let
+      x = Bytes.Decode.decode (array_decoder 16384 unsignedInt8) bytes
+   in
+      case x of
+         Just list -> list
+         Nothing -> Array.empty
+
 --loadRom: String -> Cmd Message
 --loadRom fileName =
 --    Http.get { url = String.concat ["http://localhost:3000/", fileName],
@@ -163,9 +200,13 @@ bytesToTap httpResponse =
 --              }
 loadRom: String -> Cmd Message
 loadRom url =
+   --debug_log "loadRom" url Http.get {
+   --                                   url = url,
+   --                                   expect = Http.Detailed.expectBytes GotRom (array_decoder 16384 unsignedInt8)
+   --                                 }
    debug_log "loadRom" url Http.get {
                                       url = url,
-                                      expect = Http.Detailed.expectBytes GotRom (array_decoder 16384 unsignedInt8)
+                                      expect = Http.expectBytesResponse GotRom bytesToRom
                                     }
 
 -- Not sure if this is helping - we want to pick out 16384 from the metadata so we know how many bytes to consume

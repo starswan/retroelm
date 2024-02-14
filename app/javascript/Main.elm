@@ -6,10 +6,8 @@ module Main exposing (..)
 import Array exposing (Array)
 import Browser
 import Browser.Events exposing (onKeyDown, onKeyUp)
-import Bytes exposing (Bytes)
 import Html.Events exposing (onClick)
 import Http
-import Http.Detailed
 import Json.Decode as Decode
 import Spectrum exposing (new_tape, set_spectrum_rom)
 import Z80Debug exposing (debug_log)
@@ -142,10 +140,10 @@ view model =
 --      Nothing ->
 --         "Time N/A"
 
-gotRom: Qaop -> Result (Http.Detailed.Error Bytes) (Http.Metadata, Array Int) -> (Qaop, Cmd Message)
+gotRom: Qaop -> Result Http.Error (Array Int) -> (Qaop, Cmd Message)
 gotRom qaop result =
     case result of
-        Ok (_, value) ->
+        Ok value ->
             let
                 speccy = qaop.spectrum |> set_spectrum_rom value
                 speccy2 = debug_log "gotRom" "thing" speccy
