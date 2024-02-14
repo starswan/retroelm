@@ -153,6 +153,7 @@ gotRom qaop result =
                 qaop2 = debug_log "gotRom" "qqqqq" new_qaop
             in
                 qaop2 |> Qaop.run
+                --(qaop2, Cmd.none)
         Err _ ->
             (qaop, Cmd.none)
 
