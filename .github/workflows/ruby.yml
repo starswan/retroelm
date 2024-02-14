@@ -22,11 +22,11 @@ jobs:
     strategy:
       matrix:
         #        ruby-version: ['3.1', '3.2']
-        #        3.1 tested locally, so just test 3.2 (we're writing Elm, not Ruby here)
+#        3.1 tested locally, so just test 3.2 (we're writing Elm, not Ruby here)
         ruby-version: ['3.2']
 
     env:
-      HZ: 16.5
+      HZ: 16.7
     steps:
       - uses: actions/checkout@v3
       - name: Set up Ruby
