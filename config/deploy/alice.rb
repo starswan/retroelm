@@ -13,7 +13,7 @@
 
 require "rvm/capistrano"
 
-set :deploy_to, "/home/starswan/html/retroelm"
+set :deploy_to, "/home/starswan/html/retro"
 set :user, "starswan"
 set :rvm_ruby_string, "3.1.4@retroelm"
 # Try to speed up ruby compilation on Raspberry Pi 2
