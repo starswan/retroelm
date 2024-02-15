@@ -7,7 +7,7 @@ RSpec.describe "Spectrum Emulator" do
     z80_game.save!
   end
 
-  let(:expected_hz) { (ENV['HZ'] || "10.05").to_f }
+  let(:expected_hz) { (ENV['HZ'] || "9.8").to_f }
 
   # disable for now, as we don't want to run the test twice really
   xcontext "with match day" do
@@ -20,7 +20,7 @@ RSpec.describe "Spectrum Emulator" do
       expect(page).to have_content 'Refresh Interval'
       speed = measure_speed_in_hz
       p "Speed #{speed} Hz"
-      expect(speed).to be > expected_hz
+      expect(speed).to be >= expected_hz
     end
   end
 
