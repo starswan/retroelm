@@ -65,10 +65,12 @@ group :development do
   # gem 'spring-watcher-listen', '~> 2.0.0'
 
   # Use Capistrano for deployment
-  gem "capistrano", "~> 2.15.8"
+  # gem "capistrano", "~> 2.15.8"
+  gem "capistrano"
   gem "capistrano-ext"
   gem "capistrano-rails"
   gem "rvm-capistrano", require: false
+
   gem 'ed25519'
   gem 'bcrypt_pbkdf'
 end
