@@ -27,8 +27,8 @@ test:
 production:
   adapter: mysql2
   encoding: utf8
-  socket: /var/run/mysqld/mysqld.sock
-  reconnect: true
   database: retroelm
-  username: rails
-  password: 123rails!
+  username: starswan
+  password: <%= ENV['MYSQL_STARSWAN_PASSWORD'] %>
+  socket: /var/run/mysqld/mysqld.sock
+  host: localhost
