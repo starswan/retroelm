@@ -69,6 +69,7 @@ group :development do
   gem "capistrano-ext"
   gem "capistrano-rails"
   gem "rvm-capistrano", require: false
+
   gem 'ed25519'
   gem 'bcrypt_pbkdf'
 end
