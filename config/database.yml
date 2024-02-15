@@ -27,7 +27,7 @@ test:
 production:
   adapter: mysql2
   encoding: utf8
-  database: retroelm
+  database: starswan_retroelm
   username: starswan
   password: <%= ENV['MYSQL_STARSWAN_PASSWORD'] %>
   socket: /var/run/mysqld/mysqld.sock
