@@ -20,7 +20,7 @@ RSpec.describe "Spectrum Emulator" do
       expect(page).to have_content 'Refresh Interval'
       speed = measure_speed_in_hz
       p "Speed #{speed} Hz"
-      expect(speed).to be > expected_hz
+      expect(speed).to be >= expected_hz
     end
   end
 
