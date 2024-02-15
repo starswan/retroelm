@@ -17,7 +17,8 @@ set :use_sudo, false
 
 if ENV.key? "BRANCH"
   set :scm, :git
-  set :repository, "git@github.com:starswan/retroelm.git"
+  set :repository, "git@github.com:starswan/qaop-elm.git"
+  # set :repository, "https://github.com/starswan/qaop-elm.git"
   set :branch, ENV.fetch("BRANCH")
 else
   # repo details
