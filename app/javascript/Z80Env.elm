@@ -44,6 +44,28 @@ set_rom romdata z80env =
    in
       { z80env | rom48k = romDict }
 
+--public final int m1(int addr, int ir) {
+--	int n = cpu.time - ctime;
+--	if(n>0) cont(n);
+--
+--	addr -= 0x4000;
+--	if((addr&0xC000) == 0)
+--		cont1(0);
+--	ctime = NOCONT;
+--	if((ir&0xC000) == 0x4000)
+--		ctime = cpu.time + 4;
+--	if(addr >= 0)
+--		return ram[addr];
+--	n = rom[addr+=0x4000];
+--	if(if1rom!=null && (addr&0xE8F7)==0) {
+--		if(addr==0x0008 || addr==0x1708) {
+--			if(rom==rom48k) rom = if1rom;
+--		} else if(addr==0x0700) {
+--			if(rom==if1rom) rom = rom48k;
+--		}
+--	}
+--	return n;
+--}
 m1: Int -> Int -> Z80Env -> Z80EnvWithValue
 m1 tmp_addr ir z80env_ =
     let
