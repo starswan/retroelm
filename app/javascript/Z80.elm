@@ -167,9 +167,9 @@ inc_pc: Z80 -> Int
 inc_pc z80 =
    Bitwise.and (z80.pc + 1) 0xFFFF
 
-inc_pc2: Z80 -> Z80
+inc_pc2: Z80 -> Int
 inc_pc2 z80 =
-   { z80 | pc = Bitwise.and (z80.pc + 2) 0xFFFF }
+   Bitwise.and (z80.pc + 2) 0xFFFF
 
 dec_pc2: Z80 -> Z80
 dec_pc2 z80 =
@@ -1619,8 +1619,9 @@ execute_0x36 ixiyhl z80 =
                 v = mem (char (z80_1.pc + 1)) z80_1.env
                 z80_2 = { z80_1 | env = v.env } |> add_cpu_time 5
                 x = set_mem a v.value z80_2.env
+                new_pc = z80_2 |> inc_pc2
              in
-                { z80_2 | env = x } |> inc_pc2 |> add_cpu_time 3
+                { z80_2 | env = x, pc = new_pc } |> add_cpu_time 3
 
 execute_0x3C: Z80 -> Z80
 execute_0x3C z80 =
@@ -2847,7 +2848,8 @@ group_xy_cb ixiyhl z80 =
       a = char (xy + (byte offset.value))
       z80_1 = { z80 | env = offset.env } |> add_cpu_time 3
       c = z80_1.env |> mem (char (z80.pc + 1))
-      z80_2 = { z80_1 | env = c.env } |> inc_pc2 |> add_cpu_time 5
+      new_pc = z80_1 |> inc_pc2
+      z80_2 = { z80_1 | env = c.env, pc = new_pc } |> add_cpu_time 5
       v1 = z80_2.env |> mem a
       z80_3 = { z80_2 | env = v1.env } |> add_cpu_time 4
       o = and (shiftRightBy 3 c.value) 7
