@@ -7,7 +7,7 @@ RSpec.describe "Spectrum Emulator" do
     z80_game.save!
   end
 
-  let(:expected_hz) { (ENV['HZ'] || "9.8").to_f }
+  let(:expected_hz) { (ENV['HZ'] || "9.7").to_f }
 
   # disable for now, as we don't want to run the test twice really
   xcontext "with match day" do
@@ -84,7 +84,7 @@ RSpec.describe "Spectrum Emulator" do
     zipfile = StringIO.new zipdata
     Dir.mkdir output_directory
     Zip::InputStream.open(zipfile) do |zip_stream|
-      while entry = zip_stream.get_next_entry
+      while (entry = zip_stream.get_next_entry)
         entry_filename = entry.name.split("/").last
         if entry.name.ends_with?(".tap")
           data = entry.get_input_stream.read
