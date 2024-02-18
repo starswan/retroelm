@@ -624,6 +624,7 @@ ldir i r z80 =
 -- Think this could be a useful parameter to execute_lt40 to avoid the duplication
 -- problem currently being experienced in function group_xy
 type IXIYHL = IX | IY | HL
+type IXIY = IXIY_IX | IXIY_IY
 
 --toString: IXIYHL -> String
 --toString ixiyhl =
@@ -638,6 +639,12 @@ get_xy ixiyhl z80 =
       IX -> z80.ix
       IY -> z80.iy
       HL -> z80.main.hl
+
+get_ixiy_xy: IXIY -> Z80 -> Int
+get_ixiy_xy ixiy z80 =
+   case ixiy of
+      IXIY_IX -> z80.ix
+      IXIY_IY -> z80.iy
 
 set_xy: Int -> IXIYHL -> Z80 -> Z80
 set_xy value ixiyhl z80 =
@@ -710,11 +717,12 @@ noop z80 = z80
 lt40_array_lite: Array (Maybe (Z80 -> Z80))
 lt40_array_lite = makeLiteArray
 
+list0255 = List.range 0 255
+
 makeLiteArray: Array (Maybe (Z80 -> Z80))
 makeLiteArray =
     let
-       x =  List.range 0 255
-       y = x |> List.map (\index -> lt40_dict_lite |> Dict.get index)
+       y = list0255 |> List.map (\index -> lt40_dict_lite |> Dict.get index)
     in
        Array.fromList y
 
@@ -724,8 +732,7 @@ lt40_array = makeLt40Array
 makeLt40Array: Array (Maybe ((IXIYHL -> Z80 -> Z80)))
 makeLt40Array =
     let
-       x =  List.range 0 255
-       y = x |> List.map (\index -> lt40_dict |> Dict.get index)
+       y = list0255 |> List.map (\index -> lt40_dict |> Dict.get index)
     in
        Array.fromList y
 
@@ -2422,8 +2429,8 @@ execute_instruction tmp_z80 =
             Nothing -> z80 |> executegt40ltC0 c.value HL
       else
          case c.value of
-            0xDD -> group_xy IX z80
-            0xFD -> group_xy IY z80
+            0xDD -> group_xy IXIY_IX z80
+            0xFD -> group_xy IXIY_IY z80
             0xCB -> group_cb z80
             0xED -> group_ed z80
             _ -> execute_gtc0 c.value HL z80
@@ -2477,7 +2484,7 @@ execute z80 =
 --			PC = (char)(PC+1); time += 4;
 --			switch(c) {
 --// -------------- >8 xy
-group_xy: IXIYHL -> Z80 -> Z80
+group_xy: IXIY -> Z80 -> Z80
 group_xy ixiy old_z80 =
    let
       --xy = if c0 == 0xDD then
@@ -2491,18 +2498,33 @@ group_xy ixiy old_z80 =
       z80 = { z80_1 | pc = new_pc } |> add_cpu_time 4
    in
       if c.value < 0xC0 then
-        case execute_ltC0 c.value ixiy z80 of
-            Just a_z80 -> a_z80
-            Nothing -> z80 |> executegt40ltC0 c.value ixiy
+         --case execute_ltC0 c.value ixiy z80 of
+         --    Just a_z80 -> a_z80
+         --    Nothing -> z80 |> executegt40ltC0 c.value ixiy
+
+         let
+            maybe = case ixiy of
+               IXIY_IX -> execute_ltC0 c.value IX z80
+               IXIY_IY -> execute_ltC0 c.value IY z80
+         in
+            case maybe of
+                Just a_z80 -> a_z80
+                Nothing ->
+                   case ixiy of
+                      IXIY_IX -> z80 |> executegt40ltC0 c.value IX
+                      IXIY_IY -> z80 |> executegt40ltC0 c.value IY
       -- case 0xDD:
       -- case 0xFD: c0=c; continue;
       else
          case c.value of
-           0xDD -> group_xy IX z80
-           0xFD -> group_xy IY z80
+           0xDD -> group_xy IXIY_IX z80
+           0xFD -> group_xy IXIY_IY z80
            0xCB -> group_xy_cb ixiy z80
            0xED -> group_ed z80
-           _ -> execute_gtc0 c.value ixiy z80
+           _ ->
+               case ixiy of
+                   IXIY_IX -> execute_gtc0 c.value IX z80
+                   IXIY_IY -> execute_gtc0 c.value IY z80
 --      case c.value of
 -- case 0xED: group_ed(); break;
 -- case 0xC0: time++; if(Fr!=0) MP=PC=pop(); break;
@@ -2840,10 +2862,10 @@ group_cb tmp_z80 =
 --		int v = env.mem(a);
 --		time += 4;
 --		int o = c>>>3 & 7;
-group_xy_cb: IXIYHL -> Z80 -> Z80
+group_xy_cb: IXIY -> Z80 -> Z80
 group_xy_cb ixiyhl z80 =
    let
-      xy = get_xy ixiyhl z80
+      xy = get_ixiy_xy ixiyhl z80
       offset = mem z80.pc z80.env
       a = char (xy + (byte offset.value))
       z80_1 = { z80 | env = offset.env } |> add_cpu_time 3
