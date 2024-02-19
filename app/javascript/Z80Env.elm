@@ -98,6 +98,21 @@ m1 tmp_addr ir z80env_ =
     in
         Z80EnvWithValue { z80env_1 | time = CpuTimeCTime z80env_1.time.cpu_time ctime } value
 
+--public final int mem(int addr) {
+--	int n = cpu.time - ctime;
+--	if(n>0) cont(n);
+--	ctime = NOCONT;
+--
+--	addr -= 0x4000;
+--	if(addr>=0) {
+--		if(addr<0x4000) {
+--			cont1(0);
+--			ctime = cpu.time + 3;
+--		}
+--		return ram[addr];
+--	}
+--	return rom[addr+0x4000];
+--}
 mem: Int -> Z80Env -> Z80EnvWithValue
 mem base_addr z80env_ctime =
     let
