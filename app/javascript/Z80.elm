@@ -501,7 +501,7 @@ halt: Z80 -> Z80
 halt z80 =
    let
       interrupts = z80.interrupts
-      n = shiftRightBy 2 (z80.time_limit - z80.env.ram.cpu_time + 3)
+      n = shiftRightBy 2 (z80.time_limit - z80.env.time.cpu_time + 3)
       z80_1 = if n > 0 then
                  -- turns out env.halt(n, r) just returns n...?
                  { z80 | interrupts = { interrupts | r = interrupts.r + n } } |> add_cpu_time (4 * n)
@@ -2453,7 +2453,7 @@ execute z80 =
     if z80.interrupts.halted then
         halt z80
     else
-        Loop.while (\x -> x.time_limit - x.env.ram.cpu_time > 0) execute_instruction z80
+        Loop.while (\x -> x.time_limit - x.env.time.cpu_time > 0) execute_instruction z80
 --	void execute()
 --	{
 --		if(halted) {

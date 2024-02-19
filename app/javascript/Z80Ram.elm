@@ -7,8 +7,7 @@ import Z80Screen exposing (Z80Screen)
 type alias Z80Ram =
     {
         screen: Z80Screen,
-        non_screen: Z80Memory,
-        cpu_time: Int
+        non_screen: Z80Memory
     }
 
 c_FRSTART = -14335
@@ -20,7 +19,7 @@ constructor =
     let
        ram = List.repeat (49152 - 6912) 0
     in
-        Z80Ram Z80Screen.constructor (Z80Memory.constructor ram) c_FRSTART
+        Z80Ram Z80Screen.constructor (Z80Memory.constructor ram)
 
 getRamValue: Int -> Z80Ram -> Int
 getRamValue addr z80ram =
@@ -59,8 +58,4 @@ setRamValue addr value z80ram =
          { z80ram | non_screen = z80ram.non_screen |> Z80Memory.set_value ram_addr value }
       else
          { z80ram | screen = z80ram.screen |> Z80Screen.set_value addr value }
-
-add_cpu_time_ram: Int -> Z80Ram -> Z80Ram
-add_cpu_time_ram value z80 =
-   { z80 | cpu_time = z80.cpu_time + value }
 
