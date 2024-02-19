@@ -123,15 +123,15 @@ mem base_addr z80env_ctime =
                   z80env_ctime
        addr = base_addr - 0x4000
        (new_env, ctime, value) = if addr >= 0 then
-                                   if addr < 0x4000 then
-                                     let
-                                        new_z80 = z80env |> cont1 0
-                                     in
-                                        (new_z80, new_z80.time.cpu_time + 3, z80env.ram |> getRamValue addr)
-                                   else
-                                     (z80env_ctime, c_NOCONT, z80env.ram |> getRamValue addr)
+                                    if addr < 0x4000 then
+                                       let
+                                          new_z80 = z80env |> cont1 0
+                                       in
+                                          (new_z80, new_z80.time.cpu_time + 3, new_z80.ram |> getRamValue addr)
+                                    else
+                                       (z80env, c_NOCONT, z80env.ram |> getRamValue addr)
                                  else
-                                   (z80env_ctime, c_NOCONT, z80env.rom48k |> getROMValue base_addr)
+                                    (z80env, c_NOCONT, z80env.rom48k |> getROMValue base_addr)
     in
         Z80EnvWithValue { new_env | time = CpuTimeCTime new_env.time.cpu_time ctime } value
 --	public final int mem16(int addr) {
