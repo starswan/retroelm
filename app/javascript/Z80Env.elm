@@ -118,9 +118,9 @@ mem base_addr z80env_ctime =
     let
        n = z80env_ctime.time.cpu_time - z80env_ctime.time.ctime
        z80env = if n > 0 then
-                  z80env_ctime |> cont n
+                   z80env_ctime |> cont n
                 else
-                  z80env_ctime
+                   z80env_ctime
        addr = base_addr - 0x4000
        (new_env, ctime, value) = if addr >= 0 then
                                     if addr < 0x4000 then
