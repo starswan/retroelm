@@ -448,7 +448,7 @@ jp: Bool -> Z80 -> Z80
 jp y z80 =
    let
       a = imm16 z80
-      z80_1 = { z80 | pc = a.pc }
+      z80_1 = { z80 | pc = a.pc, env = a.env }
    in
       if y then
          { z80_1 | pc = a.value }
@@ -1350,10 +1350,10 @@ execute_0x22 z80 =
   let
      v = imm16 z80
      new_z80 = { z80 | pc = v.pc }
-     env = v.env |> set_mem16 v.value new_z80.main.hl
+     env = v.env |> set_mem16 v.value new_z80.main.hl |> add_cpu_time_env 6
      --x = debug_log "LD nn, HL" ((z80.pc |> toHexString) ++ " addr " ++ (v.value |> toHexString) ++ " " ++ (new_z80.main.hl |> toHexString)) env
   in
-     { new_z80 | env = env } |> add_cpu_time 6
+     { new_z80 | env = env }
 
 execute_0x2A: IXIYHL -> Z80 -> Z80
 execute_0x2A ixiyhl z80 =
@@ -1374,7 +1374,7 @@ execute_0x32 z80 =
       v = imm16 z80
       new_z80 = { z80 | pc = v.pc }
    in
-      { new_z80 | env = set_mem v.value new_z80.flags.a v.env } |> add_cpu_time 3
+      { new_z80 | env = v.env |> set_mem v.value new_z80.flags.a } |> add_cpu_time 3
 
 execute_0x3A: Z80 -> Z80
 execute_0x3A z80 =
@@ -1383,10 +1383,9 @@ execute_0x3A z80 =
      z80_flags = z80.flags
      v = imm16 z80
      new_z80 = { z80 | pc = v.pc }
-     env = v.env
-     mem_value = mem v.value env
+     mem_value = v.env |> mem v.value
   in
-     { new_z80 | flags = { z80_flags | a = mem_value.value }, env = mem_value.env } |> add_cpu_time 3
+     { new_z80 | flags = { z80_flags | a = mem_value.value }, env = mem_value.env |> add_cpu_time_env 3 }
 
 execute_0x04: Z80 -> Z80
 execute_0x04 z80 =
