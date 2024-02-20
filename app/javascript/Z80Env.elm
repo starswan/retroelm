@@ -378,8 +378,8 @@ cont1 tmp_t z80  =
 --	}
 
 -- Helper implementation function for cont
-contimpl: Z80Env -> Int -> Int -> Z80Env
-contimpl z80env tmp_n tmp_s =
+contimpl: Int -> Int -> CpuTimeCTime -> CpuTimeCTime
+contimpl tmp_n tmp_s z80env =
     let
         s = modBy 224 tmp_s
         (ntk) = if s > 126 then
@@ -404,7 +404,7 @@ contimpl z80env tmp_n tmp_s =
         if ntk.o then
             z80env
         else
-            z80env |> add_cpu_time_env (ntk.t + 6*n4)
+            { z80env | cpu_time = z80env.cpu_time + (ntk.t + 6*n4) }
 
 cont: Int -> Z80Env-> Z80Env
 cont tmp_n z80env =
@@ -420,7 +420,10 @@ cont tmp_n z80env =
                 if tmp_s < 0 then
                     z80env
                 else
-                    contimpl z80env tmp_n tmp_s
+                    let
+                        x = z80env.time |> contimpl tmp_n tmp_s
+                    in
+                        { z80env | time = x }
 
 --private void cont_port(int port)
 --{
