@@ -4,6 +4,11 @@ import Z80Env exposing (Z80Env, add_cpu_time_env)
 import Z80Flags exposing (FlagRegisters)
 import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, ProgramCounter, Z80)
 
+type IXIYHLValue
+    = IXValue Int
+    | IYValue Int
+    | HLValue Int
+
 
 type Z80Delta
     = Whole Z80
@@ -11,7 +16,6 @@ type Z80Delta
     | JustEnv Z80Env
     | MainRegsAndCpuTime MainWithIndexRegisters Int
     | FlagsWithMain FlagRegisters MainWithIndexRegisters
-    | FlagsWithPCMainAndTime FlagRegisters Int MainWithIndexRegisters Int
     | FlagRegs FlagRegisters
     | FlagsAndAlt FlagRegisters FlagRegisters
     | EnvWithFlags Z80Env FlagRegisters
@@ -19,6 +23,9 @@ type Z80Delta
     | MainRegsWithEnv MainWithIndexRegisters Z80Env
     | PcAndCpuTime ProgramCounter Int
     | EnvWithPc Z80Env Int
+    | CpuTimeFlagsAndIXIYHLValueWithPC Int FlagRegisters IXIYHLValue Int
+    | PCIXIYHL Int IXIYHLValue
+    | PcEnvIXIYHL Int Z80Env IXIYHLValue
     --| IXIYMainFlagsCpuTime Int Int MainRegisters FlagRegisters Int
 
 
@@ -71,8 +78,39 @@ apply_delta z80 z80delta =
         EnvWithPc z80Env programCounter ->
             { z80 | env = z80Env, pc = programCounter, interrupts = z80delta.interrupts }
 
-        FlagsWithPCMainAndTime flagRegisters pc mainWithIndexRegisters cpu_time ->
-            { z80 | flags = flagRegisters, pc = pc, env = z80delta.env |> add_cpu_time_env cpu_time, main = mainWithIndexRegisters, interrupts = z80delta.interrupts }
+        CpuTimeFlagsAndIXIYHLValueWithPC cpu_time flagRegisters iXIYHLValue pc ->
+            let
+                env = z80.env |> add_cpu_time_env cpu_time
+                main = z80.main
+                z80_1 = case iXIYHLValue of
+                    IXValue int -> { main | ix = int }
+                    IYValue int -> { main | iy = int }
+                    HLValue hlvalue -> { main | hl = hlvalue }
+            in
+                { z80 | main = z80_1, flags = flagRegisters, env = env, pc = pc, interrupts = z80delta.interrupts }
+
+        PCIXIYHL pc iXIYHLValue ->
+            let
+                main = z80.main
+                z80_1 = case iXIYHLValue of
+                    IXValue int ->
+                        { main | ix = int }
+                    IYValue int ->
+                        { main | iy = int }
+                    HLValue hlvalue ->
+                        { main | hl = hlvalue }
+            in
+                { z80 | main = z80_1, pc = pc, interrupts = z80delta.interrupts }
+
+        PcEnvIXIYHL pc z80Env iXIYHLValue ->
+            let
+                main = z80.main
+                z80_1 = case iXIYHLValue of
+                    IXValue int -> { main | ix = int }
+                    IYValue int -> { main | iy = int }
+                    HLValue hlvalue -> { main | hl = hlvalue }
+            in
+                { z80 | main = z80_1, pc = pc, env = z80Env, interrupts = z80delta.interrupts }
 
         --IXIYMainFlagsCpuTime ix iy mainRegisters flagRegisters cpu_time ->
         --    { z80 | flags = flagRegisters, main = mainRegisters, ix = ix, iy = iy, pc = z80delta.pc, env = z80delta.env |> add_cpu_time_env cpu_time, interrupts = z80delta.interrupts }
