@@ -2427,7 +2427,7 @@ execute_instruction tmp_z80 =
        interrupts = tmp_z80.interrupts
        c = tmp_z80.env |> m1 tmp_z80.pc (or interrupts.ir (and interrupts.r 0x7F))
        old_z80 = { tmp_z80 | env = c.env, interrupts = { interrupts | r = interrupts.r + 1 } }
-       new_pc = old_z80 |> inc_pc
+       new_pc = Bitwise.and (old_z80.pc + 1) 0xFFFF
        z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
     in
       if c.value < 0xC0 then
