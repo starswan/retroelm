@@ -907,7 +907,11 @@ lt40_dict_lite = Dict.fromList
            -- case 0x9B: sbc(E); break;
           (0x9B, (\z80 -> z80 |> set_flag_regs (sbc z80.main.e z80.flags))),
           -- case 0x9F: sbc(A); break;
-          (0x9F, (\z80 -> z80 |> set_flag_regs (sbc z80.flags.a z80.flags)))
+          (0x9F, (\z80 -> z80 |> set_flag_regs (sbc z80.flags.a z80.flags))),
+          (0xA0, execute_0xA0),
+          (0xA1, execute_0xA1),
+          (0xA2, execute_0xA2),
+          (0xA3, execute_0xA3)
     ]
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
@@ -1932,10 +1936,6 @@ execute_0xBF z80 =
 executegt40ltC0: Int -> IXIYHL -> Z80 -> Z80
 executegt40ltC0 c ixiyhl z80 =
     case c of
-       0xA0 -> z80 |> execute_0xA0
-       0xA1 -> z80 |> execute_0xA1
-       0xA2 -> z80 |> execute_0xA2
-       0xA3 -> z80 |> execute_0xA3
        0xA4 -> z80 |> execute_0xA4 ixiyhl
        0xA5 -> z80 |> execute_0xA5 ixiyhl
        0xA6 -> z80 |> execute_0xA6 ixiyhl
