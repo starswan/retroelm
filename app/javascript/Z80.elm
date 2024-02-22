@@ -647,24 +647,12 @@ set_l value ixiyhl z80 =
 
 execute_ltC0: Int -> IXIYHL -> Z80 -> Maybe Z80
 execute_ltC0 c ixiyhl z80 =
-   let
-      maybe_func = lt40_array |> Array.get c
-   in
-      case maybe_func of
-          Nothing -> Nothing
-          Just func ->
-              case func of
-                  Just f -> Just (z80 |> f ixiyhl)
-                  Nothing ->
-                      let
-                         lite_entry = lt40_array_lite |> Array.get c
-                      in
-                         case lite_entry of
-                             Just maybe_f ->
-                                 case maybe_f of
-                                    Just f_without_ixiyhl -> Just (z80 |> f_without_ixiyhl)
-                                    Nothing -> Just (z80 |> executegt40ltC0 c ixiyhl)
-                             Nothing -> Nothing
+   case lt40_array |> Array.get c |> Maybe.withDefault Nothing of
+      Just f -> Just (z80 |> f ixiyhl)
+      Nothing ->
+         case lt40_array_lite |> Array.get c |> Maybe.withDefault Nothing of
+            Just f_without_ixiyhl -> Just (z80 |> f_without_ixiyhl)
+            Nothing -> Just (z80 |> executegt40ltC0 c ixiyhl)
 
 execute_0x01: Z80 -> Z80
 execute_0x01 z80 =
@@ -733,37 +721,23 @@ ex_af z80 =
 execute_0x33: Z80 -> Z80
 execute_0x33 z80 =
    -- case 0x33: SP=(char)(SP+1); time+=2; break;
-   z80 |> inc_sp |> add_cpu_time 2
+   { z80 | sp = Bitwise.and (z80.sp + 1) 0xFFFF } |> add_cpu_time 2
 
 execute_0x3B: Z80 -> Z80
 execute_0x3B z80 =
    -- case 0x3B: SP=(char)(SP-1); time+=2; break;
-   z80 |> dec_sp |> add_cpu_time 2
+   { z80 | sp = Bitwise.and (z80.sp - 1) 0xFFFF } |> add_cpu_time 2
 
 noop: Z80 -> Z80
 noop z80 = z80
 
-lt40_array_lite: Array (Maybe (Z80 -> Z80))
-lt40_array_lite = makeLiteArray
-
 list0255 = List.range 0 255
 
-makeLiteArray: Array (Maybe (Z80 -> Z80))
-makeLiteArray =
-    let
-       y = list0255 |> List.map (\index -> lt40_dict_lite |> Dict.get index)
-    in
-       Array.fromList y
+lt40_array_lite: Array (Maybe (Z80 -> Z80))
+lt40_array_lite = list0255 |> List.map (\index -> lt40_dict_lite |> Dict.get index) |> Array.fromList
 
 lt40_array: Array (Maybe ((IXIYHL -> Z80 -> Z80)))
-lt40_array = makeLt40Array
-
-makeLt40Array: Array (Maybe ((IXIYHL -> Z80 -> Z80)))
-makeLt40Array =
-    let
-       y = list0255 |> List.map (\index -> lt40_dict |> Dict.get index)
-    in
-       Array.fromList y
+lt40_array = list0255 |> List.map (\index -> lt40_dict |> Dict.get index) |> Array.fromList
 
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
@@ -817,12 +791,9 @@ lt40_dict_lite = Dict.fromList
           (0x00, noop),
           -- case 0x40: break;
           (0x40, noop),
-          -- case 0x41: B=C; break;
-          (0x41, (\z80-> z80 |> set_b z80.main.c)),
-          -- case 0x42: B=D; break;
-          (0x42, (\z80 -> z80 |> set_b z80.main.d)),
-          -- case 0x43: B=E; break;
-          (0x43, (\z80 -> z80 |> set_b z80.main.e)),
+          (0x41, execute_0x41),
+          (0x42, execute_0x42),
+          (0x43, execute_0x43),
           -- case 0x47: B=A; break;
           (0x47, (\z80 -> z80 |> set_b z80.flags.a)),
           -- case 0x48: C=B; break;
@@ -910,7 +881,11 @@ lt40_dict_lite = Dict.fromList
            -- case 0x9B: sbc(E); break;
           (0x9B, (\z80 -> z80 |> set_flag_regs (sbc z80.main.e z80.flags))),
           -- case 0x9F: sbc(A); break;
-          (0x9F, (\z80 -> z80 |> set_flag_regs (sbc z80.flags.a z80.flags)))
+          (0x9F, (\z80 -> z80 |> set_flag_regs (sbc z80.flags.a z80.flags))),
+          (0xA0, execute_0xA0),
+          (0xA1, execute_0xA1),
+          (0xA2, execute_0xA2),
+          (0xA3, execute_0xA3)
     ]
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
@@ -1130,6 +1105,21 @@ lt40_dict = Dict.fromList
                                   in
                                      value.z80 |> set_flag_regs (sbc value.value z80.flags)))
     ]
+
+execute_0x41: Z80 -> Z80
+execute_0x41 z80 =
+   -- case 0x41: B=C; break;
+   z80 |> set_b z80.main.c
+
+execute_0x42: Z80 -> Z80
+execute_0x42 z80 =
+   -- case 0x42: B=D; break;
+   z80 |> set_b z80.main.d
+
+execute_0x43: Z80 -> Z80
+execute_0x43 z80 =
+   -- case 0x43: B=E; break;
+   z80 |> set_b z80.main.e
 
 execute_0x44: IXIYHL -> Z80 -> Z80
 execute_0x44 ixiyhl z80 =
@@ -1920,10 +1910,6 @@ execute_0xBF z80 =
 executegt40ltC0: Int -> IXIYHL -> Z80 -> Z80
 executegt40ltC0 c ixiyhl z80 =
     case c of
-       0xA0 -> z80 |> execute_0xA0
-       0xA1 -> z80 |> execute_0xA1
-       0xA2 -> z80 |> execute_0xA2
-       0xA3 -> z80 |> execute_0xA3
        0xA4 -> z80 |> execute_0xA4 ixiyhl
        0xA5 -> z80 |> execute_0xA5 ixiyhl
        0xA6 -> z80 |> execute_0xA6 ixiyhl
@@ -2514,17 +2500,17 @@ execute_instruction tmp_z80 =
        new_pc = Bitwise.and (old_z80.pc + 1) 0xFFFF
        z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
     in
-      if c.value < 0xC0 then
-        case execute_ltC0 c.value HL z80 of
-            Just a_z80 -> a_z80
-            Nothing -> z80 |> executegt40ltC0 c.value HL
-      else
-         case c.value of
-            0xDD -> group_xy IXIY_IX z80
-            0xFD -> group_xy IXIY_IY z80
-            0xCB -> group_cb z80
-            0xED -> group_ed z80
-            _ -> execute_gtc0 c.value HL z80
+       case c.value of
+          0xDD -> group_xy IXIY_IX z80
+          0xFD -> group_xy IXIY_IY z80
+          0xCB -> group_cb z80
+          0xED -> group_ed z80
+          _ -> if c.value < 0xC0 then
+                  case execute_ltC0 c.value HL z80 of
+                      Just a_z80 -> a_z80
+                      Nothing -> z80 |> executegt40ltC0 c.value HL
+               else
+                  execute_gtc0 c.value HL z80
 -- case 0xD4: call((Ff&0x100)==0); break;
 -- case 0xDA: jp((Ff&0x100)!=0); break;
 -- case 0xE0: time++; if((flags()&FP)==0) MP=PC=pop(); break;
@@ -2588,34 +2574,29 @@ group_xy ixiy old_z80 =
       new_pc = z80_1 |> inc_pc
       z80 = { z80_1 | pc = new_pc } |> add_cpu_time 4
    in
-      if c.value < 0xC0 then
-         --case execute_ltC0 c.value ixiy z80 of
-         --    Just a_z80 -> a_z80
-         --    Nothing -> z80 |> executegt40ltC0 c.value ixiy
-
-         let
-            maybe = case ixiy of
-               IXIY_IX -> execute_ltC0 c.value IX z80
-               IXIY_IY -> execute_ltC0 c.value IY z80
-         in
-            case maybe of
-                Just a_z80 -> a_z80
-                Nothing ->
-                   case ixiy of
-                      IXIY_IX -> z80 |> executegt40ltC0 c.value IX
-                      IXIY_IY -> z80 |> executegt40ltC0 c.value IY
-      -- case 0xDD:
-      -- case 0xFD: c0=c; continue;
-      else
-         case c.value of
+       case c.value of
            0xDD -> group_xy IXIY_IX z80
            0xFD -> group_xy IXIY_IY z80
            0xCB -> group_xy_cb ixiy z80
            0xED -> group_ed z80
-           _ ->
-               case ixiy of
-                   IXIY_IX -> execute_gtc0 c.value IX z80
-                   IXIY_IY -> execute_gtc0 c.value IY z80
+           _ ->  if c.value < 0xC0 then
+                    let
+                       maybe = case ixiy of
+                          IXIY_IX -> execute_ltC0 c.value IX z80
+                          IXIY_IY -> execute_ltC0 c.value IY z80
+                    in
+                       case maybe of
+                           Just a_z80 -> a_z80
+                           Nothing ->
+                              case ixiy of
+                                 IXIY_IX -> z80 |> executegt40ltC0 c.value IX
+                                 IXIY_IY -> z80 |> executegt40ltC0 c.value IY
+      -- case 0xDD:
+      -- case 0xFD: c0=c; continue;
+                 else
+                    case ixiy of
+                       IXIY_IX -> execute_gtc0 c.value IX z80
+                       IXIY_IY -> execute_gtc0 c.value IY z80
 --      case c.value of
 -- case 0xED: group_ed(); break;
 -- case 0xC0: time++; if(Fr!=0) MP=PC=pop(); break;
@@ -3072,10 +3053,3 @@ set_flag_regs flags z80 =
 --	}
 --}
 
-inc_sp: Z80 -> Z80
-inc_sp z80 =
-   { z80 | sp = Bitwise.and (z80.sp + 1) 0xFFFF }
-
-dec_sp: Z80 -> Z80
-dec_sp z80 =
-   { z80 | sp = Bitwise.and (z80.sp - 1) 0xFFFF }
