@@ -13,15 +13,7 @@ import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, set_mem, 
 import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (subName)
-
-type alias MainRegisters =
-   {
-      b:   Int,
-      c:   Int,
-      d:   Int,
-      e:   Int,
-      hl:  Int
-   }
+import Z80Types exposing (MainRegisters, Z80, InterruptRegisters, ProgramCounter)
 
 type alias RegisterSet =
    {
@@ -49,29 +41,6 @@ type alias EnvWithRegister =
    {
         register_value: Int,
         env: Z80Env
-   }
-type alias InterruptRegisters =
-   {
-      ir:  Int,
-      r:   Int,
-      --mp:  Int, -- /* MEMPTR, the hidden register emulated according to memptr_eng.txt */
-      iff: Int,
-      iM: Int,
-      halted: Bool
-   }
-type alias Z80 =
-   {
-      env: Z80Env,
-      pc:  Int,
-      sp:  Int,
-      main: MainRegisters,
-      flags: FlagRegisters,
-      alt_main: MainRegisters,
-      alt_flags: FlagRegisters,
-      ix: Int,
-      iy: Int,
-      interrupts: InterruptRegisters,
-      time_limit: Int
    }
 
 add_cpu_time: Int -> Z80 -> Z80
@@ -146,6 +115,10 @@ set_bc v z80 =
         z80_main = z80.main
     in
         { z80 | main = { z80_main | b = shiftRightBy8 v, c = and v 0xFF }}
+
+set_bc_main: Int -> MainRegisters -> MainRegisters
+set_bc_main v z80_main =
+     { z80_main | b = shiftRightBy8 v, c = and v 0xFF }
 --	void de(int v) {E=v&0xFF; D=v>>>8;}
 set_de: Int -> Z80 -> Z80
 set_de v z80 =
@@ -250,10 +223,6 @@ set_iff value z80 =
 exx: Z80 -> Z80
 exx z80 =
    { z80 | main = z80.alt_main, alt_main = z80.main }
-
-ex_af: Z80 -> Z80
-ex_af z80 =
-    { z80 | flags = z80.alt_flags, alt_flags = z80.flags }
 
 --public void push(int v) {
 --	int sp;
@@ -706,6 +675,61 @@ execute_0x01 z80 =
    in
       z80_1 |> set_bc v.value
 
+execute_0x02: Z80 -> Z80
+execute_0x02 z80 =
+  -- case 0x02: MP=(v=B<<8|C)+1&0xFF|A<<8; env.mem(v,A); time+=3; break;
+  let
+     z80_main = z80.main
+     addr = (shiftLeftBy8 z80_main.b) + z80_main.c
+  in
+     { z80 | env = set_mem addr z80.flags.a z80.env } |> add_cpu_time 3
+
+execute_0x03: Z80 -> Z80
+execute_0x03 z80 =
+  -- case 0x03: if(++C==256) {B=B+1&0xFF;C=0;} time+=2; break;
+  let
+      z80_main = z80.main
+      tmp_c = z80_main.c + 1
+      (reg_b, reg_c) = if tmp_c == 256 then
+                          ((and (z80_main.b + 1) 0xFF), 0)
+                       else
+                          (z80_main.b, tmp_c)
+  in
+      { z80 | main = { z80_main | b = reg_b, c = reg_c } } |> add_cpu_time 2
+
+execute_0x04: Z80 -> Z80
+execute_0x04 z80 =
+   -- case 0x04: B=inc(B); break;
+   let
+      new_b = inc z80.main.b z80.flags
+   in
+      z80 |> set_flag_regs new_b.flags |> set_b new_b.value
+
+execute_0x05: Z80 -> Z80
+execute_0x05 z80 =
+   -- case 0x05: B=dec(B); break;
+   let
+      new_b = dec z80.main.b z80.flags
+   in
+      z80 |> set_flag_regs new_b.flags |> set_b new_b.value
+
+execute_0x06: Z80 -> Z80
+execute_0x06 z80 =
+   -- case 0x06: B=imm8(); break;
+   let
+      new_b = imm8 z80
+   in
+      { z80 | env = new_b.env, pc = new_b.pc }|> set_b new_b.value
+
+execute_0x07: Z80 -> Z80
+execute_0x07 z80 =
+   -- case 0x07: rot(A*0x101>>>7); break;
+   { z80 | flags = z80.flags |> rot (Bitwise.shiftRightBy 7 (z80.flags.a * 0x101)) }
+
+ex_af: Z80 -> Z80
+ex_af z80 =
+    { z80 | flags = z80.alt_flags, alt_flags = z80.flags }
+
 execute_0x33: Z80 -> Z80
 execute_0x33 z80 =
    -- case 0x33: SP=(char)(SP+1); time+=2; break;
@@ -828,7 +852,7 @@ lt40_dict_lite = Dict.fromList
           -- case 0x5A: E=D; break;
           (0x5A, (\z80 -> z80 |> set_e z80.main.d)),
           -- case 0x5B: break;
-          (0x5B, (\z80 -> z80)),
+          (0x5B, noop),
           -- case 0x5F: E=A; break;
           (0x5F, (\z80 -> z80 |> set_e z80.flags.a)),
           -- case 0x64: break;
@@ -836,7 +860,7 @@ lt40_dict_lite = Dict.fromList
           -- case 0x6D: break;
           (0x6D, noop),
           -- case 0x76: halt(); break;
-          (0x76, (\z80 ->  z80 |> halt)),
+          (0x76, halt),
           -- case 0x78: A=B; break;
           (0x78, (\z80 -> z80 |> set_a z80.main.b)),
           -- case 0x79: A=C; break;
@@ -1251,19 +1275,6 @@ execute_0x31 z80 =
   in
       { z80 | env = v.env, pc = v.pc, sp = v.value }
 
-execute_0x03: Z80 -> Z80
-execute_0x03 z80 =
-  -- case 0x03: if(++C==256) {B=B+1&0xFF;C=0;} time+=2; break;
-  let
-      z80_main = z80.main
-      tmp_c = z80_main.c + 1
-      (reg_b, reg_c) = if tmp_c == 256 then
-                          ((and (z80_main.b + 1) 0xFF), 0)
-                       else
-                          (z80_main.b, tmp_c)
-  in
-      { z80 | main = { z80_main | b = reg_b, c = reg_c } } |> add_cpu_time 2
-
 execute_0x13: Z80 -> Z80
 execute_0x13 z80 =
   -- case 0x13: if(++E==256) {D=D+1&0xFF;E=0;} time+=2; break;
@@ -1302,15 +1313,6 @@ execute_0x1B z80 =
                           (z80_main.d, tmp_e)
   in
       { z80 | main = { z80_main | d = reg_d, e = reg_e } } |> add_cpu_time 2
-
-execute_0x02: Z80 -> Z80
-execute_0x02 z80 =
-  -- case 0x02: MP=(v=B<<8|C)+1&0xFF|A<<8; env.mem(v,A); time+=3; break;
-  let
-     z80_main = z80.main
-     addr = (shiftLeftBy8 z80_main.b) + z80_main.c
-  in
-     { z80 | env = set_mem addr z80.flags.a z80.env } |> add_cpu_time 3
 
 execute_0x0A: Z80 -> Z80
 execute_0x0A z80 =
@@ -1388,30 +1390,6 @@ execute_0x3A z80 =
      mem_value = v.env |> mem v.value
   in
      { new_z80 | flags = { z80_flags | a = mem_value.value }, env = mem_value.env |> add_cpu_time_env 3 }
-
-execute_0x04: Z80 -> Z80
-execute_0x04 z80 =
-   -- case 0x04: B=inc(B); break;
-   let
-      new_b = inc z80.main.b z80.flags
-   in
-      z80 |> set_flag_regs new_b.flags |> set_b new_b.value
-
-execute_0x05: Z80 -> Z80
-execute_0x05 z80 =
-   -- case 0x05: B=dec(B); break;
-   let
-      new_b = dec z80.main.b z80.flags
-   in
-      z80 |> set_flag_regs new_b.flags |> set_b new_b.value
-
-execute_0x06: Z80 -> Z80
-execute_0x06 z80 =
-   -- case 0x06: B=imm8(); break;
-   let
-      new_b = imm8 z80
-   in
-      { z80 | env = new_b.env, pc = new_b.pc }|> set_b new_b.value
 
 execute_0x0C: Z80 -> Z80
 execute_0x0C z80 =
@@ -1716,11 +1694,6 @@ execute_0x38 z80 =
          v = imm8 z80
       in
          { z80 | env = v.env, pc = v.pc }
-
-execute_0x07: Z80 -> Z80
-execute_0x07 z80 =
-   -- case 0x07: rot(A*0x101>>>7); break;
-   { z80 | flags = z80.flags |> rot (Bitwise.shiftRightBy 7 (z80.flags.a * 0x101)) }
 
 execute_0x0F: Z80 -> Z80
 execute_0x0F z80 =
