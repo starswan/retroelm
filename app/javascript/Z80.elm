@@ -817,12 +817,9 @@ lt40_dict_lite = Dict.fromList
           (0x00, noop),
           -- case 0x40: break;
           (0x40, noop),
-          -- case 0x41: B=C; break;
-          (0x41, (\z80-> z80 |> set_b z80.main.c)),
-          -- case 0x42: B=D; break;
-          (0x42, (\z80 -> z80 |> set_b z80.main.d)),
-          -- case 0x43: B=E; break;
-          (0x43, (\z80 -> z80 |> set_b z80.main.e)),
+          (0x41, execute_0x41),
+          (0x42, execute_0x42),
+          (0x43, execute_0x43),
           -- case 0x47: B=A; break;
           (0x47, (\z80 -> z80 |> set_b z80.flags.a)),
           -- case 0x48: C=B; break;
@@ -1130,6 +1127,21 @@ lt40_dict = Dict.fromList
                                   in
                                      value.z80 |> set_flag_regs (sbc value.value z80.flags)))
     ]
+
+execute_0x41: Z80 -> Z80
+execute_0x41 z80 =
+   -- case 0x41: B=C; break;
+   z80 |> set_b z80.main.c
+
+execute_0x42: Z80 -> Z80
+execute_0x42 z80 =
+   -- case 0x42: B=D; break;
+   z80 |> set_b z80.main.d
+
+execute_0x43: Z80 -> Z80
+execute_0x43 z80 =
+   -- case 0x43: B=E; break;
+   z80 |> set_b z80.main.e
 
 execute_0x44: IXIYHL -> Z80 -> Z80
 execute_0x44 ixiyhl z80 =
