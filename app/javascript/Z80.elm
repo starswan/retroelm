@@ -10,7 +10,7 @@ import Loop
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8, toHexString, toHexString2)
 import Z80Debug exposing (debug_log, debug_todo)
 import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta)
-import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, pop, push, set_mem, set_mem16, z80_in, z80env_constructor)
+import Z80Env exposing (CpuTimeCTime, Z80Env, add_cpu_time_ctime, add_cpu_time_env, m1, m1_env, mem, mem16, mem16_env, out, pop, push, set_mem, set_mem16, z80_in, z80env_constructor)
 import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (subName)
@@ -32,6 +32,24 @@ type alias IntWithZ80 =
 --        value: Int,
 --        env: Z80Env
 --   }
+type alias CpuTimeWithSpAndValue =
+    {
+        time: CpuTimeCTime,
+        sp: Int,
+        value: Int
+    }
+type alias CpuTimeWithPcAndValue =
+    {
+        time: CpuTimeCTime,
+        pc: Int,
+        value: Int
+    }
+type alias EnvWithPCAndValue =
+   {
+        env: Z80Env,
+        pc: Int,
+        value: Int
+   }
 type alias EnvWithRegister =
    {
         register_value: Int,
@@ -228,6 +246,38 @@ exx z80 =
       { z80 | main = { main | b = alt.b, c = alt.c, d = alt.d, e = alt.e, hl = alt.hl },
               alt_main = { alt | b = main.b, c = main.c, d = main.d, e = main.e, hl = main.hl } }
 
+--public void push(int v) {
+--	int sp;
+--	time++;
+--	env.mem((char)((sp=SP)-1), v>>>8);
+--	time += 3;
+--	env.mem(SP = (char)(sp-2), v&0xFF);
+--	time += 3;
+--}
+push: Int -> Z80 -> EnvWithStackPointer
+push v z80 =
+   let
+      --a = debug_log "push" ((v |> toHexString) ++ " onto " ++ (z80.sp |> toHexString)) Nothing
+      sp_minus_1 = Bitwise.and (z80.sp - 1) 0xFFFF
+      new_sp = Bitwise.and (z80.sp - 2) 0xFFFF
+      env_2 = z80.env
+             |> add_cpu_time_env 1
+             |> set_mem sp_minus_1 (shiftRightBy8 v)
+             |> add_cpu_time_env 3
+             |> set_mem new_sp (and v 0xFF)
+             |> add_cpu_time_env 3
+   in
+      EnvWithStackPointer env_2 new_sp
+
+pop: Z80 -> CpuTimeWithSpAndValue
+pop z80 =
+   let
+      old_env = z80.env
+      v = old_env |> mem16 z80.sp
+      time = v.time |> add_cpu_time_ctime 6
+   in
+      CpuTimeWithSpAndValue time (z80.sp + 2) v.value
+
 f_szh0n0p: Int -> Z80 -> Z80
 f_szh0n0p r z80 =
    let
@@ -305,6 +355,42 @@ getd xy z80 =
    in
       IntWithPcAndEnv (char (xy + byte d.value)) (char (z80.pc + 1)) (d.env |> add_cpu_time_env 8)
 --
+--	private int imm8()
+--	{
+--		int v = env.mem(PC);
+--		PC = (char)(PC+1);
+--		time += 3;
+--		return v;
+--	}
+imm8: Z80 -> EnvWithPCAndValue
+imm8 z80 =
+    let
+        v = mem z80.pc z80.env
+        new_pc = Bitwise.and (z80.pc + 1) 0xFFFF
+        env_1 = v.env |> add_cpu_time_env 3
+    in
+        EnvWithPCAndValue env_1 new_pc v.value
+
+-- would need the side-effect of mem call as well
+--imm8_discard: Z80 -> Z80
+--imm8_discard z80 =
+--    z80 |> inc_pc |> add_cpu_time 3
+--	private int imm16()
+--	{
+--		int v = env.mem16(PC);
+--		PC = (char)(PC+2);
+--		time += 6;
+--		return v;
+--	}
+imm16: Z80 -> CpuTimeWithPcAndValue
+imm16 z80 =
+    let
+        v = mem16 z80.pc z80.env
+        pc = Bitwise.and (z80.pc + 2) 0xFFFF
+        time = v.time |> add_cpu_time_ctime 6
+    in
+        CpuTimeWithPcAndValue time pc v.value
+--
 --
 --	private void rrd()
 --	{
@@ -358,7 +444,8 @@ jp: Bool -> Z80 -> Z80
 jp y z80 =
    let
       a = imm16 z80
-      z80_1 = { z80 | pc = a.pc, env = a.env }
+      env = z80.env
+      z80_1 = { z80 | pc = a.pc, env = { env | time = a.time} }
    in
       if y then
          { z80_1 | pc = a.value }
@@ -390,7 +477,8 @@ call: Bool -> Z80 -> Z80
 call y z80 =
    let
       a = imm16 z80
-      z80_2 = { z80 | pc = a.pc, env = a.env }
+      env = z80.env
+      z80_2 = { z80 | pc = a.pc, env = { env | time = a.time}  }
    in
      if y then
       let
@@ -2675,6 +2763,7 @@ execute_0xC0 z80 =
       if z80_1.flags.fr /= 0 then
          let
             result = z80_1.env |> pop
+            env = z80_1.env
             --x = debug_log "ret nz" (result.value |> subName) Nothing
             z80_2 = { z80_1 | env = result.env }
          in
@@ -2701,8 +2790,9 @@ execute_0xC8 z80 =
       if z80_1.flags.fr == 0 then
            let
               popped = z80_1.env |> pop
+              env = z80_1.env
            in
-              { z80_1 | env = popped.env, pc = popped.value }
+              { z80_1 | env = { env | time = popped.time }, pc = popped.value }
       else
            z80_1
 
@@ -2725,9 +2815,10 @@ execute_0xD0 z80 =
        if (and z80.flags.ff 0x100) == 0 then
           let
              popped = z80_1.env |> pop
+             env = z80_1.env
              --x = debug_log "ret nc" (popped.value |> subName) Nothing
           in
-             { z80_1 | env = popped.env, pc = popped.value }
+             { z80_1 | env = { env | time = popped.time }, pc = popped.value }
        else
           z80_1
 
@@ -2741,7 +2832,8 @@ execute_0xC3 z80 =
    -- case 0xC3: MP=PC=imm16(); break;
    let
       v = imm16 z80
-      z80_1 = { z80 | pc = v.pc, env = v.env }
+      env = z80.env
+      z80_1 = { z80 | pc = v.pc, env = { env | time = v.time}}
       --y = debug_log "jp" (v.value |> subName) Nothing
    in
       z80_1 |> set_pc v.value
@@ -2794,7 +2886,8 @@ execute_0xCD z80 =
    -- case 0xCD: v=imm16(); push(PC); MP=PC=v; break;
    let
       v = z80 |> imm16
-      z80_1 = { z80 | env = v.env }
+      env = z80.env
+      z80_1 = { z80 | env = { env | time = v.time} }
       --d = debug_log "call" ("from " ++ (v.z80.pc |> toHexString) ++ " to " ++ (v.value |> subName)) Nothing
       pushed = z80_1.env |> push v.pc
    in
@@ -2836,9 +2929,10 @@ execute_0xC9 z80 =
     -- case 0xC9: MP=PC=pop(); break;
    let
       a = z80.env |> pop
+      env = z80.env
       --b = debug_log "ret" (a.value |> subName) Nothing
    in
-      { z80 | env = a.env, pc = a.value }
+      { z80 | env = { env | time = a.time }, pc = a.value }
 
 execute_0xF5: Z80 -> Z80
 execute_0xF5 z80 =
@@ -2879,7 +2973,8 @@ execute_0xC1 z80 =
    -- case 0xC1: v=pop(); B=v>>>8; C=v&0xFF; break;
    let
       v = z80.env |> pop
-      z80_1 = { z80 | env = v.env }
+      env = z80.env
+      z80_1 = { z80 | env = { env | time = v.time } }
       --x = debug_log "pop_bc" (v.value |> toHexString) Nothing
    in
       z80_1 |> set_bc v.value
@@ -2889,7 +2984,8 @@ execute_0xE3 z80 =
    -- case 0xE3: v=pop(); push(HL); MP=HL=v; time+=2; break;
    let
       v = z80.env |> pop
-      z80_1 = { z80 | env = v.env }
+      env = z80.env
+      z80_1 = { z80 | env = { env | time = v.time } }
       pushed = z80_1.env |> push z80_1.main.hl
    in
       { z80_1 | env = pushed } |> set_hl v.value |> add_cpu_time 2
@@ -2899,7 +2995,8 @@ execute_0xF1 z80 =
     -- case 0xF1: af(pop()); break;
    let
       v = z80.env |> pop
-      z80_1 = { z80 | env = v.env }
+      env = z80.env
+      z80_1 = { z80 | env = { env | time = v.time } }
    in
       z80_1 |> set_af v.value
 
@@ -2920,9 +3017,10 @@ execute_0xD8 z80 =
       z80_2 = if and z80_1.flags.ff 0x100 /= 0 then
                  let
                      v = z80_1.env |> pop
+                     env = z80_1.env
                  in
                     --debug_log "ret c" (v.value |> subName) ret
-                    { z80_1 | env = v.env, pc = v.value }
+                    { z80_1 | env = { env | time = v.time }, pc = v.value }
               else
                  z80_1
    in
@@ -2961,7 +3059,8 @@ execute_0xD1 z80 =
    -- case 0xD1: v=pop(); D=v>>>8; E=v&0xFF; break;
    let
       v = z80.env |> pop
-      z80_1 = { z80 | env = v.env }
+      env = z80.env
+      z80_1 = { z80 | env = { env | time = v.time }}
    in
       z80_1 |> set_de v.value
 
@@ -2985,8 +3084,9 @@ execute_0xF8 z80 =
        z80_2 = if (and z80_1.flags.ff c_FS) /= 0 then
                    let
                        popped = z80_1.env |> pop
+                       env = z80_1.env
                    in
-                       { z80_1 | env = popped.env, pc = popped.value }
+                       { z80_1 | env = { env | time = popped.time }, pc = popped.value }
                else
                    z80_1
     in
@@ -3077,8 +3177,10 @@ execute_delta tmp_z80 =
       --switch(c) {
     let
        interrupts = tmp_z80.interrupts
-       c = tmp_z80.env |> m1 tmp_z80.pc (or interrupts.ir (and interrupts.r 0x7F))
-       old_z80 = { tmp_z80 | env = c.env, interrupts = { interrupts | r = interrupts.r + 1 } }
+       env = tmp_z80.env
+       c = env |> m1 tmp_z80.pc (or interrupts.ir (and interrupts.r 0x7F))
+       new_env = { env | time = c.time }
+       old_z80 = { tmp_z80 | env = new_env, interrupts = { interrupts | r = interrupts.r + 1 } }
        new_pc = Bitwise.and (old_z80.pc + 1) 0xFFFF
        z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
     in
@@ -3148,7 +3250,7 @@ execute z80 =
 group_xy: IXIY -> Z80 -> Z80Delta
 group_xy ixiy old_z80 =
    let
-      c = m1 old_z80.pc (or old_z80.interrupts.ir (and old_z80.interrupts.r 0x7F)) old_z80.env
+      c = m1_env old_z80.pc (or old_z80.interrupts.ir (and old_z80.interrupts.r 0x7F)) old_z80.env
       intr = old_z80.interrupts
       z80_1 = { old_z80 | env = c.env, interrupts = { intr | r = intr.r + 1 } }
       new_pc = z80_1 |> inc_pc
@@ -3243,7 +3345,7 @@ group_ed: Z80 -> Z80
 group_ed z80_0 =
    let
       ints = z80_0.interrupts
-      c = m1 z80_0.pc (or z80_0.interrupts.ir (and z80_0.interrupts.r 0x7F)) z80.env
+      c = m1_env z80_0.pc (or z80_0.interrupts.ir (and z80_0.interrupts.r 0x7F)) z80.env
       new_r = z80_0.interrupts.r + 1
       old_z80 = { z80_0 | interrupts = { ints | r = new_r } }
       new_pc = old_z80 |> inc_pc
@@ -3272,14 +3374,16 @@ group_ed z80_0 =
       0x43 -> let
                  v = imm16 z80
                  z80_1 = { z80 | pc = v.pc }
-                 env = v.env |> set_mem16 v.value (or (shiftLeftBy8 z80.main.b) z80.main.c)
+                 env_1 = z80_1.env
+                 env = { env_1 | time = v.time} |> set_mem16 v.value (or (shiftLeftBy8 z80.main.b) z80.main.c)
               in
                  { z80_1 | env = env } |> add_cpu_time 6
       -- case 0x53: MP=(v=imm16())+1; env.mem16(v,D<<8|E); time+=6; break;
       0x53 -> let
                  v = imm16 z80
                  z80_1 = { z80 | pc = v.pc }
-                 env = v.env |> set_mem16 v.value (or (shiftLeftBy8 z80.main.d) z80.main.e)
+                 env_1 = z80_1.env
+                 env = { env_1 | time = v.time} |> set_mem16 v.value (or (shiftLeftBy8 z80.main.d) z80.main.e)
               in
                  { z80_1 | env = env } |> add_cpu_time 6
       -- case 0xB8: ldir(-1,true); break;
@@ -3291,14 +3395,16 @@ group_ed z80_0 =
       0x7B -> let
                  v = z80 |> imm16
                  z80_1 = { z80 | pc = v.pc }
-                 sp = v.env |> mem16 v.value
+                 env  = z80_1.env
+                 sp = { env | time = v.time} |> mem16_env v.value
               in
                  { z80_1 | env = sp.env } |> add_cpu_time 6
       -- case 0x4B: MP=(v=imm16())+1; v=env.mem16(v); B=v>>>8; C=v&0xFF; time+=6; break;
       0x4B -> let
                  v1 = z80 |> imm16
                  z80_1 = { z80 | pc = v1.pc }
-                 v2 = v1.env |> mem16 v1.value
+                 env = z80_1.env
+                 v2 = { env | time = v1.time} |> mem16_env v1.value
                  --x = debug_log "LD BC,(nnnn)" (v2.value |> toHexString) Nothing
               in
                  { z80_1 | env = v2.env } |> set_bc v2.value |> add_cpu_time 6
@@ -3306,14 +3412,16 @@ group_ed z80_0 =
       0x73 -> let
                  v = z80 |> imm16
                  z80_1 = { z80 | pc = v.pc }
-                 env = v.env |> set_mem16 v.value z80_1.env.sp
+                 env_1 = z80_1.env
+                 env = { env_1 | time = v.time} |> set_mem16 v.value z80_1.env.sp
               in
                  { z80 | env = env } |> add_cpu_time 6
       -- case 0x5B: MP=(v=imm16())+1; v=env.mem16(v); D=v>>>8; E=v&0xFF; time+=6; break;
       0x5B -> let
                  v1 = z80 |> imm16
                  z80_1 = { z80 | pc = v1.pc }
-                 v2 = v1.env |> mem16 v1.value
+                 env = z80_1.env
+                 v2 = { env | time = v1.time} |> mem16_env v1.value
               in
                  { z80_1 | env = v2.env } |> set_de v2.value |> add_cpu_time 6
       -- case 0x42: sbc_hl(B<<8|C); break;
@@ -3421,7 +3529,7 @@ group_cb tmp_z80 =
    let
       new_r = and (tmp_z80.interrupts.r + 1) 0x7F
       ir_or_r = or tmp_z80.interrupts.ir new_r
-      c = m1 tmp_z80.pc (or tmp_z80.interrupts.ir ir_or_r) tmp_z80.env
+      c = m1_env tmp_z80.pc (or tmp_z80.interrupts.ir ir_or_r) tmp_z80.env
       old_z80 = { tmp_z80 | env = c.env }
       new_pc = old_z80 |> inc_pc
       z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
@@ -3586,7 +3694,7 @@ interrupt bus z80 =
                 3 -> let
                         new_ir = Bitwise.and ints.ir 0xFF00
                         addr = Bitwise.or new_ir bus
-                        env_and_pc = z80.env |> mem16 addr
+                        env_and_pc = z80.env |> mem16_env addr
                       in
                         { new_z80 | env = env_and_pc.env, pc = env_and_pc.value } |> add_cpu_time 6
                 _ -> new_z80
