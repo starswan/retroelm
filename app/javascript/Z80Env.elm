@@ -126,25 +126,25 @@ m1_env tmp_addr ir z80env =
 --	return rom[addr+0x4000];
 --}
 mem: Int -> Z80Env -> Z80EnvWithValue
-mem base_addr z80env_ctime =
+mem base_addr z80env =
     let
-       old_time = z80env_ctime.time
+       old_time = z80env.time
        n = old_time.cpu_time - old_time.ctime
-       z80env = if n > 0 then
-                   z80env_ctime |> cont_env n
+       time_0 = if n > 0 then
+                   old_time |> cont n
                 else
-                   z80env_ctime
+                   old_time
        addr = base_addr - 0x4000
        (new_time, ctime, value) = if addr >= 0 then
                                     if addr < 0x4000 then
                                        let
-                                          new_z80_time = z80env.time |> cont1 0
+                                          new_z80_time = time_0 |> cont1 0
                                        in
                                           (new_z80_time, new_z80_time.cpu_time + 3, z80env.ram |> getRamValue addr)
                                     else
-                                       (z80env.time, c_NOCONT, z80env.ram |> getRamValue addr)
+                                       (time_0, c_NOCONT, z80env.ram |> getRamValue addr)
                                  else
-                                    (z80env.time, c_NOCONT, z80env.rom48k |> getROMValue base_addr)
+                                    (time_0, c_NOCONT, z80env.rom48k |> getROMValue base_addr)
     in
         Z80EnvWithValue { z80env | time = { new_time | ctime = ctime } } value
 --	public final int mem16(int addr) {
