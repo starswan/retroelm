@@ -24,12 +24,6 @@ type alias IntWithZ80 =
         value: Int,
         z80: Z80
     }
---type alias EnvWithRegisterAndValue =
---   {
---        register_value: Int,
---        value: Int,
---        env: Z80Env
---   }
 type alias CpuTimeWithSpAndValue =
     {
         time: CpuTimeCTime,
