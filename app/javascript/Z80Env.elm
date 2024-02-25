@@ -125,7 +125,7 @@ m1_env tmp_addr ir z80env =
 --	}
 --	return rom[addr+0x4000];
 --}
-mem: Int -> Z80Env -> Z80EnvWithValue
+mem: Int -> Z80Env -> CpuTimeWithValue
 mem base_addr z80env =
     let
        old_time = z80env.time
@@ -146,7 +146,7 @@ mem base_addr z80env =
                                  else
                                     (time_0, c_NOCONT, z80env.rom48k |> getROMValue base_addr)
     in
-        Z80EnvWithValue { z80env | time = { new_time | ctime = ctime } } value
+        CpuTimeWithValue { new_time | ctime = ctime } value
 --	public final int mem16(int addr) {
 --		int n = cpu.time - ctime;
 --		if(n>0) cont(n);
