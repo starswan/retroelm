@@ -251,11 +251,13 @@ set_ram addr value z80env =
 set_mem: Int -> Int -> Z80Env -> Z80Env
 set_mem z80_addr value old_z80env =
    let
-      n = old_z80env.time.cpu_time - old_z80env.time.ctime
+      time_0 = old_z80env.time
+      n = time_0.cpu_time - time_0.ctime
       z80env = if n > 0 then
                 old_z80env |> cont n
              else
-                { old_z80env | time = CpuTimeCTime old_z80env.time.cpu_time c_NOCONT }
+                { old_z80env | time = { time_0 | ctime = c_NOCONT } }
+      time_1 = z80env.time
       addr = z80_addr - 0x4000
       (new_env, ctime) = if addr < 0x4000 then
                             if addr < 0 then
@@ -269,11 +271,11 @@ set_mem z80_addr value old_z80env =
                                   if ram_value == value then
                                      (z80env_1 , new_time)
                                   else
-                                     (z80env_1 |> set_ram addr value, new_time)
+                                     ({z80env | ram = z80env.ram |> Z80Ram.setRamValue addr value}, new_time)
                          else
-                            (z80env |> set_ram addr value, c_NOCONT)
+                            ({z80env | ram = z80env.ram |> Z80Ram.setRamValue addr value}, c_NOCONT)
    in
-      { new_env | time = CpuTimeCTime z80env.time.cpu_time ctime }
+      { new_env | time = { time_1 | ctime = ctime } }
 --public final void mem16(int addr, int v) {
 --
 --	int addr1 = addr-0x3FFF;
@@ -305,14 +307,18 @@ set_mem16 addr value z80env =
                                 cont n z80env
                              else
                                 z80env
-                       env_1 = { env | time = CpuTimeCTime z80env.time.cpu_time c_NOCONT }
+                       time_0 = z80env.time
+                       env_1 = { env | time = { time_0 | ctime = c_NOCONT } }
                        nenv = if addr1 < 0 then
                                  env_1
                               else
                                  if addr1 >= 0x4000 then
-                                    env_1
-                                    |> set_ram (addr - 1) (Bitwise.and value 0xFF)
-                                    |> set_ram addr (shiftRightBy8 value)
+                                    let
+                                        ram = z80env.ram
+                                              |> Z80Ram.setRamValue (addr - 1) (Bitwise.and value 0xFF)
+                                              |> Z80Ram.setRamValue addr (shiftRightBy8 value)
+                                    in
+                                       { env_1 | ram = ram }
                                  else
                                     env_1
                                     |> set_mem addr (Bitwise.and value 0xFF)

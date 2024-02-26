@@ -234,14 +234,15 @@ exx z80 =
 --}
 push: Int -> Z80 -> EnvWithRegister
 push v z80 =
-   let
-      --a = debug_log "push" ((v |> toHexString) ++ " onto " ++ (z80.sp |> toHexString)) Nothing
-      sp_minus_1 = Bitwise.and (z80.sp - 1) 0xFFFF
-      env = z80.env |> add_cpu_time_env 1 |> set_mem sp_minus_1 (shiftRightBy8 v) |> add_cpu_time_env 3
-      new_sp = Bitwise.and (z80.sp - 2) 0xFFFF
-      env_2 = env |> set_mem new_sp (and v 0xFF) |> add_cpu_time_env 3
-   in
-      EnvWithRegister new_sp env_2
+    let
+        (sp_minus_1, new_sp) = if z80.sp > 1 then
+                                  (z80.sp - 1, z80.sp - 2)
+                               else
+                                  ((Bitwise.and (z80.sp - 1) 0xFFFF), (Bitwise.and (z80.sp - 2) 0xFFFF))
+        env = z80.env |> add_cpu_time_env 1 |> set_mem sp_minus_1 (shiftRightBy8 v) |> add_cpu_time_env 3
+        env_2 = env |> set_mem new_sp (and v 0xFF) |> add_cpu_time_env 3
+    in
+        EnvWithRegister new_sp env_2
 
 pop: Z80 -> EnvWithRegisterAndValue
 pop z80 =
