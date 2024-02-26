@@ -241,8 +241,10 @@ push: Int -> Z80 -> EnvWithStackPointer
 push v z80 =
    let
       --a = debug_log "push" ((v |> toHexString) ++ " onto " ++ (z80.sp |> toHexString)) Nothing
-      sp_minus_1 = Bitwise.and (z80.sp - 1) 0xFFFF
-      new_sp = Bitwise.and (z80.sp - 2) 0xFFFF
+      (sp_minus_1, new_sp) = if z80.sp > 1 then
+                                  (z80.sp - 1, z80.sp - 2)
+                              else
+                                  ((Bitwise.and (z80.sp - 1) 0xFFFF), (Bitwise.and (z80.sp - 2) 0xFFFF))
       env_2 = z80.env
              |> add_cpu_time_env 1
              |> set_mem sp_minus_1 (shiftRightBy8 v)
