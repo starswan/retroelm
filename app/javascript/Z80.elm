@@ -37,6 +37,11 @@ type alias EnvWithPCAndValue =
         pc: Int,
         value: Int
    }
+type alias EnvWithSP =
+   {
+        env: Z80Env,
+        sp: Int
+   }
 type alias EnvWithRegister =
    {
         register_value: Int,
@@ -232,7 +237,7 @@ exx z80 =
 --	env.mem(SP = (char)(sp-2), v&0xFF);
 --	time += 3;
 --}
-push: Int -> Z80 -> EnvWithRegister
+push: Int -> EnvWithSP -> EnvWithSP
 push v z80 =
    let
       --a = debug_log "push" ((v |> toHexString) ++ " onto " ++ (z80.sp |> toHexString)) Nothing
@@ -241,7 +246,7 @@ push v z80 =
       new_sp = Bitwise.and (z80.sp - 2) 0xFFFF
       env_2 = env |> set_mem new_sp (and v 0xFF) |> add_cpu_time_env 3
    in
-      EnvWithRegister new_sp env_2
+      EnvWithSP env_2 new_sp
 
 pop: Z80 -> EnvWithRegisterAndValue
 pop z80 =
@@ -454,13 +459,11 @@ call y z80 =
      if y then
       let
          --b = debug_log "call" (a.value |> subName) Nothing
-         --z80_1 = z80_2 |> push z80_2.pc |> set_pc a.value
-         pushed = z80_2 |> push z80_2.pc
-         z80_1 = { z80_2 | sp = pushed.register_value, env = pushed.env, pc = a.value }
+         pushed = EnvWithSP a.env z80.sp |> push z80_2.pc
       in
-         z80_1
+         { z80_2 | sp = pushed.sp, env = pushed.env, pc = a.value }
      else
-       z80_2
+        z80_2
 --
 --	private void halt()
 --	{
@@ -2202,11 +2205,11 @@ execute_0xCD z80 =
    -- case 0xCD: v=imm16(); push(PC); MP=PC=v; break;
    let
       v = z80 |> imm16
-      z80_1 = { z80 | env = v.env }
+      --z80_1 = { z80 | env = v.env }
       --d = debug_log "call" ("from " ++ (v.z80.pc |> toHexString) ++ " to " ++ (v.value |> subName)) Nothing
-      pushed = z80_1 |> push v.pc
+      pushed = EnvWithSP v.env z80.sp |> push v.pc
    in
-      { z80_1 | env = pushed.env, sp = pushed.register_value, pc = v.value }
+      { z80 | env = pushed.env, sp = pushed.sp, pc = v.value }
 
 execute_0xC5: Z80 -> Z80
 execute_0xC5 z80 =
@@ -2214,9 +2217,9 @@ execute_0xC5 z80 =
     --z80 |> push (z80 |> get_bc)
     let
         bc =  (z80 |> get_bc)
-        pushed = z80 |> push bc
+        pushed = EnvWithSP z80.env z80.sp |> push bc
     in
-        { z80 | env = pushed.env, sp = pushed.register_value }
+        { z80 | env = pushed.env, sp = pushed.sp }
 
 execute_0xE6: Z80 -> Z80
 execute_0xE6 z80 =
@@ -2252,17 +2255,17 @@ execute_0xF5 z80 =
    -- case 0xF5: push(A<<8|flags()); break;
    let
       a = z80 |> get_af
-      pushed = z80 |> push a
+      pushed = EnvWithSP z80.env z80.sp |> push a
    in
-      { z80 | env = pushed.env, sp = pushed.register_value }
+      { z80 | env = pushed.env, sp = pushed.sp }
 
 execute_0xC7CFD7DFE7EFF7FF: Int -> Z80 -> Z80
 execute_0xC7CFD7DFE7EFF7FF c z80 =
     --z80 |> push z80.pc |> set_pc (c - 199)
     let
-        pushed  = z80 |> push z80.pc
+        pushed  = EnvWithSP z80.env z80.sp |> push z80.pc
     in
-        { z80 | env = pushed.env, sp = pushed.register_value, pc = (c - 199) }
+        { z80 | env = pushed.env, sp = pushed.sp, pc = (c - 199) }
 
 execute_0xE1: Z80 -> Z80
 execute_0xE1 z80 =
@@ -2277,9 +2280,9 @@ execute_0xE5: Z80 -> Z80
 execute_0xE5 z80 =
    -- case 0xE5: push(HL); break;
    let
-       pushed = z80 |> push z80.main.hl
+       pushed = EnvWithSP z80.env z80.sp |> push z80.main.hl
    in
-      { z80 | sp = pushed.register_value, env = pushed.env }
+      { z80 | sp = pushed.sp, env = pushed.env }
 
 execute_0xC1: Z80 -> Z80
 execute_0xC1 z80 =
@@ -2296,10 +2299,10 @@ execute_0xE3 z80 =
    -- case 0xE3: v=pop(); push(HL); MP=HL=v; time+=2; break;
    let
       v = z80 |> pop
-      z80_1 = { z80 | sp = v.register_value, env = v.env }
-      pushed = z80_1 |> push z80_1.main.hl
+      --z80_1 = { z80 | sp = v.register_value, env = v.env }
+      pushed = EnvWithSP v.env v.register_value |> push z80.main.hl
    in
-      { z80_1 | env = pushed.env, sp = pushed.register_value } |> set_hl v.value |> add_cpu_time 2
+      { z80 | env = pushed.env, sp = pushed.sp } |> set_hl v.value |> add_cpu_time 2
 
 execute_0xF1: Z80 -> Z80
 execute_0xF1 z80 =
@@ -2341,9 +2344,9 @@ execute_0xD5 z80 =
    --z80 |> push (z80 |> get_de)
    let
       de = z80 |> get_de
-      pushed = z80 |> push de
+      pushed = EnvWithSP z80.env z80.sp |> push de
    in
-      { z80 | env = pushed.env, sp = pushed.register_value }
+      { z80 | env = pushed.env, sp = pushed.sp }
 
 execute_0xE9: IXIYHL -> Z80 -> Z80
 execute_0xE9 ixiyhl z80 =
@@ -3006,9 +3009,9 @@ interrupt bus z80 =
         let
             --z81 = debug_log "interrupt" "keyboard scan" z80
             new_ints = { ints | iff = 0, halted = False }
-            z80_1 = { z80 | interrupts = new_ints }
-            pushed = z80_1 |> push z80_1.pc
-            new_z80 = { z80_1 | sp = pushed.register_value, env = pushed.env } |> add_cpu_time 6
+            --z80_1 = { z80 | interrupts = new_ints }
+            pushed = EnvWithSP z80.env z80.sp |> push z80.pc
+            new_z80 = { z80 | interrupts = new_ints, sp = pushed.sp, env = pushed.env } |> add_cpu_time 6
         in
             case ints.iM of
                 0 -> new_z80 |> im0 bus
