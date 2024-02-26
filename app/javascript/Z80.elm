@@ -363,10 +363,6 @@ imm8 z80 =
     in
         EnvWithPCAndValue env_1 new_pc v.value
 
--- would need the side-effect of mem call as well
---imm8_discard: Z80 -> Z80
---imm8_discard z80 =
---    z80 |> inc_pc |> add_cpu_time 3
 --	private int imm16()
 --	{
 --		int v = env.mem16(PC);
@@ -2628,9 +2624,10 @@ group_xy ixiy old_z80 =
       --       old_z80.ix
       --     else
       --       old_z80.iy
-      c = m1_env old_z80.pc (or old_z80.interrupts.ir (and old_z80.interrupts.r 0x7F)) old_z80.env
+      env = old_z80.env
+      c = env |> m1 old_z80.pc (or old_z80.interrupts.ir (and old_z80.interrupts.r 0x7F))
       intr = old_z80.interrupts
-      z80_1 = { old_z80 | env = c.env, interrupts = { intr | r = intr.r + 1 } }
+      z80_1 = { old_z80 | env = { env | time = c.time }, interrupts = { intr | r = intr.r + 1 } }
       new_pc = z80_1 |> inc_pc
       z80 = { z80_1 | pc = new_pc } |> add_cpu_time 4
 
