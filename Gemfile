@@ -45,8 +45,9 @@ group :development, :test do
   gem "faraday-follow_redirects"
   # gem "faraday_middleware"
 
-  gem "selenium-webdriver", "<= 4.17"
-  gem 'webdrivers'
+  # 4.11 insists that /usr/bin/firefox is a binary, when it isn't
+  # on Ubuntu 22.04 due to it being a snap which is very annoying
+  gem "selenium-webdriver", "< 4.11"
 
   gem "guard-bundler"
   gem "guard-rspec"
