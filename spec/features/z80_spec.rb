@@ -10,19 +10,19 @@ RSpec.describe "Spectrum Emulator" do
   let(:expected_hz) { (ENV['HZ'] || "11.01").to_f }
 
   # disable for now, as we don't want to run the test twice really
-  xcontext "with match day" do
-    let(:z80_game) { build(:game, :match_day) }
-
-    it "loads the emulator", :js do
-      visit '/'
-      click_on z80_game.name
-
-      expect(page).to have_content 'Refresh Interval'
-      speed = measure_speed_in_hz
-      p "Speed #{speed} Hz"
-      expect(speed).to be >= expected_hz
-    end
-  end
+  # xcontext "with match day" do
+  #   let(:z80_game) { build(:game, :match_day) }
+  #
+  #   it "loads the emulator", :js do
+  #     visit '/'
+  #     click_on z80_game.name
+  #
+  #     expect(page).to have_content 'Refresh Interval'
+  #     speed = measure_speed_in_hz
+  #     p "Speed #{speed} Hz"
+  #     expect(speed).to be >= expected_hz
+  #   end
+  # end
 
   context "with z80_full_test" do
     let(:z80_game) { build(:game, :z80_test_full) }
