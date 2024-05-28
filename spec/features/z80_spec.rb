@@ -7,7 +7,7 @@ RSpec.describe "Spectrum Emulator" do
     z80_game.save!
   end
 
-  let(:expected_hz) { (ENV['HZ'] || "11.01").to_f }
+  let(:expected_hz) { (ENV['HZ'] || "11.21").to_f }
 
   # disable for now, as we don't want to run the test twice really
   # xcontext "with match day" do
