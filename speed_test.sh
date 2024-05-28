@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+rake yarn:install
 count=$1
 timings=()
 for i in $(seq $count)
