@@ -164,7 +164,7 @@ rawToLines screen =
    lines screen |> List.foldr toDrawn []
 
 -- Convert row index into start row data location and (colour-ish) attribute memory location
-calcOffsets: Int -> (Int, Int, Int)
+calcOffsets: Int -> (Int, Int)
 calcOffsets start =
    let
       bank = start // 64
@@ -176,32 +176,30 @@ calcOffsets start =
       row_offset = row_index * 32
       attr_offset = 0x1800 + (attr_index * 32)
    in
-      (start, row_offset, attr_offset)
+      (row_offset, attr_offset)
 
 range0192 = List.range 0 191
 
-screenOffsets = range0192 |> List.map (\line_num -> calcOffsets line_num) |> fromList
+screenOffsets = range0192 |> List.map (\line_num -> calcOffsets line_num)
 
-mapScreen: Int -> Z80Screen -> Int -> RawScreenData
-mapScreen line_num z80env_ram index  =
+mapScreen: (Int, Int) -> Z80Memory -> Int -> RawScreenData
+mapScreen (row_offset, attr_offset) z80env_ram index  =
    let
-      --(row_offset, attr_offset) = calcOffsets line_num
-      (thing, row_offset, attr_offset) = screenOffsets |> Array.get line_num |> Maybe.withDefault (0, 0, 0)
-      data = getValue (row_offset + index) z80env_ram.screen
-      colour = getValue (attr_offset + index) z80env_ram.screen
+      data = getValue (row_offset + index) z80env_ram
+      colour = getValue (attr_offset + index) z80env_ram
    in
       { colour=colour,data=data }
 
 range031 = List.range 0 31
 
-singleScreenLine: Int -> Z80Screen -> List RawScreenData
+singleScreenLine: (Int, Int) -> Z80Memory -> List RawScreenData
 singleScreenLine line_num z80env =
     List.map (mapScreen line_num z80env) range031
 
 screenLines: Z80Screen -> List (List ScreenLine)
 screenLines z80env =
     let
-        rawlines = range0192 |> List.map (\line_num -> singleScreenLine line_num z80env)
+        rawlines = screenOffsets |> List.map (\line_num -> singleScreenLine line_num z80env.screen)
     in
         List.map rawToLines rawlines
 
