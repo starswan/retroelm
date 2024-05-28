@@ -1,6 +1,6 @@
 module Z80Screen exposing (..)
 
-import Array exposing (Array)
+import Array exposing (Array, fromList)
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Byte exposing (Byte, getBit)
 import Dict exposing (Dict)
@@ -178,10 +178,15 @@ calcOffsets start =
    in
       (row_offset, attr_offset)
 
+range0192 = List.range 0 191
+
+screenOffsets = range0192 |> List.map (\line_num -> calcOffsets line_num) |> fromList
+
 mapScreen: Int -> Z80Screen -> Int -> RawScreenData
 mapScreen line_num z80env_ram index  =
    let
-      (row_offset, attr_offset) = calcOffsets line_num
+      --(row_offset, attr_offset) = calcOffsets line_num
+      (row_offset, attr_offset) = screenOffsets |> Array.get line_num |> Maybe.withDefault (0, 0)
       data = getValue (row_offset + index) z80env_ram.screen
       colour = getValue (attr_offset + index) z80env_ram.screen
    in
@@ -191,12 +196,7 @@ range031 = List.range 0 31
 
 singleScreenLine: Int -> Z80Screen -> List RawScreenData
 singleScreenLine line_num z80env =
-    let
-       single_line = List.map (mapScreen line_num z80env) range031
-    in
-       single_line
-
-range0192 = List.range 0 191
+    List.map (mapScreen line_num z80env) range031
 
 screenLines: Z80Screen -> List (List ScreenLine)
 screenLines z80env =
