@@ -1,25 +1,37 @@
 module Z80Rom exposing (..)
 
+import Array exposing (Array)
 import Dict exposing (Dict)
-import Utils exposing (toHexString)
+import Utils exposing (listToDict, toHexString)
 import Z80Debug exposing (debug_todo)
-type alias Z80ROM = Dict Int Int
+type alias Z80ROM = {
+    data: Dict Int Int
+    }
 
 constructor: Z80ROM
 constructor =
    let
      rom48k = List.range 0 16384
      rom_list = List.indexedMap Tuple.pair rom48k
+     rom_dict = Dict.fromList rom_list
    in
-     Dict.fromList rom_list
+     Z80ROM rom_dict
 
 getROMValue: Int -> Z80ROM -> Int
 getROMValue addr z80dict  =
-    case Dict.get addr z80dict of
+    case Dict.get addr z80dict.data of
         Just a ->
           a
         Nothing ->
           debug_todo "getROMValue" (String.fromInt addr) -1
+
+set_spectrum_rom: Array Int -> Z80ROM -> Z80ROM
+set_spectrum_rom romdata z80env =
+   let
+      romDict = listToDict (Array.toList romdata)
+   in
+      { z80env | data = romDict }
+
 
 c_COMMON_NAMES = Dict.fromList [(0x11DC, "RAM-FILL"), (0x11E2, "RAM-READ"), (0xEE7, "PRB-BYTES"),
                                 (0x19B8, "NEXT-ONE"),(0x15E6, "INPUT-AD"), (0x15F7, "CALL-SUB"),
