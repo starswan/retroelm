@@ -4,20 +4,25 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Utils exposing (listToDict, toHexString)
 import Z80Debug exposing (debug_todo)
-type alias Z80ROM = Array Int
+type alias Z80ROM = Maybe (Array Int)
 
 constructor: Z80ROM
 constructor =
    let
      rom48k = List.range 0 16384
    in
-     Array.fromList rom48k
+     --Array.fromList rom48k
+     Nothing
 
 getROMValue: Int -> Z80ROM -> Int
-getROMValue addr z80dict  =
-    case Array.get addr z80dict.data of
-        Just a ->
-          a
+getROMValue addr maybe_z80dict  =
+    case maybe_z80dict of
+        Just z80dict ->
+            case Array.get addr z80dict.data of
+                Just a ->
+                  a
+                Nothing ->
+                  debug_todo "getROMValue" (String.fromInt addr) -1
         Nothing ->
           debug_todo "getROMValue" (String.fromInt addr) -1
 

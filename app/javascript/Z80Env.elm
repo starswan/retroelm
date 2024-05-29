@@ -7,7 +7,7 @@ import Array exposing (Array)
 import Bitwise exposing (and, or, shiftLeftBy, shiftRightBy)
 import Dict
 import Keyboard exposing (Keyboard, z80_keyboard_input)
-import Maybe.Extra exposing (combine)
+--import Maybe.Extra exposing (combine)
 import Utils exposing (shiftLeftBy8, shiftRightBy8)
 import Z80Debug exposing (debug_log)
 import Z80Ram exposing (Z80Ram, c_FRSTART, getRamValue)
@@ -68,7 +68,7 @@ set_rom romdata z80env =
         x = debug_log "set_rom" (rom_List |> List.length |> String.fromInt) Nothing
         rommy = z80env.rom48k |> set_spectrum_rom romdata
     in
-        { z80env | rom48k = rommy }
+        { z80env | rom48k = Just romdata }
         --Z80Env romdata z80env.ram z80env.keyboard z80env.ctime
 
 --public final int m1(int addr, int ir) {
