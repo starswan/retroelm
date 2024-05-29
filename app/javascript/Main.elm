@@ -146,11 +146,12 @@ gotRom qaop result =
         Ok value ->
             let
                 speccy = qaop.spectrum |> set_spectrum_rom value
-                speccy2 = debug_log "gotRom" "thing" speccy
-                new_qaop = { qaop | spectrum = speccy2 }
-                qaop2 = debug_log "gotRom" "qqqqq" new_qaop
+                --speccy2 = debug_log "gotRom" "thing" speccy
+                new_qaop = { qaop | spectrum = speccy }
+                --qaop2 = debug_log "gotRom" "qqqqq" new_qaop
             in
-                qaop2 |> Qaop.run
+                new_qaop |> Qaop.run
+                --(new_qaop, Cmd.none)
                 --(qaop2, Cmd.none)
         Err _ ->
             (qaop, Cmd.none)
@@ -174,7 +175,9 @@ update message model =
               (newmodel, Cmd.none)
        GotRom result ->
             let
+               y = debug_log "before update" "gotRom"
                (qaop, cmd) = gotRom model.qaop result
+               x = debug_log "update" "gotRom"
             in
                ({ model | qaop = qaop, count = model.count + 1 }, cmd)
        GotTAP result ->

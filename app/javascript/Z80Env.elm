@@ -64,8 +64,8 @@ z80env_constructor =
 set_rom: Array Int -> Z80Env -> Z80Env
 set_rom romdata z80env =
     let
-        rom_List = romdata |> Array.toList
-        x = debug_log "set_rom" (rom_List |> List.length |> String.fromInt) Nothing
+        --rom_List = romdata |> Array.toList
+        --x = debug_log "set_rom" (rom_List |> List.length |> String.fromInt) Nothing
         rommy = z80env.rom48k |> set_spectrum_rom romdata
     in
         { z80env | rom48k = rommy }
