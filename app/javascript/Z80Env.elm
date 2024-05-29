@@ -68,7 +68,7 @@ set_rom romdata z80env =
         x = debug_log "set_rom" (rom_List |> List.length |> String.fromInt) Nothing
         rommy = z80env.rom48k |> set_spectrum_rom romdata
     in
-        { z80env | rom48k = Just romdata }
+        { z80env | rom48k = rommy }
         --Z80Env romdata z80env.ram z80env.keyboard z80env.ctime
 
 --public final int m1(int addr, int ir) {

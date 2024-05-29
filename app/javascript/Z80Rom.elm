@@ -4,7 +4,9 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Utils exposing (listToDict, toHexString)
 import Z80Debug exposing (debug_todo)
-type alias Z80ROM = Maybe (Array Int)
+type alias Z80ROM = {
+    data: Maybe (Array Int)
+    }
 
 constructor: Z80ROM
 constructor =
@@ -12,13 +14,13 @@ constructor =
      rom48k = List.range 0 16384
    in
      --Array.fromList rom48k
-     Nothing
+     Z80ROM Nothing
 
 getROMValue: Int -> Z80ROM -> Int
 getROMValue addr maybe_z80dict  =
-    case maybe_z80dict of
+    case maybe_z80dict.data of
         Just z80dict ->
-            case Array.get addr z80dict.data of
+            case Array.get addr z80dict of
                 Just a ->
                   a
                 Nothing ->
@@ -31,7 +33,7 @@ set_spectrum_rom romdata z80env =
    let
       romDict = listToDict (Array.toList romdata)
    in
-      { z80env | data = romDict }
+      { z80env | data = Just romdata }
 
 
 c_COMMON_NAMES = Dict.fromList [(0x11DC, "RAM-FILL"), (0x11E2, "RAM-READ"), (0xEE7, "PRB-BYTES"),
