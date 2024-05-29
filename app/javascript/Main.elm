@@ -21,10 +21,10 @@ import Html exposing (Html, button, div, h2, span, text)
 import Html.Attributes exposing (id, style)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Message(..), Qaop, ctrlKeyDownEvent, ctrlKeyUpEvent, keyDownEvent, keyUpEvent, pause)
-import Utils exposing (digitToString)
+import Utils exposing (delay, digitToString)
 import Vector16384
 import Z80Debug exposing (debug_log)
-import Z80Memory exposing (getScreenLine)
+import Z80Tape exposing (Tapfile)
 
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
