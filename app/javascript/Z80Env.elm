@@ -6,9 +6,9 @@ module Z80Env exposing (..)
 import Array exposing (Array)
 import Bitwise exposing (and, or, shiftLeftBy, shiftRightBy)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
-import Utils exposing (listToDict, shiftLeftBy8, shiftRightBy8)
-import Z80Ram exposing (Z80Ram, c_FRSTART, getRam16Value, getRamValue)
-import Z80Rom exposing (Z80ROM, getROMValue)
+import Utils exposing (shiftLeftBy8, shiftRightBy8)
+import Z80Ram exposing (Z80Ram, c_FRSTART, getRamValue)
+import Z80Rom exposing (Z80ROM, getROMValue, set_spectrum_rom)
 
 
 type alias CpuTimeCTime =
@@ -47,9 +47,9 @@ z80env_constructor =
 set_rom: Array Int -> Z80Env -> Z80Env
 set_rom romdata z80env =
    let
-      romDict = listToDict (Array.toList romdata)
+       rommy = z80env.rom48k |> set_spectrum_rom romdata
    in
-      { z80env | rom48k = romDict }
+      { z80env | rom48k = rommy }
 
 --public final int m1(int addr, int ir) {
 --	int n = cpu.time - ctime;
