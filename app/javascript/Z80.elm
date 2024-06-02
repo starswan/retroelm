@@ -13,34 +13,28 @@ import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, set_mem, 
 import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (subName)
-import Z80Types exposing (IntWithPcAndEnv, InterruptRegisters, MainRegisters, ProgramCounter, Z80)
+import Z80Types exposing (IntWithPcAndEnv, InterruptRegisters, MainRegisters, ProgramCounter, Z80, imm16, imm8, pop, push)
 
-type alias RegisterSet =
-   {
-      main: MainRegisters,
-      flags: FlagRegisters
-   }
-type alias EnvWithRegisterAndValue =
-   {
-        register_value: Int,
+--type alias RegisterSet =
+--   {
+--      main: MainRegisters,
+--      flags: FlagRegisters
+--   }
+type alias IntWithZ80 =
+    {
         value: Int,
-        env: Z80Env
-   }
-type alias EnvWithPCAndValue =
-   {
-        env: Z80Env,
-        pc: Int,
-        value: Int
-   }
+        z80: Z80
+    }
+--type alias EnvWithRegisterAndValue =
+--   {
+--        register_value: Int,
+--        value: Int,
+--        env: Z80Env
+--   }
 type alias EnvWithRegister =
    {
         register_value: Int,
         env: Z80Env
-   }
-type alias EnvWithStackPointer =
-   {
-        env: Z80Env,
-        sp: Int
    }
 
 add_cpu_time: Int -> Z80 -> Z80
@@ -224,37 +218,6 @@ exx: Z80 -> Z80
 exx z80 =
    { z80 | main = z80.alt_main, alt_main = z80.main }
 
---public void push(int v) {
---	int sp;
---	time++;
---	env.mem((char)((sp=SP)-1), v>>>8);
---	time += 3;
---	env.mem(SP = (char)(sp-2), v&0xFF);
---	time += 3;
---}
-push: Int -> Z80 -> EnvWithStackPointer
-push v z80 =
-   let
-      --a = debug_log "push" ((v |> toHexString) ++ " onto " ++ (z80.sp |> toHexString)) Nothing
-      sp_minus_1 = Bitwise.and (z80.sp - 1) 0xFFFF
-      new_sp = Bitwise.and (z80.sp - 2) 0xFFFF
-      env_2 = z80.env
-             |> add_cpu_time_env 1
-             |> set_mem sp_minus_1 (shiftRightBy8 v)
-             |> add_cpu_time_env 3
-             |> set_mem new_sp (and v 0xFF)
-             |> add_cpu_time_env 3
-   in
-      EnvWithStackPointer env_2 new_sp
-
-pop: Z80 -> EnvWithRegisterAndValue
-pop z80 =
-   let
-      v = z80.env |> mem16 z80.sp
-      env = v.env |> add_cpu_time_env 6
-   in
-      EnvWithRegisterAndValue (z80.sp + 2) v.value env
-
 f_szh0n0p: Int -> Z80 -> Z80
 f_szh0n0p r z80 =
    let
@@ -331,42 +294,6 @@ getd xy z80 =
       d = z80.env |> mem z80.pc
    in
       IntWithPcAndEnv (char (xy + byte d.value)) (char (z80.pc + 1)) (d.env |> add_cpu_time_env 8)
---
---	private int imm8()
---	{
---		int v = env.mem(PC);
---		PC = (char)(PC+1);
---		time += 3;
---		return v;
---	}
-imm8: Z80 -> EnvWithPCAndValue
-imm8 z80 =
-    let
-        v = mem z80.pc z80.env
-        new_pc = Bitwise.and (z80.pc + 1) 0xFFFF
-        env_1 = v.env |> add_cpu_time_env 3
-    in
-        EnvWithPCAndValue env_1 new_pc v.value
-
--- would need the side-effect of mem call as well
---imm8_discard: Z80 -> Z80
---imm8_discard z80 =
---    z80 |> inc_pc |> add_cpu_time 3
---	private int imm16()
---	{
---		int v = env.mem16(PC);
---		PC = (char)(PC+2);
---		time += 6;
---		return v;
---	}
-imm16: Z80 -> EnvWithPCAndValue
-imm16 z80 =
-    let
-        v = mem16 z80.pc z80.env
-        pc = Bitwise.and (z80.pc + 2) 0xFFFF
-        env = v.env |> add_cpu_time_env 6
-    in
-        EnvWithPCAndValue env pc v.value
 --
 --
 --	private void rrd()
@@ -798,18 +725,13 @@ lt40_dict_lite = Dict.fromList
           (0x41, execute_0x41),
           (0x42, execute_0x42),
           (0x43, execute_0x43),
-          -- case 0x47: B=A; break;
-          (0x47, (\z80 -> z80 |> set_b z80.flags.a)),
-          -- case 0x48: C=B; break;
-          (0x48, (\z80 -> z80 |> set_c z80.main.b)),
+          (0x47, execute_0x47),
+          (0x48, execute_0x48),
           -- case 0x49: break;
           (0x49, noop),
-          -- case 0x4A: C=D; break;
-          (0x4A, (\z80 -> z80 |> set_c z80.main.d)),
-          -- case 0x4B: C=E; break;
-          (0x4B, (\z80 -> z80 |> set_c z80.main.e)),
-          -- case 0x4F: C=A; break;
-          (0x4F, (\z80 -> z80 |> set_c z80.flags.a)),
+          (0x4A, execute_0x4A),
+          (0x4B, execute_0x4B),
+          (0x4F, execute_0x4F),
           -- case 0x50: D=B; break;
           (0x50, (\z80 -> z80 |> set_d z80.main.b)),
           -- case 0x51: D=C; break;
@@ -1130,6 +1052,31 @@ execute_0x44 ixiyhl z80 =
     -- case 0x44: B=HL>>>8; break;
     -- case 0x44: B=xy>>>8; break;
     z80 |> set_b (get_h ixiyhl z80)
+
+execute_0x47: Z80 -> Z80
+execute_0x47 z80 =
+   -- case 0x47: B=A; break;
+   z80 |> set_b z80.flags.a
+
+execute_0x48: Z80 -> Z80
+execute_0x48 z80 =
+    -- case 0x48: C=B; break;
+    z80 |> set_c z80.main.b
+
+execute_0x4A: Z80 -> Z80
+execute_0x4A z80 =
+    -- case 0x4A: C=D; break;
+    z80 |> set_c z80.main.d
+
+execute_0x4B: Z80 -> Z80
+execute_0x4B z80 =
+    -- case 0x4B: C=E; break;
+    z80 |> set_c z80.main.e
+
+execute_0x4F: Z80 -> Z80
+execute_0x4F z80 =
+    -- case 0x4F: C=A; break;
+    z80 |> set_c z80.flags.a
 
 execute_0x10: Z80 -> Z80
 execute_0x10 z80 =
@@ -2090,7 +2037,7 @@ execute_0xC0 z80 =
          let
             result = z80_1 |> pop
             --x = debug_log "ret nz" (result.value |> subName) Nothing
-            z80_2 = { z80_1 | env = result.env, sp = result.register_value }
+            z80_2 = { z80_1 | env = result.env, sp = result.sp }
          in
             { z80_2 | pc = result.value }
       else
@@ -2116,7 +2063,7 @@ execute_0xC8 z80 =
            let
               popped = z80_1 |> pop
            in
-              { z80_1 | sp = popped.register_value, env = popped.env, pc = popped.value }
+              { z80_1 | sp = popped.sp, env = popped.env, pc = popped.value }
       else
            z80_1
 
@@ -2141,7 +2088,7 @@ execute_0xD0 z80 =
              popped = z80_1 |> pop
              --x = debug_log "ret nc" (popped.value |> subName) Nothing
           in
-             { z80_1 | env = popped.env, sp = popped.register_value, pc = popped.value }
+             { z80_1 | env = popped.env, sp = popped.sp, pc = popped.value }
        else
           z80_1
 
@@ -2248,7 +2195,7 @@ execute_0xC9 z80 =
       a = z80 |> pop
       --b = debug_log "ret" (a.value |> subName) Nothing
    in
-      { z80 | env = a.env, sp = a.register_value, pc = a.value }
+      { z80 | env = a.env, sp = a.sp, pc = a.value }
 
 execute_0xF5: Z80 -> Z80
 execute_0xF5 z80 =
@@ -2272,7 +2219,7 @@ execute_0xE1 z80 =
    -- case 0xE1: HL=pop(); break;
    let
       hl = z80 |> pop
-      z80_1 = { z80 | env = hl.env, sp = hl.register_value }
+      z80_1 = { z80 | env = hl.env, sp = hl.sp }
    in
       z80_1 |> set_hl hl.value
 
@@ -2289,7 +2236,7 @@ execute_0xC1 z80 =
    -- case 0xC1: v=pop(); B=v>>>8; C=v&0xFF; break;
    let
       v = z80 |> pop
-      z80_1 = { z80 | sp = v.register_value, env = v.env }
+      z80_1 = { z80 | sp = v.sp, env = v.env }
       --x = debug_log "pop_bc" (v.value |> toHexString) Nothing
    in
       z80_1 |> set_bc v.value
@@ -2299,7 +2246,7 @@ execute_0xE3 z80 =
    -- case 0xE3: v=pop(); push(HL); MP=HL=v; time+=2; break;
    let
       v = z80 |> pop
-      z80_1 = { z80 | sp = v.register_value, env = v.env }
+      z80_1 = { z80 | sp = v.sp, env = v.env }
       pushed = z80_1 |> push z80_1.main.hl
    in
       { z80_1 | env = pushed.env, sp = pushed.sp } |> set_hl v.value |> add_cpu_time 2
@@ -2309,7 +2256,7 @@ execute_0xF1 z80 =
     -- case 0xF1: af(pop()); break;
    let
       v = z80 |> pop
-      z80_1 = { z80 | sp = v.register_value, env = v.env }
+      z80_1 = { z80 | sp = v.sp, env = v.env }
    in
       z80_1 |> set_af v.value
 
@@ -2332,7 +2279,7 @@ execute_0xD8 z80 =
                      v = z80_1 |> pop
                  in
                     --debug_log "ret c" (v.value |> subName) ret
-                    { z80_1 | sp = v.register_value, env = v.env, pc = v.value }
+                    { z80_1 | sp = v.sp, env = v.env, pc = v.value }
               else
                  z80_1
    in
@@ -2371,7 +2318,7 @@ execute_0xD1 z80 =
    -- case 0xD1: v=pop(); D=v>>>8; E=v&0xFF; break;
    let
       v = z80 |> pop
-      z80_1 = { z80 | sp = v.register_value, env = v.env }
+      z80_1 = { z80 | sp = v.sp, env = v.env }
    in
       z80_1 |> set_de v.value
 
@@ -2396,7 +2343,7 @@ execute_0xF8 z80 =
                    let
                        popped = z80_1 |> pop
                    in
-                       { z80_1 | sp = popped.register_value, env = popped.env, pc = popped.value }
+                       { z80_1 | sp = popped.sp, env = popped.env, pc = popped.value }
                else
                    z80_1
     in
