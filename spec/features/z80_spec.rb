@@ -56,14 +56,14 @@ RSpec.describe "Spectrum Emulator" do
   end
 
   def measure_speed_in_hz
-    sleep 12
+    sleep 10
     # Test emulation speed in Hz
     low = 0
     high = page.find("#hz").text.to_f
     # wait for speed to hit a steady state
     while high - low > 0.02
-      times = 1.upto(5).map do
-        sleep 1
+      times = 1.upto(8).map do
+        sleep 0.4
         page.find("#hz").text.to_f
       end
       # p "Speed Times #{times.sort}"
