@@ -40,3 +40,10 @@ type alias Z80 =
       interrupts: InterruptRegisters,
       time_limit: Int
    }
+
+type alias IntWithPcAndEnv =
+    {
+        value: Int,
+        pc: Int,
+        env: Z80Env
+    }
