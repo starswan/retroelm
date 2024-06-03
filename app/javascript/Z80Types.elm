@@ -12,6 +12,16 @@ type alias MainRegisters =
       e:   Int,
       hl:  Int
    }
+type alias MainWithIndexRegisters =
+   {
+      b:   Int,
+      c:   Int,
+      d:   Int,
+      e:   Int,
+      hl:  Int,
+      ix:  Int,
+      iy:  Int
+   }
 
 type alias ProgramCounter =
     {
@@ -33,12 +43,10 @@ type alias Z80 =
       env: Z80Env,
       pc:  Int,
       sp:  Int,
-      main: MainRegisters,
+      main: MainWithIndexRegisters,
       flags: FlagRegisters,
       alt_main: MainRegisters,
       alt_flags: FlagRegisters,
-      ix: Int,
-      iy: Int,
       interrupts: InterruptRegisters,
       time_limit: Int
    }
