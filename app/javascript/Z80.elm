@@ -111,7 +111,7 @@ set_bc v z80 =
     in
         { z80 | main = { z80_main | b = shiftRightBy8 v, c = and v 0xFF }}
 
-set_bc_main: Int -> MainRegisters -> MainRegisters
+set_bc_main: Int -> MainWithIndexRegisters -> MainWithIndexRegisters
 set_bc_main v z80_main =
      { z80_main | b = shiftRightBy8 v, c = and v 0xFF }
 --	void de(int v) {E=v&0xFF; D=v>>>8;}
@@ -122,7 +122,7 @@ set_de v z80 =
     in
         { z80 | main = { z80_main | d = shiftRightBy8 v, e = and v 0xFF } }
 
-set_de_main: Int -> MainRegisters -> MainRegisters
+set_de_main: Int -> MainWithIndexRegisters -> MainWithIndexRegisters
 set_de_main v z80_main =
     { z80_main | d = shiftRightBy8 v, e = and v 0xFF }
 --	void hl(int v) {HL = v;}
@@ -684,11 +684,11 @@ execute_0x09 ixiyhl z80 =
    --case 0x09: HL=add16(HL,B<<8|C); break;
    --case 0x09: xy=add16(xy,B<<8|C); break;
    let
-      xy = get_xy ixiyhl z80
+      xy = get_xy ixiyhl z80.main
       new_xy = add16 xy (get_bc z80) z80.flags
-      new_z80 = set_xy new_xy.value ixiyhl z80
+      new_z80 = set_xy new_xy.value ixiyhl z80.main
    in
-      Whole ({ new_z80 | flags = new_xy.flags } |> add_cpu_time new_xy.time)
+      Whole ({ z80 | main = new_z80, flags = new_xy.flags } |> add_cpu_time new_xy.time)
      -- doing this doesn't allow for DD 09 which adds an extra 1 to PC
      --IXIYMainFlagsCpuTime new_z80.ix new_z80.iy new_z80.main new_xy.flags new_xy.time
 
@@ -879,6 +879,18 @@ execute_0x18 z80 =
   in
      --z80 |> set_pc dest |> add_cpu_time 8
      PcAndCpuTime pc_val 8
+
+execute_0x19: IXIYHL -> Z80 -> Z80Delta
+execute_0x19 ixiyhl z80 =
+  -- case 0x19: HL=add16(HL,D<<8|E); break;
+  -- case 0x19: xy=add16(xy,D<<8|E); break;
+  let
+     xy = get_xy ixiyhl z80.main
+     new_xy = add16 xy (get_de z80) z80.flags
+     new_z80 = set_xy new_xy.value ixiyhl z80.main
+  in
+     --{ z80 | main = new_z80, flags = new_xy.flags} |> add_cpu_time new_xy.time
+     FlagsWithPCMainAndTime new_xy.flags z80.pc new_z80 new_xy.time
 
 execute_0x1A: Z80 -> Z80Delta
 execute_0x1A z80 =
@@ -1226,14 +1238,14 @@ lt40_dict_lite = Dict.fromList
 lt40_delta_dict: Dict Int (IXIYHL -> Z80 -> Z80Delta)
 lt40_delta_dict = Dict.fromList
     [
-          (0x09, execute_0x09)
+          (0x09, execute_0x09),
+          (0x19, execute_0x19)
     ]
 
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
-          (0x19, execute_0x19),
           (0x29, execute_0x29),
           (0x39, execute_0x39),
           (0x21, execute_0x21),
@@ -1492,17 +1504,6 @@ execute_0x4F: Z80 -> Z80
 execute_0x4F z80 =
     -- case 0x4F: C=A; break;
     z80 |> set_c z80.flags.a
-
-execute_0x19: IXIYHL -> Z80 -> Z80
-execute_0x19 ixiyhl z80 =
-  -- case 0x19: HL=add16(HL,D<<8|E); break;
-  -- case 0x19: xy=add16(xy,D<<8|E); break;
-  let
-     xy = get_xy ixiyhl z80.main
-     new_xy = add16 xy (get_de z80) z80.flags
-     new_z80 = set_xy new_xy.value ixiyhl z80.main
-  in
-     { z80 | main = new_z80, flags = new_xy.flags} |> add_cpu_time new_xy.time
 
 execute_0x29: IXIYHL -> Z80 -> Z80
 execute_0x29 ixiyhl z80 =
