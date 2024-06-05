@@ -1524,6 +1524,26 @@
   resolved "https://registry.yarnpkg.com/@xtuc/long/-/long-4.2.2.tgz#d291c6a4e97989b5c61d9acf396ae4fe133a718d"
   integrity sha512-NuHqBY1PB/D8xU6s/thBgOAiAP7HOYDQ32+BFZILJ8ivkUkAHQnWfn6WhL79Owj1qmUnoN/YPhktdIoucipkAQ==
 
+"@zokka/zokka-binary-darwin_arm64@0.191.0-beta.0":
+  version "0.191.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@zokka/zokka-binary-darwin_arm64/-/zokka-binary-darwin_arm64-0.191.0-beta.0.tgz#8ebc372f4d68b9626884684b1e53b3366cc2b4bf"
+  integrity sha512-zRXpB5k+mr1Jtex+mrzDFCqV6/mybV3kuSfnLogh3wKIqv7JjLOq3io3xwQgAH2na9TRPsJ8QejLPmS/MtTN+g==
+
+"@zokka/zokka-binary-darwin_x64@0.191.0-beta.0":
+  version "0.191.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@zokka/zokka-binary-darwin_x64/-/zokka-binary-darwin_x64-0.191.0-beta.0.tgz#0369db7a8469bd56347891dd66c8dee7175c588f"
+  integrity sha512-9RpIJ7dT1zqNbLhM3s2YazPVyZz+wplhwrIai5+PbApK5W+Z5JNEwND6T/slV/KFVCSJs9Kyq8eXTYZY1KP5QA==
+
+"@zokka/zokka-binary-linux_x64@0.191.0-beta.0":
+  version "0.191.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@zokka/zokka-binary-linux_x64/-/zokka-binary-linux_x64-0.191.0-beta.0.tgz#695d0ff81dee1f563955f872d2347e9463d42911"
+  integrity sha512-lK6dXBrkQtDLyPOD6If2u7e/5ghnsROVxMfYc2jo/7xXpn1aff9utliXgGXb7H1fIi6DJ/4ypzA3WuUAtuOfkg==
+
+"@zokka/zokka-binary-win32_x64@0.191.0-beta.0":
+  version "0.191.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@zokka/zokka-binary-win32_x64/-/zokka-binary-win32_x64-0.191.0-beta.0.tgz#51cbcdf93ee87d48c213fe36c88c79c8e4e3cd41"
+  integrity sha512-1YeDbQYkRwfnyLDtzut/y0VTuDLnPShasXSRfdv7xKBhhZe4VIA4VGGtpPRzOvY+vd8VKOWJ35nEOmrA//DGbg==
+
 accepts@~1.3.4, accepts@~1.3.5:
   version "1.3.7"
   resolved "https://registry.yarnpkg.com/accepts/-/accepts-1.3.7.tgz#531bc726517a3b2b41f850021c6cc15eaab507cd"
@@ -7787,3 +7807,13 @@ yocto-queue@^0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/yocto-queue/-/yocto-queue-0.1.0.tgz#0294eb3dee05028d31ee1a5fa2c556a6aaf10a1b"
   integrity sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==
+
+zokka@^0.191.0-beta.0:
+  version "0.191.0-beta.0"
+  resolved "https://registry.yarnpkg.com/zokka/-/zokka-0.191.0-beta.0.tgz#9aa12a564b23347a6e383b000a8f0f37ca52706b"
+  integrity sha512-Qhqu6cjD6g03TMcAuBWCpHBCPEqqkQtlpd2c4eHGn80cdjUwAPil7Ioznhnq9++HdqOBPhuxtn/L3Ds6Rz4GzQ==
+  optionalDependencies:
+    "@zokka/zokka-binary-darwin_arm64" "0.191.0-beta.0"
+    "@zokka/zokka-binary-darwin_x64" "0.191.0-beta.0"
+    "@zokka/zokka-binary-linux_x64" "0.191.0-beta.0"
+    "@zokka/zokka-binary-win32_x64" "0.191.0-beta.0"
