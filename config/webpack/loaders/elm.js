@@ -3,7 +3,8 @@ const { resolve } = require('path')
 const isProduction = process.env.NODE_ENV === 'production'
 const isDevelopment = process.env.NODE_ENV === 'development'
 const elmSource = resolve(process.cwd())
-const elmBinary = `${elmSource}/node_modules/.bin/elm`
+// const elmBinary = `${elmSource}/node_modules/.bin/elm`
+const elmBinary = `${elmSource}/node_modules/.bin/zokka`
 
 const options = { 
   cwd: elmSource, 

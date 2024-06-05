@@ -13,6 +13,7 @@
     "elm-format": "^0.8.7",
     "elm-hot-webpack-loader": "^1.1.8",
     "elm-test": "0.19.1-revision9",
-    "webpack-dev-server": "^4.11.0"
+    "webpack-dev-server": "^4.11.0",
+    "zokka": "^0.191.0-beta.0"
   }
 }
