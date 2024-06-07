@@ -2,7 +2,7 @@ module Z80Types exposing (..)
 
 import Bitwise
 import Utils exposing (shiftRightBy8)
-import Z80Env exposing (Z80Env, add_cpu_time_env, mem, mem16, set_mem)
+import Z80Env exposing (CpuTimeCTime, Z80Env, add_cpu_time_ctime, add_cpu_time_env, mem, mem16, set_mem)
 import Z80Flags exposing (FlagRegisters)
 type alias MainRegisters =
    {
@@ -77,6 +77,20 @@ type alias EnvWithPCAndValue =
         value: Int
    }
 
+type alias CpuTimeWithSpAndValue =
+    {
+        time: CpuTimeCTime,
+        sp: Int,
+        value: Int
+    }
+
+type alias CpuTimeWithPcAndValue =
+    {
+        time: CpuTimeCTime,
+        pc: Int,
+        value: Int
+    }
+
 --public void push(int v) {
 --	int sp;
 --	time++;
@@ -100,13 +114,15 @@ push v z80 =
    in
       EnvWithStackPointer env_2 new_sp
 
-pop: Z80 -> EnvWithStackPointerAndValue
+pop: Z80 -> CpuTimeWithSpAndValue
 pop z80 =
    let
-      v = z80.env |> mem16 z80.sp
-      env = v.env |> add_cpu_time_env 6
+      old_env = z80.env
+      v = old_env |> mem16 z80.sp
+      time = v.time |> add_cpu_time_ctime 6
    in
-      EnvWithStackPointerAndValue env (z80.sp + 2) v.value
+      CpuTimeWithSpAndValue time (z80.sp + 2) v.value
+
 
 --
 --	private int imm8()
@@ -119,16 +135,13 @@ pop z80 =
 imm8: Z80 -> EnvWithPCAndValue
 imm8 z80 =
     let
-        v = mem z80.pc z80.env
+        env_0 = z80.env
+        v = mem z80.pc env_0
         new_pc = Bitwise.and (z80.pc + 1) 0xFFFF
-        env_1 = v.env |> add_cpu_time_env 3
+        env_1 = { env_0 | time = v.time } |> add_cpu_time_env 3
     in
         EnvWithPCAndValue env_1 new_pc v.value
 
--- would need the side-effect of mem call as well
---imm8_discard: Z80 -> Z80
---imm8_discard z80 =
---    z80 |> inc_pc |> add_cpu_time 3
 --	private int imm16()
 --	{
 --		int v = env.mem16(PC);
@@ -136,12 +149,11 @@ imm8 z80 =
 --		time += 6;
 --		return v;
 --	}
-imm16: Z80 -> EnvWithPCAndValue
+imm16: Z80 -> CpuTimeWithPcAndValue
 imm16 z80 =
     let
         v = mem16 z80.pc z80.env
         pc = Bitwise.and (z80.pc + 2) 0xFFFF
-        env = v.env |> add_cpu_time_env 6
+        time = v.time |> add_cpu_time_ctime 6
     in
-        EnvWithPCAndValue env pc v.value
-
+        CpuTimeWithPcAndValue time pc v.value

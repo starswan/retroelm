@@ -24,18 +24,6 @@ type alias IntWithZ80 =
         value: Int,
         z80: Z80
     }
-type alias CpuTimeWithSpAndValue =
-    {
-        time: CpuTimeCTime,
-        sp: Int,
-        value: Int
-    }
-type alias CpuTimeWithPcAndValue =
-    {
-        time: CpuTimeCTime,
-        pc: Int,
-        value: Int
-    }
 type alias EnvWithPCAndValue =
    {
         env: Z80Env,
@@ -235,38 +223,6 @@ exx z80 =
    in
       { z80 | main = new_main, alt_main = new_alt }
 
---public void push(int v) {
---	int sp;
---	time++;
---	env.mem((char)((sp=SP)-1), v>>>8);
---	time += 3;
---	env.mem(SP = (char)(sp-2), v&0xFF);
---	time += 3;
---}
-push: Int -> Z80 -> EnvWithStackPointer
-push v z80 =
-   let
-      --a = debug_log "push" ((v |> toHexString) ++ " onto " ++ (z80.sp |> toHexString)) Nothing
-      sp_minus_1 = Bitwise.and (z80.sp - 1) 0xFFFF
-      new_sp = Bitwise.and (z80.sp - 2) 0xFFFF
-      env_2 = z80.env
-             |> add_cpu_time_env 1
-             |> set_mem sp_minus_1 (shiftRightBy8 v)
-             |> add_cpu_time_env 3
-             |> set_mem new_sp (and v 0xFF)
-             |> add_cpu_time_env 3
-   in
-      EnvWithStackPointer env_2 new_sp
-
-pop: Z80 -> CpuTimeWithSpAndValue
-pop z80 =
-   let
-      old_env = z80.env
-      v = old_env |> mem16 z80.sp
-      time = v.time |> add_cpu_time_ctime 6
-   in
-      CpuTimeWithSpAndValue time (z80.sp + 2) v.value
-
 f_szh0n0p: Int -> Z80 -> Z80
 f_szh0n0p r z80 =
    let
@@ -344,40 +300,7 @@ getd xy z80 =
       d = env_0 |> mem z80.pc
       env = { env_0 | time = d.time }
    in
-      IntWithPcAndEnv (char (xy + byte d.value)) (char (z80.pc + 1)) (d.env |> add_cpu_time_env 8)
---
---	private int imm8()
---	{
---		int v = env.mem(PC);
---		PC = (char)(PC+1);
---		time += 3;
---		return v;
---	}
-imm8: Z80 -> EnvWithPCAndValue
-imm8 z80 =
-    let
-        env_0 = z80.env
-        v = mem z80.pc env_0
-        new_pc = Bitwise.and (z80.pc + 1) 0xFFFF
-        env_1 = { env_0 | time = v.time } |> add_cpu_time_env 3
-    in
-        EnvWithPCAndValue env_1 new_pc v.value
-
---	private int imm16()
---	{
---		int v = env.mem16(PC);
---		PC = (char)(PC+2);
---		time += 6;
---		return v;
---	}
-imm16: Z80 -> CpuTimeWithPcAndValue
-imm16 z80 =
-    let
-        v = mem16 z80.pc z80.env
-        pc = Bitwise.and (z80.pc + 2) 0xFFFF
-        time = v.time |> add_cpu_time_ctime 6
-    in
-        CpuTimeWithPcAndValue time pc v.value
+      IntWithPcAndEnv (char (xy + byte d.value)) (char (z80.pc + 1)) (env |> add_cpu_time_env 8)
 --
 --
 --	private void rrd()
@@ -2112,8 +2035,9 @@ hl_deref_with_z80 ixiyhl z80 =
     let
         a = env_mem_hl ixiyhl z80
         new_b = mem a.value a.env
+        env = a.env
     in
-        IntWithPcAndEnv new_b.value a.pc new_b.env
+        IntWithPcAndEnv new_b.value a.pc { env | time = new_b.time }
 
 a_with_z80: Z80 -> IntWithPcAndEnv
 a_with_z80 z80 =
