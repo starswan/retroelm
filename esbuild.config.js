@@ -3,18 +3,22 @@ const path = require('path')
 const ElmPlugin = require('esbuild-plugin-elm')
 const esbuild = require('esbuild')
 
+const node_env = process.env.RAILS_ENV
+
 const elm_options = function() {
-    // if (process.env.NODE_ENV === "production") {
+    // can't see this log message?
+    // console.log('node_env = ' + node_env);
+    if (node_env === "production" || node_env === "arthur") {
         return {
             optimize: true,
             debug: false
         }
-    // } else {
-    //     return {
-    //         optimize: false,
-    //         debug: true
-    //     }
-    // }
+    } else {
+        return {
+            optimize: false,
+            debug: true
+        }
+    }
 }
 
 const options = elm_options()
