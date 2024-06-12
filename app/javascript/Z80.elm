@@ -13,7 +13,7 @@ import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, set_mem, 
 import Z80Flags exposing (FlagRegisters, IntWithFlags, IntWithFlagsAndTime, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FH, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (subName)
-import Z80Types exposing (IntWithPcAndEnv, InterruptRegisters, MainRegisters, Z80, imm16, imm8, pop, push)
+import Z80Types exposing (IntWithPcAndEnv, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, imm16, imm8, pop, push)
 
 --type alias RegisterSet =
 --   {
@@ -47,7 +47,7 @@ add_cpu_time value z80 =
 constructor: Z80
 constructor =
     let
-        main = Z80Types.MainWithIndexRegisters 0 0 0 0 0 0 0
+        main = MainWithIndexRegisters 0 0 0 0 0 0 0
         alternate = MainRegisters 0 0 0 0 0
         main_flags = FlagRegisters 0 0 0 0 0
         alt_flags = FlagRegisters 0 0 0 0 0
