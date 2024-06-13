@@ -1610,11 +1610,15 @@ execute_0x5F z80 =
    in
       { main | e = z80.flags.a } |> MainRegs
 
-execute_0x60: IXIYHL -> Z80 -> Z80
+execute_0x60: IXIYHL -> Z80 -> Z80Delta
 execute_0x60 ixiyhl z80 =
    -- case 0x60: HL=HL&0xFF|B<<8; break;
    -- case 0x60: xy=xy&0xFF|B<<8; break;
-   z80 |> set_h_z80 z80.main.b ixiyhl
+   --z80 |> set_h_z80 z80.main.b ixiyhl
+   let
+      value = z80.main |> set_h z80.main.b ixiyhl
+   in
+      MainRegsWithPc value z80.pc
 
 execute_0x61: IXIYHL -> Z80 -> Z80
 execute_0x61 ixiyhl z80 =
@@ -2146,16 +2150,16 @@ lt40_delta_dict_lite = Dict.fromList
           (0x5A, execute_0x5A),
           -- case 0x5B: break;
           (0x5B, delta_noop),
-          (0x5F, execute_0x5F)
+          (0x5F, execute_0x5F),
+          -- case 0x64: break;
+          (0x64, delta_noop),
+          -- case 0x6D: break;
+          (0x6D, delta_noop)
     ]
 
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
-          -- case 0x64: break;
-          (0x64, noop),
-          -- case 0x6D: break;
-          (0x6D, noop),
           -- case 0x76: halt(); break;
           (0x76, halt),
           (0x78, execute_0x78),
@@ -2277,14 +2281,14 @@ lt40_delta_dict = Dict.fromList
           (0x56, execute_0x56),
           (0x5C, execute_0x5C),
           (0x5D, execute_0x5D),
-          (0x5E, execute_0x5E)
+          (0x5E, execute_0x5E),
+          (0x60, execute_0x60)
     ]
 
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
-          (0x60, execute_0x60),
           (0x61, execute_0x61),
           (0x62, execute_0x62),
           (0x63, execute_0x63),
