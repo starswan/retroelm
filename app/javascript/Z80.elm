@@ -32,12 +32,6 @@ type alias IntWithZ80 =
 --        value: Int,
 --        env: Z80Env
 --   }
-type alias CpuTimeWithSpAndValue =
-    {
-        time: CpuTimeCTime,
-        sp: Int,
-        value: Int
-    }
 type alias CpuTimeWithPcAndValue =
     {
         time: CpuTimeCTime,

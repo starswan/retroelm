@@ -2,7 +2,7 @@ module Z80Types exposing (..)
 
 import Bitwise
 import Utils exposing (shiftRightBy8)
-import Z80Env exposing (Z80Env, add_cpu_time_env, mem, mem16, set_mem)
+import Z80Env exposing (CpuTimeCTime, Z80Env, add_cpu_time_ctime, add_cpu_time_env, mem, mem16, set_mem)
 import Z80Flags exposing (FlagRegisters)
 type alias MainRegisters =
    {
@@ -63,6 +63,14 @@ type alias EnvWithPCAndValue =
         pc: Int,
         value: Int
    }
+
+type alias CpuTimeWithSpAndValue =
+   {
+       time: CpuTimeCTime,
+       sp: Int,
+       value: Int
+   }
+
 
 --
 --	private int imm8()
