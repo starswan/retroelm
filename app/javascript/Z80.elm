@@ -1546,43 +1546,69 @@ execute_0x57 z80 =
    in
       { main | d = z80.flags.a } |> MainRegs
 
-execute_0x58: Z80 -> Z80
+execute_0x58: Z80 -> Z80Delta
 execute_0x58 z80 =
   -- case 0x58: E=B; break;
-  z80 |> set_e z80.main.b
+  --z80 |> set_e z80.main.b
+   let
+       main = z80.main
+   in
+      { main | e = z80.main.b } |> MainRegs
 
-execute_0x59: Z80 -> Z80
+execute_0x59: Z80 -> Z80Delta
 execute_0x59 z80 =
   -- case 0x59: E=C; break;
-  z80 |> set_e z80.main.c
+  --z80 |> set_e z80.main.c
+   let
+       main = z80.main
+   in
+      { main | e = z80.main.c } |> MainRegs
 
-execute_0x5A: Z80 -> Z80
+execute_0x5A: Z80 -> Z80Delta
 execute_0x5A z80 =
    -- case 0x5A: E=D; break;
-   z80 |> set_e z80.main.d
+   --z80 |> set_e z80.main.d
+   let
+       main = z80.main
+   in
+      { main | e = z80.main.d } |> MainRegs
 
-execute_0x5C: IXIYHL -> Z80 -> Z80
+execute_0x5C: IXIYHL -> Z80 -> Z80Delta
 execute_0x5C ixiyhl z80 =
    -- case 0x5C: E=HL>>>8; break;
-   z80 |> set_e (get_h ixiyhl z80.main)
+   --z80 |> set_e (get_h ixiyhl z80.main)
+   let
+       main = z80.main
+   in
+      { main | e = (get_h ixiyhl z80.main) } |> MainRegs
 
-execute_0x5D: IXIYHL -> Z80 -> Z80
+execute_0x5D: IXIYHL -> Z80 -> Z80Delta
 execute_0x5D ixiyhl z80 =
    -- case 0x5D: E=HL&0xFF; break;
-   z80 |> set_e (get_l ixiyhl z80.main)
+   --z80 |> set_e (get_l ixiyhl z80.main)
+   let
+       main = z80.main
+   in
+      { main | e = (get_l ixiyhl z80.main) } |> MainRegs
 
-execute_0x5E: IXIYHL -> Z80 -> Z80
+execute_0x5E: IXIYHL -> Z80 -> Z80Delta
 execute_0x5E ixiyhl z80 =
    -- case 0x5E: E=env.mem(HL); time+=3; break;
    let
       value = hl_deref_with_z80 ixiyhl z80
+      main = z80.main
    in
-      { z80 | pc = value.pc, env = value.env } |> set_e value.value
+      --{ z80 | pc = value.pc, env = value.env } |> set_e value.value
+      MainRegsWithPcAndEnv { main | e = value.value } value.pc value.env
 
-execute_0x5F: Z80 -> Z80
+execute_0x5F: Z80 -> Z80Delta
 execute_0x5F z80 =
    -- case 0x5F: E=A; break;
-   z80 |> set_e z80.flags.a
+   --z80 |> set_e z80.flags.a
+   let
+       main = z80.main
+   in
+      { main | e = z80.flags.a } |> MainRegs
 
 execute_0x60: IXIYHL -> Z80 -> Z80
 execute_0x60 ixiyhl z80 =
@@ -2114,18 +2140,18 @@ lt40_delta_dict_lite = Dict.fromList
           (0x51, execute_0x51),
           (0x52, delta_noop),
           (0x53, execute_0x53),
-          (0x57, execute_0x57)
+          (0x57, execute_0x57),
+          (0x58, execute_0x58),
+          (0x59, execute_0x59),
+          (0x5A, execute_0x5A),
+          -- case 0x5B: break;
+          (0x5B, delta_noop),
+          (0x5F, execute_0x5F)
     ]
 
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
-          (0x58, execute_0x58),
-          (0x59, execute_0x59),
-          (0x5A, execute_0x5A),
-          -- case 0x5B: break;
-          (0x5B, noop),
-          (0x5F, execute_0x5F),
           -- case 0x64: break;
           (0x64, noop),
           -- case 0x6D: break;
@@ -2248,16 +2274,16 @@ lt40_delta_dict = Dict.fromList
           (0x4E, execute_0x4E),
           (0x54, execute_0x54),
           (0x55, execute_0x55),
-          (0x56, execute_0x56)
+          (0x56, execute_0x56),
+          (0x5C, execute_0x5C),
+          (0x5D, execute_0x5D),
+          (0x5E, execute_0x5E)
     ]
 
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
-          (0x5C, execute_0x5C),
-          (0x5D, execute_0x5D),
-          (0x5E, execute_0x5E),
           (0x60, execute_0x60),
           (0x61, execute_0x61),
           (0x62, execute_0x62),
