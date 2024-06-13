@@ -71,6 +71,12 @@ type alias CpuTimeWithSpAndValue =
        value: Int
    }
 
+type alias CpuTimeWithPcAndValue =
+    {
+        time: CpuTimeCTime,
+        pc: Int,
+        value: Int
+    }
 
 --
 --	private int imm8()
@@ -100,12 +106,11 @@ imm8 z80 =
 --		time += 6;
 --		return v;
 --	}
-imm16: Z80 -> EnvWithPCAndValue
+imm16: Z80 -> CpuTimeWithPcAndValue
 imm16 z80 =
     let
         v = mem16 z80.pc z80.env
         pc = Bitwise.and (z80.pc + 2) 0xFFFF
-        env = v.env |> add_cpu_time_env 6
+        time = v.time |> add_cpu_time_ctime 6
     in
-        EnvWithPCAndValue env pc v.value
-
+        CpuTimeWithPcAndValue time pc v.value

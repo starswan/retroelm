@@ -14,7 +14,7 @@ import Z80Env exposing (CpuTimeCTime, Z80Env, add_cpu_time_ctime, add_cpu_time_e
 import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (subName)
-import Z80Types exposing (IntWithPcAndEnv, InterruptRegisters, MainRegisters, MainWithIndexRegisters, ProgramCounter, Z80, imm16, imm8)
+import Z80Types exposing (EnvWithStackPointer, IntWithPcAndEnv, InterruptRegisters, MainRegisters, MainWithIndexRegisters, ProgramCounter, Z80, imm16, imm8)
 
 --type alias RegisterSet =
 --   {
@@ -32,12 +32,6 @@ type alias IntWithZ80 =
 --        value: Int,
 --        env: Z80Env
 --   }
-type alias CpuTimeWithPcAndValue =
-    {
-        time: CpuTimeCTime,
-        pc: Int,
-        value: Int
-    }
 type alias EnvWithPCAndValue =
    {
         env: Z80Env,
@@ -248,30 +242,6 @@ exx z80 =
 --	env.mem(SP = (char)(sp-2), v&0xFF);
 --	time += 3;
 --}
-push: Int -> Z80 -> EnvWithStackPointer
-push v z80 =
-   let
-      --a = debug_log "push" ((v |> toHexString) ++ " onto " ++ (z80.sp |> toHexString)) Nothing
-      sp_minus_1 = Bitwise.and (z80.sp - 1) 0xFFFF
-      new_sp = Bitwise.and (z80.sp - 2) 0xFFFF
-      env_2 = z80.env
-             |> add_cpu_time_env 1
-             |> set_mem sp_minus_1 (shiftRightBy8 v)
-             |> add_cpu_time_env 3
-             |> set_mem new_sp (and v 0xFF)
-             |> add_cpu_time_env 3
-   in
-      EnvWithStackPointer env_2 new_sp
-
-pop: Z80 -> CpuTimeWithSpAndValue
-pop z80 =
-   let
-      old_env = z80.env
-      v = old_env |> mem16 z80.sp
-      time = v.time |> add_cpu_time_ctime 6
-   in
-      CpuTimeWithSpAndValue time (z80.sp + 2) v.value
-
 f_szh0n0p: Int -> Z80 -> Z80
 f_szh0n0p r z80 =
    let
@@ -365,25 +335,6 @@ imm8 z80 =
     in
         EnvWithPCAndValue env_1 new_pc v.value
 
--- would need the side-effect of mem call as well
---imm8_discard: Z80 -> Z80
---imm8_discard z80 =
---    z80 |> inc_pc |> add_cpu_time 3
---	private int imm16()
---	{
---		int v = env.mem16(PC);
---		PC = (char)(PC+2);
---		time += 6;
---		return v;
---	}
-imm16: Z80 -> CpuTimeWithPcAndValue
-imm16 z80 =
-    let
-        v = mem16 z80.pc z80.env
-        pc = Bitwise.and (z80.pc + 2) 0xFFFF
-        time = v.time |> add_cpu_time_ctime 6
-    in
-        CpuTimeWithPcAndValue time pc v.value
 --
 --
 --	private void rrd()
