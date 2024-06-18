@@ -1650,26 +1650,36 @@ execute_0x63 ixiyhl z80 =
    in
       MainRegsWithPc value z80.pc
 
-execute_0x65: IXIYHL -> Z80 -> Z80
+execute_0x65: IXIYHL -> Z80 -> Z80Delta
 execute_0x65 ixiyhl z80 =
    -- case 0x65: HL=HL&0xFF|(HL&0xFF)<<8; break;
    -- case 0x65: xy=xy&0xFF|(xy&0xFF)<<8; break;
-   z80 |> set_h_z80 (get_l ixiyhl z80.main) ixiyhl
+   --z80 |> set_h_z80 (get_l ixiyhl z80.main) ixiyhl
+   let
+      value = z80.main |> set_h (get_l ixiyhl z80.main) ixiyhl
+   in
+      MainRegsWithPc value z80.pc
 
-execute_0x66: IXIYHL -> Z80 -> Z80
+execute_0x66: IXIYHL -> Z80 -> Z80Delta
 execute_0x66 ixiyhl z80 =
    -- case 0x66: HL=HL&0xFF|env.mem(HL)<<8; time+=3; break;
    -- case 0x66: HL=HL&0xFF|env.mem(getd(xy))<<8; time+=3; break;
    let
       value = hl_deref_with_z80 ixiyhl z80
+      main = z80.main
    in
-      { z80 | pc = value.pc, env = value.env } |> set_h_z80 value.value HL |> add_cpu_time 3
+      --{ z80 | pc = value.pc, env = value.env } |> set_h_z80 value.value HL |> add_cpu_time 3
+      MainRegsWithPcAndEnv (main |> set_h value.value HL) value.pc (value.env |> add_cpu_time_env 3)
 
-execute_0x67: IXIYHL -> Z80 -> Z80
+execute_0x67: IXIYHL -> Z80 -> Z80Delta
 execute_0x67 ixiyhl z80 =
    -- case 0x67: HL=HL&0xFF|A<<8; break;
    -- case 0x67: xy=xy&0xFF|A<<8; break;
-   z80 |> set_h_z80 z80.flags.a ixiyhl
+   --z80 |> set_h_z80 z80.flags.a ixiyhl
+   let
+      value = z80.main |> set_h z80.flags.a ixiyhl
+   in
+      MainRegsWithPc value z80.pc
 
 execute_0x68: IXIYHL -> Z80 -> Z80
 execute_0x68 ixiyhl z80 =
@@ -2297,16 +2307,16 @@ lt40_delta_dict = Dict.fromList
           (0x60, execute_0x60),
           (0x61, execute_0x61),
           (0x62, execute_0x62),
-          (0x63, execute_0x63)
+          (0x63, execute_0x63),
+          (0x65, execute_0x65),
+          (0x66, execute_0x66),
+          (0x67, execute_0x67)
     ]
 
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
-          (0x65, execute_0x65),
-          (0x66, execute_0x66),
-          (0x67, execute_0x67),
           (0x68, execute_0x68),
           (0x69, execute_0x69),
           (0x6A, execute_0x6A),
