@@ -2102,9 +2102,6 @@ makeLt40Array =
 lt40_delta_dict_lite: Dict Int (Z80 -> Z80Delta)
 lt40_delta_dict_lite = Dict.fromList
     [
-          (0xCD, execute_0xCD),
-          (0xDD, (\z80 -> group_xy IXIY_IX z80)),
-          (0xFD, (\z80 -> group_xy IXIY_IY z80)),
           (0x01, execute_0x01),
           (0x02, execute_0x02),
           (0x03, execute_0x03),
@@ -2178,7 +2175,10 @@ lt40_delta_dict_lite = Dict.fromList
           -- case 0x64: break;
           (0x64, delta_noop),
           -- case 0x6D: break;
-          (0x6D, delta_noop)
+          (0x6D, delta_noop),
+          (0xCD, execute_0xCD),
+          (0xDD, (\z80 -> group_xy IXIY_IX z80)),
+          (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ]
 
 lt40_dict_lite: Dict Int (Z80 -> Z80)
