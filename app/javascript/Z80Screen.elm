@@ -5,7 +5,7 @@ import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Byte exposing (Byte, getBit)
 import Dict exposing (Dict)
 import Maybe exposing (withDefault)
-import Z80Memory exposing (Z80Memory, getValue)
+import Z80Memory exposing (GetValueErr, Z80Memory, getValue)
 
 type alias Z80Screen =
     {
@@ -182,13 +182,15 @@ range0192 = List.range 0 191
 
 screenOffsets = range0192 |> List.map (\line_num -> calcOffsets line_num)
 
-mapScreen: (Int, Int) -> Z80Memory -> Int -> RawScreenData
+mapScreen: (Int, Int) -> Z80Memory -> Int -> Result GetValueErr RawScreenData
 mapScreen (row_offset, attr_offset) z80env_ram index  =
    let
       data = getValue (row_offset + index) z80env_ram
       colour = getValue (attr_offset + index) z80env_ram
+      handleSuccess = (\c d -> { colour=c,data=d } )
    in
-      { colour=colour,data=data }
+   Result.map2 handleSuccess colour data
+      --{ colour=colour,data=data }
 
 range031 = List.range 0 31
 
