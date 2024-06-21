@@ -1702,11 +1702,12 @@ execute_0x6A ixiyhl z80 =
    --z80 |> set_l_z80 z80.main.d ixiyhl
    MainRegsWithPc (z80.main |> set_l z80.main.d ixiyhl) z80.pc
 
-execute_0x6B: IXIYHL -> Z80 -> Z80
+execute_0x6B: IXIYHL -> Z80 -> Z80Delta
 execute_0x6B ixiyhl z80 =
    -- case 0x6B: HL=HL&0xFF00|E; break;
    -- case 0x6B: xy=xy&0xFF00|E; break;
-   z80 |> set_l_z80 z80.main.e ixiyhl
+   --z80 |> set_l_z80 z80.main.e ixiyhl
+   MainRegsWithPc (z80.main |> set_l z80.main.e ixiyhl) z80.pc
 
 execute_0x6C: IXIYHL -> Z80 -> Z80
 execute_0x6C ixiyhl z80 =
@@ -2316,14 +2317,14 @@ lt40_delta_dict = Dict.fromList
           (0x67, execute_0x67),
           (0x68, execute_0x68),
           (0x69, execute_0x69),
-          (0x6A, execute_0x6A)
+          (0x6A, execute_0x6A),
+          (0x6B, execute_0x6B)
     ]
 
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
-          (0x6B, execute_0x6B),
           (0x6C, execute_0x6C),
           (0x6E, execute_0x6E),
           (0x6F, execute_0x6F),
