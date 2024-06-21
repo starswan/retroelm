@@ -33,7 +33,7 @@ gem 'matrix', require: false
 # This is something to do with ruby 3.1...?
 gem 'net-smtp', require: false
 gem 'rexml', require: false
-gem 'rubyzip'
+gem 'rubyzip', '< 3'
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
