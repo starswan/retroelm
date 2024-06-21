@@ -7,16 +7,17 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 require 'rspec/rails'
 # Add additional requires below this line. Rails is not loaded until this point!
 
-Capybara.register_driver :selenium_chrome do |app|
-  Capybara::Selenium::Driver.new(app, browser: :chrome)
-end
-Capybara.javascript_driver = :selenium_chrome
-
-# require "capybara/cuprite"
-# Capybara.register_driver(:cuprite) do |app|
-#   Capybara::Cuprite::Driver.new(app, window_size: [1200, 800])
+# Capybara.register_driver :selenium_chrome do |app|
+#   Capybara::Selenium::Driver.new(app, browser: :chrome)
 # end
-# Capybara.javascript_driver = :cuprite
+# Capybara.javascript_driver = :selenium_chrome
+
+require "capybara/cuprite"
+Capybara.register_driver(:cuprite) do |app|
+  # Capybara::Cuprite::Driver.new(app, window_size: [1200, 800])
+  Capybara::Cuprite::Driver.new(app, headless: false)
+end
+Capybara.javascript_driver = :cuprite
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
 # spec/support/ and its subdirectories. Files matching `spec/**/*_spec.rb` are
