@@ -344,11 +344,6 @@ cont1 tmp_t z80  =
                   z80 |> add_cpu_time_time (6 - (Bitwise.and t 7))
                else
                    z80
-
-cont1_env: Int -> Z80Env -> Z80Env
-cont1_env tmp_t z80  =
-   { z80 | time = z80.time |> cont1 tmp_t }
-
 --
 --	private final void cont(int n) {
 --		int s, k;
