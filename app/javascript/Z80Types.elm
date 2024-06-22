@@ -42,7 +42,6 @@ type alias Z80 =
    {
       env: Z80Env,
       pc:  Int,
-      sp:  Int,
       main: MainWithIndexRegisters,
       flags: FlagRegisters,
       alt_main: MainRegisters,
@@ -57,18 +56,6 @@ type alias IntWithPcAndEnv =
         pc: Int,
         env: Z80Env
     }
-type alias EnvWithStackPointer =
-   {
-        env: Z80Env,
-        sp: Int
-   }
-
-type alias EnvWithStackPointerAndValue =
-   {
-        env: Z80Env,
-        sp: Int,
-        value: Int
-   }
 
 type alias EnvWithPCAndValue =
    {
@@ -76,37 +63,6 @@ type alias EnvWithPCAndValue =
         pc: Int,
         value: Int
    }
-
---public void push(int v) {
---	int sp;
---	time++;
---	env.mem((char)((sp=SP)-1), v>>>8);
---	time += 3;
---	env.mem(SP = (char)(sp-2), v&0xFF);
---	time += 3;
---}
-push: Int -> Z80 -> EnvWithStackPointer
-push v z80 =
-   let
-      --a = debug_log "push" ((v |> toHexString) ++ " onto " ++ (z80.sp |> toHexString)) Nothing
-      sp_minus_1 = Bitwise.and (z80.sp - 1) 0xFFFF
-      new_sp = Bitwise.and (z80.sp - 2) 0xFFFF
-      env_2 = z80.env
-             |> add_cpu_time_env 1
-             |> set_mem sp_minus_1 (shiftRightBy8 v)
-             |> add_cpu_time_env 3
-             |> set_mem new_sp (Bitwise.and v 0xFF)
-             |> add_cpu_time_env 3
-   in
-      EnvWithStackPointer env_2 new_sp
-
-pop: Z80 -> EnvWithStackPointerAndValue
-pop z80 =
-   let
-      v = z80.env |> mem16 z80.sp
-      env = v.env |> add_cpu_time_env 6
-   in
-      EnvWithStackPointerAndValue env (z80.sp + 2) v.value
 
 --
 --	private int imm8()

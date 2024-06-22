@@ -13,7 +13,8 @@ suite =
        addr = 30000
        sp = 0x8765
        old_z80 = Z80.constructor
-       z80 = { old_z80 | pc = addr, sp = sp }
+       old_z80env = old_z80.env
+       z80 = { old_z80 | pc = addr, env = { old_z80env | sp = sp } }
        flags = z80.flags
        z80env = z80.env
        z80main = z80.main

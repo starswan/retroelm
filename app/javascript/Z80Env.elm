@@ -23,7 +23,8 @@ type alias Z80Env =
             rom48k: Z80ROM,
             ram: Z80Ram,
             keyboard: Keyboard,
-            time: CpuTimeCTime
+            time: CpuTimeCTime,
+            sp:  Int
     }
 
 type alias Z80EnvWithValue =
@@ -42,7 +43,7 @@ c_NOCONT = 99999
 c_SCRENDT = 191*224+126
 
 z80env_constructor =
-    Z80Env Z80Rom.constructor Z80Ram.constructor Keyboard.constructor (CpuTimeCTime c_FRSTART 0)
+    Z80Env Z80Rom.constructor Z80Ram.constructor Keyboard.constructor (CpuTimeCTime c_FRSTART 0) 0
 
 set_rom: Array Int -> Z80Env -> Z80Env
 set_rom romdata z80env =
@@ -515,3 +516,34 @@ add_cpu_time_env value z80env =
 reset_cpu_time: Z80Env -> Z80Env
 reset_cpu_time z80env =
    { z80env | time = CpuTimeCTime c_FRSTART z80env.time.ctime }
+
+--public void push(int v) {
+--	int sp;
+--	time++;
+--	env.mem((char)((sp=SP)-1), v>>>8);
+--	time += 3;
+--	env.mem(SP = (char)(sp-2), v&0xFF);
+--	time += 3;
+--}
+push: Int -> Z80Env -> Z80Env
+push v z80 =
+   let
+      --a = debug_log "push" ((v |> toHexString) ++ " onto " ++ (z80.sp |> toHexString)) Nothing
+      sp_minus_1 = Bitwise.and (z80.sp - 1) 0xFFFF
+      new_sp = Bitwise.and (z80.sp - 2) 0xFFFF
+      env_2 = z80
+             |> add_cpu_time_env 1
+             |> set_mem sp_minus_1 (shiftRightBy8 v)
+             |> add_cpu_time_env 3
+             |> set_mem new_sp (Bitwise.and v 0xFF)
+             |> add_cpu_time_env 3
+   in
+      { env_2 | sp = new_sp }
+
+pop: Z80Env -> Z80EnvWithValue
+pop z80 =
+   let
+      v = z80 |> mem16 z80.sp
+      env = v.env |> add_cpu_time_env 6
+   in
+      Z80EnvWithValue { env | sp = z80.sp + 2 } v.value
