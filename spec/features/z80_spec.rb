@@ -1,6 +1,7 @@
 require "rails_helper"
 
 # require "open-uri"
+require "zip"
 
 RSpec.describe "Spectrum Emulator" do
   before do
