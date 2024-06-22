@@ -1,6 +1,6 @@
 module Z80Delta exposing (..)
 
-import Z80Env exposing (Z80Env, add_cpu_time_env)
+import Z80Env exposing (CpuTimeCTime, Z80Env, add_cpu_time_env)
 import Z80Flags exposing (FlagRegisters)
 import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, ProgramCounter, Z80)
 
@@ -8,6 +8,7 @@ import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegist
 type Z80Delta
     = Whole Z80
     | MainRegsWithPcAndEnv MainWithIndexRegisters Int Z80Env
+    | MainRegsWithPcAndCpuTime MainWithIndexRegisters Int CpuTimeCTime
     | JustEnv Z80Env
     | MainRegsAndCpuTime MainWithIndexRegisters Int
     | FlagsWithMain FlagRegisters MainWithIndexRegisters
@@ -19,7 +20,9 @@ type Z80Delta
     | EnvWithFlags Z80Env FlagRegisters
     | EnvWithFlagsAndPc Z80Env FlagRegisters Int
     | MainRegsWithEnv MainWithIndexRegisters Z80Env
-    | PcAndCpuTime ProgramCounter Int
+    | PcAndCpuTime Int CpuTimeCTime
+    | SpPcAndCpuTime Int Int CpuTimeCTime
+    | PcAndCpuTimeIncrement Int Int
     | SpAndCpuTime Int Int
     | EnvWithPc Z80Env Int
     | NoChange
@@ -51,7 +54,16 @@ apply_delta z80 z80delta =
             { z80 | pc = z80delta.pc, env = z80delta.env |> add_cpu_time_env cpu_time, main = mainRegisters, interrupts = z80delta.interrupts }
 
         PcAndCpuTime pc cpu_time ->
-            { z80 | pc = pc.pc, env = z80delta.env |> add_cpu_time_env cpu_time, interrupts = z80delta.interrupts }
+            let
+               env = z80delta.env
+            in
+               { z80 | pc = pc, env = { env | time = cpu_time }, interrupts = z80delta.interrupts }
+
+        SpPcAndCpuTime sp pc cpu_time ->
+            let
+               env = z80delta.env
+            in
+               { z80 | pc = pc, env = { env | sp = sp, time = cpu_time }, interrupts = z80delta.interrupts }
 
         FlagsWithMain flagRegisters mainRegisters ->
             { z80 | flags = flagRegisters, pc = z80delta.pc, env = z80delta.env, main = mainRegisters, interrupts = z80delta.interrupts }
@@ -91,6 +103,16 @@ apply_delta z80 z80delta =
 
         MainRegsWithPc mainWithIndexRegisters pc ->
             { z80 | main = mainWithIndexRegisters, pc = pc, env = z80delta.env, interrupts = z80delta.interrupts }
+
+        MainRegsWithPcAndCpuTime mainWithIndexRegisters pc cpuTimeCTime ->
+            let
+                env = z80delta.env
+            in
+            { z80 | main = mainWithIndexRegisters, pc = pc, env = { env | time = cpuTimeCTime }, interrupts = z80delta.interrupts }
+
+        PcAndCpuTimeIncrement pc cpu_time ->
+            { z80 | pc = pc, env = z80delta.env |> add_cpu_time_env cpu_time, interrupts = z80delta.interrupts }
+
 
 
 

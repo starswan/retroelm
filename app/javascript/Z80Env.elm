@@ -581,6 +581,6 @@ pop: Z80Env -> Z80EnvWithValue
 pop z80 =
    let
       v = z80 |> mem16 z80.sp
-      env = v.env |> add_cpu_time_env 6
+      env = { z80 | time = v.time } |> add_cpu_time_env 6
    in
       Z80EnvWithValue { env | sp = z80.sp + 2 } v.value
