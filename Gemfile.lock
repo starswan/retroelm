@@ -271,10 +271,6 @@ GEM
       sprockets (> 3.0)
       sprockets-rails
       tilt
-    selenium-webdriver (4.10.0)
-      rexml (~> 3.2, >= 3.2.5)
-      rubyzip (>= 1.2.2, < 3.0)
-      websocket (~> 1.0)
     semantic_range (3.0.0)
     shellany (0.0.1)
     simplecov (0.17.0)
@@ -308,7 +304,6 @@ GEM
       railties (>= 5.2)
       semantic_range (>= 2.3.0)
     webrick (1.8.1)
-    websocket (1.2.10)
     websocket-driver (0.7.6)
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.5)
@@ -348,7 +343,6 @@ DEPENDENCIES
   rubyzip (< 3)
   rvm-capistrano
   sass-rails (>= 6)
-  selenium-webdriver (< 4.11)
   simplecov
   sqlite3 (~> 1.4)
   tzinfo-data
