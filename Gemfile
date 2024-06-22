@@ -33,6 +33,7 @@ gem 'matrix', require: false
 # This is something to do with ruby 3.1...?
 gem 'net-smtp', require: false
 gem 'rexml', require: false
+gem 'rubyzip', '< 3'
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
@@ -47,7 +48,10 @@ group :development, :test do
 
   # 4.11 insists that /usr/bin/firefox is a binary, when it isn't
   # on Ubuntu 22.04 due to it being a snap which is very annoying
-  gem "selenium-webdriver", "< 4.11"
+  # gem "selenium-webdriver", "< 4.11"
+  # gem "selenium-webdriver"
+  # gem 'geckodriver'
+  gem "cuprite"
 
   gem "guard-bundler"
   gem "guard-rspec"

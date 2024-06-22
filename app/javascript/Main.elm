@@ -34,8 +34,8 @@ import Z80Tape exposing (Tapfile)
 -- 22nd Jan 2024 Chromium debug 74.2ms (13.4 Hz)         live 37.8ms (26.4 Hz)
 -- 22nd Jan 2024 Firefox debug 104.6ms  (9.5 Hz)         live 59.9ms (16.6 Hz)
 
--- Run at 40 (25Hz) - i7 laptop can do 20Hz in firefox dev mode
-c_TICKTIME = 40
+-- Run at 25 (40Hz) - i7 laptop can do 20Hz in firefox dev mode
+c_TICKTIME = 25
 
 -- I'm currently unsure whether scaling the display results in a significant slowdown or not
 -- what it does show is that changing the screen makes everything slower, which probably means in practice
