@@ -23,7 +23,8 @@ type alias Z80Env =
             rom48k: Z80ROM,
             ram: Z80Ram,
             keyboard: Keyboard,
-            time: CpuTimeCTime
+            time: CpuTimeCTime,
+            sp:  Int
     }
 
 type alias Z80EnvWithValue =
@@ -42,7 +43,7 @@ c_NOCONT = 99999
 c_SCRENDT = 191*224+126
 
 z80env_constructor =
-    Z80Env Z80Rom.constructor Z80Ram.constructor Keyboard.constructor (CpuTimeCTime c_FRSTART 0)
+    Z80Env Z80Rom.constructor Z80Ram.constructor Keyboard.constructor (CpuTimeCTime c_FRSTART 0) 0
 
 set_rom: Array Int -> Z80Env -> Z80Env
 set_rom romdata z80env =
