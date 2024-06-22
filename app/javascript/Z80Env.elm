@@ -420,10 +420,6 @@ cont tmp_n z80env =
                 else
                     z80env |> contimpl tmp_n tmp_s
 
-cont_env: Int -> Z80Env-> Z80Env
-cont_env n z80env =
-    { z80env | time = z80env.time |> cont n }
-
 --private void cont_port(int port)
 --{
 --	int n = cpu.time - ctime;
