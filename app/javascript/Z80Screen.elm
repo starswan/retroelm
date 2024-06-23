@@ -22,10 +22,10 @@ constructor: Z80Screen
 constructor =
    let
       --for(int i=6144;i<6912;i++) ram[i] = 070; // white
-      startrange = List.repeat 6144 0
-      whiterange = List.repeat (6912 - 6144) 0x38 -- white
+      screen_data = List.repeat 6144 0
+      attributes = List.repeat (6912 - 6144) 0x38 -- white
 
-      screen = List.concat [startrange, whiterange] |> Z80Memory.constructor
+      screen = List.concat [screen_data, attributes] |> Z80Memory.constructor
    in
       --Z80Screen screen 7 0 0 0 0 0
       Z80Screen screen 7
