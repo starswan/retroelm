@@ -26,6 +26,8 @@ import Z80Tape exposing (Tapfile)
 
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
+-- 23rd Jun 2024 Chromium debug 70.5ms (14.2 Hz) 106
+--
 -- 14th Feb 2024 Chromium debug 70.3ms (14.2 Hz) 184     live 42.1ms (23.7 Hz)  73 sec
 -- 14th Feb 2024 Firefox  debug 96.3ms (10.4 Hz) 217     live 72.0ms (13.9 Hz) 355 sec
 
