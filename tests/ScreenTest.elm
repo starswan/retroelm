@@ -16,13 +16,13 @@ suite =
                let
                   a = [{colour=0x70, data=0x76}]
                in
-                  Expect.equal [{colour=0x70, data=[0x76]}] (a |> Z80Screen.lines)
+                  Expect.equal [{colour=0x70, data=[0x76]}] (a |> Z80Screen.fold_lines)
          ,test "with dups" <|
             \_ ->
                let
                   a = [{colour=0x70, data=0x76}, {colour=0x70, data=0x71}, { colour=0x45, data=0x87}]
                in
-                  Expect.equal [{colour=0x70, data=[0x76, 0x71]}, {colour=0x45, data=[0x87]}] (a |> Z80Screen.lines)
+                  Expect.equal [{colour=0x70, data=[0x76, 0x71]}, {colour=0x45, data=[0x87]}] (a |> Z80Screen.fold_lines)
       ],
       describe "rawToLines"
       [

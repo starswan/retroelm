@@ -1,6 +1,6 @@
 module Z80Screen exposing (..)
 
-import Array exposing (Array, fromList)
+import Array exposing (Array)
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Byte exposing (Byte, getBit)
 import Dict exposing (Dict)
@@ -10,24 +10,25 @@ import Z80Memory exposing (Z80Memory, getValue)
 type alias Z80Screen =
     {
         screen: Z80Memory,
-        border: Int,
-        flash: Int,
-        refrs_a: Int,
-        refrs_b: Int,
-        refrs_t: Int,
-        refrs_s: Int
+        border: Int
+        --flash: Int,
+        --refrs_a: Int,
+        --refrs_b: Int,
+        --refrs_t: Int,
+        --refrs_s: Int
     }
 
 constructor: Z80Screen
 constructor =
    let
       --for(int i=6144;i<6912;i++) ram[i] = 070; // white
-      startrange = List.repeat 6144 0
-      whiterange = List.repeat (6912 - 6144) 0x38 -- white
+      screen_data = List.repeat 6144 0
+      attributes = List.repeat 768 0x38 -- white
 
-      screen = List.concat [startrange, whiterange] |> Z80Memory.constructor
+      screen = List.concat [screen_data, attributes] |> Z80Memory.constructor
    in
-      Z80Screen screen 7 0 0 0 0 0
+      --Z80Screen screen 7 0 0 0 0 0
+      Z80Screen screen 7
 
 set_value: Int -> Int -> Z80Screen -> Z80Screen
 set_value addr value z80s =
@@ -155,13 +156,13 @@ foldUp raw list =
        _ ->
          [ScreenData raw.colour [raw.data]]
 
-lines: List RawScreenData -> List ScreenData
-lines screen =
+fold_lines: List RawScreenData -> List ScreenData
+fold_lines screen =
    screen |> List.foldr foldUp []
 
 rawToLines: List RawScreenData -> List ScreenLine
 rawToLines screen =
-   lines screen |> List.foldr toDrawn []
+   fold_lines screen |> List.foldr toDrawn []
 
 -- Convert row index into start row data location and (colour-ish) attribute memory location
 calcOffsets: Int -> (Int, Int)
@@ -196,12 +197,13 @@ singleScreenLine: (Int, Int) -> Z80Memory -> List RawScreenData
 singleScreenLine line_num z80env =
     List.map (mapScreen line_num z80env) range031
 
-screenLines: Z80Screen -> List (List ScreenLine)
+screenLines: Z80Screen -> Dict Int (List ScreenLine)
 screenLines z80env =
     let
         rawlines = screenOffsets |> List.map (\line_num -> singleScreenLine line_num z80env.screen)
+        lines2 = List.map rawToLines rawlines
     in
-        List.map rawToLines rawlines
+        lines2 |> List.indexedMap (\index linelist -> (index, linelist)) |> Dict.fromList
 
 --private final void refresh_screen() {
 --	int ft = cpu.time;

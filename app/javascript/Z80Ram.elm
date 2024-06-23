@@ -51,11 +51,8 @@ getRam16Value addr z80ram =
 
 setRamValue: Int -> Int -> Z80Ram-> Z80Ram
 setRamValue addr value z80ram =
-   let
-      ram_addr = addr - 6912
-   in
-      if ram_addr >= 0 then
-         { z80ram | non_screen = z80ram.non_screen |> Z80Memory.set_value ram_addr value }
-      else
-         { z80ram | screen = z80ram.screen |> Z80Screen.set_value addr value }
+   if addr >= 6912 then
+      { z80ram | non_screen = z80ram.non_screen |> Z80Memory.set_value (addr - 6912) value }
+   else
+      { z80ram | screen = z80ram.screen |> Z80Screen.set_value addr value }
 
