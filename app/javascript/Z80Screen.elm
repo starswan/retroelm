@@ -23,7 +23,7 @@ constructor =
    let
       --for(int i=6144;i<6912;i++) ram[i] = 070; // white
       screen_data = List.repeat 6144 0
-      attributes = List.repeat (6912 - 6144) 0x38 -- white
+      attributes = List.repeat 768 0x38 -- white
 
       screen = List.concat [screen_data, attributes] |> Z80Memory.constructor
    in
