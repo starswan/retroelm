@@ -22,7 +22,9 @@ constructor: Z80Screen
 constructor =
    let
       --for(int i=6144;i<6912;i++) ram[i] = 070; // white
+      -- 3 banks of 2048 (8x8x32) screen data
       screen_data = List.repeat 6144 0
+      -- 3 banks of 256 (8x32) attributes 0x5800 - 0x5AFF
       attributes = List.repeat 768 0x38 -- white
 
       screen = List.concat [screen_data, attributes] |> Z80Memory.constructor
