@@ -10,20 +10,20 @@ type alias CpuTimeCTime =
             ctime: Int
     }
 
-type alias CpuTimeWithValue =
+type alias CpuTimeAndValue =
     {
         time: CpuTimeCTime,
         value: Int
     }
 
-type alias CpuTimeWithPcAndValue =
+type alias CpuTimePcAndValue =
    {
         time: CpuTimeCTime,
         pc: Int,
         value: Int
    }
 
-type alias CpuTimeAndPcValue =
+type alias CpuTimeAndPc =
    {
         time: CpuTimeCTime,
         pc: Int
