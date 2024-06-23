@@ -7,6 +7,7 @@ import Array exposing (Array)
 import Browser
 import Browser.Events exposing (onKeyDown, onKeyUp)
 import Bytes exposing (Bytes)
+import Dict exposing (values)
 import Html.Events exposing (onClick)
 import Http
 import Http.Detailed
@@ -105,7 +106,7 @@ view model =
    let
       screen = model.qaop.spectrum.cpu.env.ram.screen
       lines = screen |> screenLines
-      screen_data = List.indexedMap lineListToSvg lines
+      screen_data = Dict.map lineListToSvg lines |> values
       -- border colour is never bright
       border_colour = spectrumColour screen.border False
       background = [rect [height "100%", width "100%", fill border_colour, rx "15"] []]
