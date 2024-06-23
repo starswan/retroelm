@@ -1,6 +1,7 @@
 module Z80Types exposing (..)
 
 import Bitwise
+import CpuTimeCTime exposing (CpuTimePcAndValue, add_cpu_time_time)
 import Utils exposing (shiftRightBy8)
 import Z80Env exposing (Z80Env, add_cpu_time_env, mem, mem16, set_mem)
 import Z80Flags exposing (FlagRegisters)
@@ -72,14 +73,14 @@ type alias EnvWithPCAndValue =
 --		time += 3;
 --		return v;
 --	}
-imm8: Z80 -> EnvWithPCAndValue
+imm8: Z80 -> CpuTimePcAndValue
 imm8 z80 =
     let
         v = mem z80.pc z80.env
         new_pc = Bitwise.and (z80.pc + 1) 0xFFFF
-        env_1 = v.env |> add_cpu_time_env 3
+        env_1 = v.time |> add_cpu_time_time 3
     in
-        EnvWithPCAndValue env_1 new_pc v.value
+        CpuTimePcAndValue env_1 new_pc v.value
 
 -- would need the side-effect of mem call as well
 --imm8_discard: Z80 -> Z80
