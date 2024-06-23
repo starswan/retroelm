@@ -5,7 +5,7 @@ module Z80Env exposing (..)
 
 import Array exposing (Array)
 import Bitwise exposing (and, or, shiftLeftBy, shiftRightBy)
-import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeWithValue, add_cpu_time_time, c_NOCONT, cont, cont1, cont_port)
+import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, add_cpu_time_time, c_NOCONT, cont, cont1, cont_port)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (shiftLeftBy8, shiftRightBy8, toHexString)
 import Z80Ram exposing (Z80Ram, c_FRSTART, getRamValue)
@@ -106,7 +106,7 @@ m1 tmp_addr ir z80env =
 --	}
 --	return rom[addr+0x4000];
 --}
-mem: Int -> Z80Env -> CpuTimeWithValue
+mem: Int -> Z80Env -> CpuTimeAndValue
 mem base_addr z80env =
     let
        n = z80env.time.cpu_time - z80env.time.ctime
@@ -126,7 +126,7 @@ mem base_addr z80env =
                                  else
                                     (z80env_time, c_NOCONT, z80env.rom48k |> getROMValue base_addr)
     in
-        CpuTimeWithValue (CpuTimeCTime new_env.cpu_time ctime) value
+        CpuTimeAndValue (CpuTimeCTime new_env.cpu_time ctime) value
 --	public final int mem16(int addr) {
 --		int n = cpu.time - ctime;
 --		if(n>0) cont(n);

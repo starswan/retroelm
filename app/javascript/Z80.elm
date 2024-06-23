@@ -5,7 +5,7 @@ module Z80 exposing (..)
 
 import Array exposing (Array)
 import Bitwise exposing (and, complement, or, shiftLeftBy, shiftRightBy)
-import CpuTimeCTime exposing (CpuTimeAndPcValue, CpuTimeWithPcAndValue, add_cpu_time_time)
+import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimePcAndValue, add_cpu_time_time)
 import Dict exposing (Dict)
 import Loop
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8, toHexString, toHexString2)
@@ -299,12 +299,12 @@ sbc_hl b z80 =
 --		time += 8;
 --		return MP = (char)(xy + (byte)d);
 --	}
-getd: Int -> Z80 -> CpuTimeWithPcAndValue
+getd: Int -> Z80 -> CpuTimePcAndValue
 getd xy z80 =
    let
       d = z80.env |> mem z80.pc
    in
-      CpuTimeWithPcAndValue (d.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (xy + byte d.value))
+      CpuTimePcAndValue (d.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (xy + byte d.value))
 --
 --
 --	private void rrd()
@@ -373,7 +373,7 @@ jp y z80 =
 --		byte d = (byte)env.mem(pc); time += 8;
 --		MP = PC = (char)(pc+d+1);
 --	}
-jr: Z80 -> CpuTimeAndPcValue
+jr: Z80 -> CpuTimeAndPc
 jr z80 =
    let
       mempc = mem z80.pc z80.env
@@ -381,7 +381,7 @@ jr z80 =
       --x = Debug.log "jr" ((String.fromInt d.value) ++ " " ++ (String.fromInt (byte d.value)))
    in
       --z80 |> set_env mempc.env |> add_cpu_time 8 |> set_pc (z80.pc + d + 1)
-      CpuTimeAndPcValue (mempc.time |> add_cpu_time_time 8) (Bitwise.and (z80.pc + d + 1) 0xFFFF)
+      CpuTimeAndPc (mempc.time |> add_cpu_time_time 8) (Bitwise.and (z80.pc + d + 1) 0xFFFF)
 --
 --	private void call(boolean y)
 --	{
@@ -2387,7 +2387,7 @@ lt40_dict = Dict.fromList
           (0xE9, execute_0xE9)
     ]
 
-env_mem_hl: IXIYHL -> Z80 -> CpuTimeWithPcAndValue
+env_mem_hl: IXIYHL -> Z80 -> CpuTimePcAndValue
 env_mem_hl ixiyhl z80 =
     let
        xy = get_xy ixiyhl z80.main
@@ -2395,7 +2395,7 @@ env_mem_hl ixiyhl z80 =
         case ixiyhl of
             IX -> getd xy z80
             IY -> getd xy z80
-            HL -> CpuTimeWithPcAndValue z80.env.time z80.pc xy
+            HL -> CpuTimePcAndValue z80.env.time z80.pc xy
 
 execute_0xA0: Z80 -> Z80
 execute_0xA0 z80 =
@@ -2595,7 +2595,7 @@ set_a value z80 =
 
 -- There appear to be many situations where we already know that we don't need all
 -- this complexity as we're just doing LD A,B or something similar - so stop using it in those cases
-load408bit: Int -> IXIYHL -> Z80 -> CpuTimeWithPcAndValue
+load408bit: Int -> IXIYHL -> Z80 -> CpuTimePcAndValue
 load408bit c_value ixiyhl z80 =
    case (and c_value 0x07) of
       0 -> b_with_z80 z80
@@ -2607,49 +2607,49 @@ load408bit c_value ixiyhl z80 =
       6 -> hl_deref_with_z80 ixiyhl z80
       _ -> a_with_z80 z80
 
-b_with_z80: Z80 -> CpuTimeWithPcAndValue
+b_with_z80: Z80 -> CpuTimePcAndValue
 b_with_z80 z80 =
-    CpuTimeWithPcAndValue z80.env.time z80.pc z80.main.b
+    CpuTimePcAndValue z80.env.time z80.pc z80.main.b
 
-c_with_z80: Z80 -> CpuTimeWithPcAndValue
+c_with_z80: Z80 -> CpuTimePcAndValue
 c_with_z80 z80 =
-    CpuTimeWithPcAndValue z80.env.time z80.pc z80.main.c
+    CpuTimePcAndValue z80.env.time z80.pc z80.main.c
 
-d_with_z80: Z80 -> CpuTimeWithPcAndValue
+d_with_z80: Z80 -> CpuTimePcAndValue
 d_with_z80 z80 =
-    CpuTimeWithPcAndValue z80.env.time z80.pc z80.main.d
+    CpuTimePcAndValue z80.env.time z80.pc z80.main.d
 
-e_with_z80: Z80 -> CpuTimeWithPcAndValue
+e_with_z80: Z80 -> CpuTimePcAndValue
 e_with_z80 z80 =
-    CpuTimeWithPcAndValue z80.env.time z80.pc z80.main.e
+    CpuTimePcAndValue z80.env.time z80.pc z80.main.e
 
 get_h: IXIYHL -> MainWithIndexRegisters -> Int
 get_h ixiyhl z80 =
     shiftRightBy8 (get_xy ixiyhl z80)
 
-h_with_z80: IXIYHL -> Z80 -> CpuTimeWithPcAndValue
+h_with_z80: IXIYHL -> Z80 -> CpuTimePcAndValue
 h_with_z80 ixiyhl z80 =
-    CpuTimeWithPcAndValue z80.env.time z80.pc (shiftRightBy8 (get_xy ixiyhl z80.main))
+    CpuTimePcAndValue z80.env.time z80.pc (shiftRightBy8 (get_xy ixiyhl z80.main))
 
 get_l: IXIYHL -> MainWithIndexRegisters -> Int
 get_l ixiyhl z80 =
     and (get_xy ixiyhl z80) 0xFF
 
-l_with_z80: IXIYHL -> Z80 -> CpuTimeWithPcAndValue
+l_with_z80: IXIYHL -> Z80 -> CpuTimePcAndValue
 l_with_z80 ixiyhl z80 =
-    CpuTimeWithPcAndValue z80.env.time z80.pc (and (get_xy ixiyhl z80.main) 0xFF)
+    CpuTimePcAndValue z80.env.time z80.pc (and (get_xy ixiyhl z80.main) 0xFF)
 
-hl_deref_with_z80: IXIYHL -> Z80 -> CpuTimeWithPcAndValue
+hl_deref_with_z80: IXIYHL -> Z80 -> CpuTimePcAndValue
 hl_deref_with_z80 ixiyhl z80 =
     let
         a = env_mem_hl ixiyhl z80
         new_b = mem a.value z80.env
     in
-        CpuTimeWithPcAndValue new_b.time a.pc new_b.value
+        CpuTimePcAndValue new_b.time a.pc new_b.value
 
-a_with_z80: Z80 -> CpuTimeWithPcAndValue
+a_with_z80: Z80 -> CpuTimePcAndValue
 a_with_z80 z80 =
-    CpuTimeWithPcAndValue  z80.env.time z80.pc z80.flags.a
+    CpuTimePcAndValue z80.env.time z80.pc z80.flags.a
 
 set408bit: Int -> Int -> IXIYHL -> Z80 -> Z80
 set408bit c value ixiyhl z80 =
@@ -3548,14 +3548,14 @@ group_xy_cb ixiyhl z80 =
       offset = mem z80.pc z80.env
       a = char (xy + (byte offset.value))
       env_1 = z80.env
-      z80_1 = { z80 | env = { env_1 | time = offset.time } } |> add_cpu_time 3
+      z80_1 = { z80 | env = { env_1 | time = offset.time |> add_cpu_time_time 3} }
       c = z80_1.env |> mem (char (z80.pc + 1))
       new_pc = z80_1 |> inc_pc2
       env_2 = z80_1.env
-      z80_2 = { z80_1 | env = { env_2 | time = c.time }, pc = new_pc } |> add_cpu_time 5
+      z80_2 = { z80_1 | env = { env_2 | time = c.time |> add_cpu_time_time 5 }, pc = new_pc }
       v1 = z80_2.env |> mem a
       env_3 = z80_2.env
-      z80_3 = { z80_2 | env = { env_3 | time = v1.time } } |> add_cpu_time 4
+      z80_3 = { z80_2 | env = { env_3 | time = v1.time |> add_cpu_time_time 4} }
       o = and (shiftRightBy 3 c.value) 7
 --		switch(c&0xC0) {
 --			case 0x00: v = shifter(o, v); break;
@@ -3578,7 +3578,7 @@ group_xy_cb ixiyhl z80 =
       --                                                   " to " ++ (v2.value |> toHexString2)) new_env
 --		env.mem(a, v);
 --		time += 3;
-      z80_4 = { z80_3 | flags = v2.flags, env = new_env } |> add_cpu_time 3
+      z80_4 = { z80_3 | flags = v2.flags, env = new_env |> add_cpu_time_env 3 }
 --		switch(c&0x07) {
 --			case 0: B = v; break;
 --			case 1: C = v; break;
@@ -3618,7 +3618,7 @@ interrupt bus z80 =
             new_ints = { ints | iff = 0, halted = False }
             z80_1 = { z80 | interrupts = new_ints }
             pushed = z80_1.env |> push z80_1.pc
-            new_z80 = { z80_1 | env = pushed } |> add_cpu_time 6
+            new_z80 = { z80_1 | env = pushed |> add_cpu_time_env 6 }
         in
             case ints.iM of
                 0 -> new_z80 |> im0 bus
@@ -3629,7 +3629,7 @@ interrupt bus z80 =
                         addr = Bitwise.or new_ir bus
                         env_and_pc = z80.env |> mem16 addr
                       in
-                        { new_z80 | env = env_and_pc.env, pc = env_and_pc.value } |> add_cpu_time 6
+                        { new_z80 | env = env_and_pc.env |> add_cpu_time_env 6, pc = env_and_pc.value }
                 _ -> new_z80
 
 set_im_direct: Int -> Z80 -> Z80
