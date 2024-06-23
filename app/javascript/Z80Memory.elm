@@ -11,11 +11,16 @@ type Z80Memory
 
 constructor : List Int -> Z80Memory
 constructor list =
+    Z80Memory (ramListToDict list)
+
+
+ramListToDict : List Int -> Dict Int Int
+ramListToDict list =
     let
         ramarray =
             List.indexedMap Tuple.pair list
     in
-    Z80Memory (Dict.fromList ramarray)
+    Dict.fromList ramarray
 
 
 getValue : Int -> Z80Memory -> Int
