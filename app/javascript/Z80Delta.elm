@@ -1,5 +1,6 @@
 module Z80Delta exposing (..)
 
+import CpuTimeCTime exposing (CpuTimeCTime)
 import Z80Env exposing (Z80Env, add_cpu_time_env)
 import Z80Flags exposing (FlagRegisters)
 import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, ProgramCounter, Z80)
@@ -8,6 +9,7 @@ import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegist
 type Z80Delta
     = Whole Z80
     | MainRegsWithPcAndEnv MainWithIndexRegisters Int Z80Env
+    | MainRegsWithPcAndCpuTime MainWithIndexRegisters Int CpuTimeCTime
     | JustEnv Z80Env
     | MainRegsAndCpuTime MainWithIndexRegisters Int
     | FlagsWithMain FlagRegisters MainWithIndexRegisters
@@ -17,11 +19,14 @@ type Z80Delta
     | MainRegsWithPc MainWithIndexRegisters Int
     | FlagsAndAlt FlagRegisters FlagRegisters
     | EnvWithFlags Z80Env FlagRegisters
+    | CpuTimeWithFlags CpuTimeCTime FlagRegisters
     | EnvWithFlagsAndPc Z80Env FlagRegisters Int
+    | CpuTimeWithFlagsAndPc CpuTimeCTime FlagRegisters Int
     | MainRegsWithEnv MainWithIndexRegisters Z80Env
     | PcAndCpuTime ProgramCounter Int
     | SpAndCpuTime Int Int
     | EnvWithPc Z80Env Int
+    | CpuTimeWithPc CpuTimeCTime Int
     | NoChange
 
 
@@ -44,6 +49,12 @@ apply_delta z80 z80delta =
         MainRegsWithPcAndEnv mainRegisters pc z80Env ->
             { z80 | pc = pc, env = z80Env, main = mainRegisters, interrupts = z80delta.interrupts }
 
+        MainRegsWithPcAndCpuTime mainRegisters pc cpu_time ->
+            let
+                env = z80delta.env
+            in
+                { z80 | pc = pc, env = { env | time = cpu_time}, main = mainRegisters, interrupts = z80delta.interrupts }
+
         JustEnv z80Env ->
             { z80 | pc = z80delta.pc, env = z80Env, interrupts = z80delta.interrupts }
 
@@ -65,11 +76,23 @@ apply_delta z80 z80delta =
         EnvWithFlags z80Env flagRegisters ->
             { z80 | flags = flagRegisters, pc = z80delta.pc, env = z80Env, interrupts = z80delta.interrupts }
 
+        CpuTimeWithFlags time flagRegisters ->
+            let
+                env = z80delta.env
+            in
+               { z80 | flags = flagRegisters, pc = z80delta.pc, env = { env | time = time }, interrupts = z80delta.interrupts }
+
         MainRegsWithEnv mainRegisters z80Env ->
             { z80 | env = z80Env, pc = z80delta.pc, main = mainRegisters, interrupts = z80delta.interrupts }
 
         EnvWithPc z80Env programCounter ->
             { z80 | env = z80Env, pc = programCounter, interrupts = z80delta.interrupts }
+
+        CpuTimeWithPc cpu_time programCounter ->
+            let
+               env = z80delta.env
+            in
+               { z80 | env = { env | time = cpu_time }, pc = programCounter, interrupts = z80delta.interrupts }
 
         FlagsWithPCMainAndTime flagRegisters pc mainWithIndexRegisters cpu_time ->
             { z80 | flags = flagRegisters, pc = pc, env = z80delta.env |> add_cpu_time_env cpu_time, main = mainWithIndexRegisters, interrupts = z80delta.interrupts }
@@ -82,6 +105,12 @@ apply_delta z80 z80delta =
 
         EnvWithFlagsAndPc z80Env flagRegisters pc ->
             { z80 | flags = flagRegisters, pc = pc, env = z80Env, interrupts = z80delta.interrupts }
+
+        CpuTimeWithFlagsAndPc cpu_time flagRegisters pc ->
+            let
+                env = z80delta.env
+            in
+                { z80 | flags = flagRegisters, pc = pc, env = { env | time = cpu_time }, interrupts = z80delta.interrupts }
 
         NoChange ->
             { z80 | pc = z80delta.pc, env = z80delta.env, interrupts = z80delta.interrupts }

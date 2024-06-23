@@ -10,6 +10,25 @@ type alias CpuTimeCTime =
             ctime: Int
     }
 
+type alias CpuTimeWithValue =
+    {
+        time: CpuTimeCTime,
+        value: Int
+    }
+
+type alias CpuTimeWithPcAndValue =
+   {
+        time: CpuTimeCTime,
+        pc: Int,
+        value: Int
+   }
+
+type alias CpuTimeAndPcValue =
+   {
+        time: CpuTimeCTime,
+        pc: Int
+   }
+
 --	private final void cont1(int t) {
 --		t += cpu.time;
 --		if(t<0 || t>=SCRENDT) return;
