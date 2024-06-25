@@ -7,9 +7,63 @@ import Dict exposing (Dict)
 import Maybe exposing (withDefault)
 import Z80Memory exposing (Z80Memory, getValue)
 
+type alias DataRow =
+    {
+       addr: Int,
+       list: List Int
+    }
+
+type alias AttributeRow =
+    {
+       addr: Int,
+       list: List Int,
+       dict: Dict Int Int
+    }
+
+--default_attrs = List.repeat 8 (List.repeat 32 0x38)
+--default_data = List.repeat 64 (List.repeat 32 0)
+default_attrs = List.repeat 32 0x38
+default_data = List.repeat 32 0
+
+type alias ScreenBank =
+    {
+       line0: DataRow,
+       line1: DataRow,
+       line2: DataRow,
+       line3: DataRow,
+       line4: DataRow,
+       line5: DataRow,
+       line6: DataRow,
+       line7: DataRow,
+       attrs: AttributeRow,
+       line_dict: Dict Int Int
+    }
+
+fromOffsets: Int -> Int -> ScreenBank
+fromOffsets dataOffset attrOffset =
+    let
+       l0 = DataRow dataOffset default_data
+       l1 = DataRow (dataOffset + 32 * 8) default_data
+       l2 = DataRow (dataOffset + 32 * 8 * 2) default_data
+       l3 = DataRow (dataOffset + 32 * 8 * 3) default_data
+       l4 = DataRow (dataOffset + 32 * 8 * 4) default_data
+       l5 = DataRow (dataOffset + 32 * 8 * 5) default_data
+       l6 = DataRow (dataOffset + 32 * 8 * 6) default_data
+       l7 = DataRow (dataOffset + 32 * 8 * 7) default_data
+       a = AttributeRow attrOffset default_attrs Dict.empty
+    in
+       ScreenBank l0 l1 l2 l3 l4 l5 l6 l7 a Dict.empty
+
+type alias ScreenMemory =
+    {
+        bank1: ScreenBank,
+        bank2: ScreenBank,
+        bank3: ScreenBank
+    }
+
 type alias Z80Screen =
     {
-        screen: Z80Memory,
+        screen: ScreenMemory,
         border: Int
         --flash: Int,
         --refrs_a: Int,
@@ -23,21 +77,45 @@ constructor =
    let
       --for(int i=6144;i<6912;i++) ram[i] = 070; // white
       -- 3 banks of 2048 (8x8x32) screen data
-      screen_data = List.repeat 6144 0
+      --screen_data = List.repeat 6144 0
       -- 3 banks of 256 (8x32) attributes 0x5800 - 0x5AFF
-      attributes = List.repeat 768 0x38 -- white
+      --attributes = List.repeat 768 0x38 -- white
 
-      screen = List.concat [screen_data, attributes] |> Z80Memory.constructor
+      --screen = List.concat [screen_data, attributes] |> Z80Memory.constructor
+      screen = ScreenMemory (fromOffsets 0 0x1800) (fromOffsets 0x800 0x1900) (fromOffsets 0x1000 0x1A00)
    in
       --Z80Screen screen 7 0 0 0 0 0
       Z80Screen screen 7
+
+set_screen_value: Int -> Int -> ScreenMemory -> ScreenMemory
+set_screen_value addr value mem =
+    let
+        bank1 = mem.bank1
+        bank2 = mem.bank2
+        bank3 = mem.bank3
+        bank3_attrs = mem.bank3.attrs
+        bank2_attrs = mem.bank2.attrs
+        bank1_attrs = mem.bank1.attrs
+    in
+    if addr >= bank3_attrs.addr then
+       { mem | bank3 = { bank3 | attrs = { bank3_attrs | dict = bank3_attrs.dict |> Dict.insert addr value } } }
+    else if addr >= bank2_attrs.addr then
+       { mem | bank2 = { bank2 | attrs = { bank2_attrs | dict = bank2_attrs.dict |>  Dict.insert addr value } } }
+    else if addr >= bank1_attrs.addr then
+       { mem | bank1 = { bank1 | attrs = { bank1_attrs | dict = bank1_attrs.dict |> Dict.insert addr value } } }
+    else if addr >= mem.bank3.line0.addr then
+       { mem | bank3 = { bank3 | line_dict = mem.bank3.line_dict |> Dict.insert addr value } }
+    else if addr >= mem.bank2.line0.addr then
+       { mem | bank2 = { bank2 | line_dict = mem.bank2.line_dict |> Dict.insert addr value } }
+    else
+       { mem | bank1 = { bank1 | line_dict = mem.bank1.line_dict |> Dict.insert addr value } }
 
 set_value: Int -> Int -> Z80Screen -> Z80Screen
 set_value addr value z80s =
     let
         z80screen = z80s |> refresh_screen
     in
-       { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
+       { z80screen | screen = z80screen.screen |> set_screen_value addr value }
 
 -- colour data is bit 7 flash, bit 6 bright, bits 5-3 paper, bits 2-0 ink
 type alias RawScreenData =
@@ -199,14 +277,49 @@ singleScreenLine: (Int, Int) -> Z80Memory -> List RawScreenData
 singleScreenLine line_num z80env =
     List.map (mapScreen line_num z80env) range031
 
+--screenLines: Z80Screen -> Dict Int (List ScreenLine)
+--screenLines z80env =
+--    let
+--        rawlines = screenOffsets |> List.map (\line_num -> singleScreenLine line_num z80env.screen)
+--        lines2 = List.map rawToLines rawlines
+--    in
+--        lines2 |> List.indexedMap (\index linelist -> (index, linelist)) |> Dict.fromList
+
+getDataItem: Int -> Int -> Dict Int Int -> Int
+getDataItem index item screenrow =
+   case screenrow |> Dict.get index of
+       Just a ->  a
+       Nothing -> item
+
+getAttrItem: Int -> Int -> AttributeRow -> Int
+getAttrItem index item screenrow =
+   case screenrow.dict |> Dict.get index of
+       Just a ->  a
+       Nothing -> item
+
+screenBank: ScreenBank -> Dict Int (List ScreenLine)
+screenBank bank =
+    let
+        data0 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.list
+        data1 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line1.list
+        data2 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line2.list
+        data3 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line3.list
+        data4 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line4.list
+        data5 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line5.list
+        data6 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line6.list
+        data7 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line7.list
+        attrs = List.indexedMap (\index item -> getAttrItem index item bank.attrs) bank.attrs.list
+    in
+    Dict.empty
+
 screenLines: Z80Screen -> Dict Int (List ScreenLine)
 screenLines z80env =
     let
-        rawlines = screenOffsets |> List.map (\line_num -> singleScreenLine line_num z80env.screen)
-        lines2 = List.map rawToLines rawlines
+        b1 = z80env.screen.bank1 |> screenBank
+        b2 = z80env.screen.bank2 |> screenBank
+        b3 = z80env.screen.bank3 |> screenBank
     in
-        lines2 |> List.indexedMap (\index linelist -> (index, linelist)) |> Dict.fromList
-
+        Dict.union (Dict.union b1 b2) b3
 --private final void refresh_screen() {
 --	int ft = cpu.time;
 --	if(ft < refrs_t)
