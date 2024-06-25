@@ -4,6 +4,7 @@ import Array exposing (Array)
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Byte exposing (Byte, getBit)
 import Dict exposing (Dict)
+import List.Extra
 import Maybe exposing (withDefault)
 import Z80Memory exposing (Z80Memory, getValue)
 
@@ -27,6 +28,7 @@ default_data = List.repeat 32 0
 
 type alias ScreenBank =
     {
+       lineOffset: Int,
        line0: DataRow,
        line1: DataRow,
        line2: DataRow,
@@ -40,8 +42,9 @@ type alias ScreenBank =
     }
 
 fromOffsets: Int -> Int -> ScreenBank
-fromOffsets dataOffset attrOffset =
+fromOffsets lineNum attrOffset =
     let
+       dataOffset = lineNum * 256
        l0 = DataRow dataOffset default_data
        l1 = DataRow (dataOffset + 32 * 8) default_data
        l2 = DataRow (dataOffset + 32 * 8 * 2) default_data
@@ -52,7 +55,7 @@ fromOffsets dataOffset attrOffset =
        l7 = DataRow (dataOffset + 32 * 8 * 7) default_data
        a = AttributeRow attrOffset default_attrs Dict.empty
     in
-       ScreenBank l0 l1 l2 l3 l4 l5 l6 l7 a Dict.empty
+       ScreenBank lineNum l0 l1 l2 l3 l4 l5 l6 l7 a Dict.empty
 
 type alias ScreenMemory =
     {
@@ -82,7 +85,7 @@ constructor =
       --attributes = List.repeat 768 0x38 -- white
 
       --screen = List.concat [screen_data, attributes] |> Z80Memory.constructor
-      screen = ScreenMemory (fromOffsets 0 0x1800) (fromOffsets 0x800 0x1900) (fromOffsets 0x1000 0x1A00)
+      screen = ScreenMemory (fromOffsets 0 0x1800) (fromOffsets 8 0x1900) (fromOffsets 16 0x1A00)
    in
       --Z80Screen screen 7 0 0 0 0 0
       Z80Screen screen 7
@@ -291,15 +294,10 @@ getDataItem index item screenrow =
        Just a ->  a
        Nothing -> item
 
-getAttrItem: Int -> Int -> AttributeRow -> Int
-getAttrItem index item screenrow =
-   case screenrow.dict |> Dict.get index of
-       Just a ->  a
-       Nothing -> item
-
 screenBank: ScreenBank -> Dict Int (List ScreenLine)
 screenBank bank =
     let
+        attrs = List.indexedMap (\index item -> getDataItem index item bank.attrs.dict) bank.attrs.list
         data0 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.list
         data1 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line1.list
         data2 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line2.list
@@ -308,9 +306,39 @@ screenBank bank =
         data5 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line5.list
         data6 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line6.list
         data7 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line7.list
-        attrs = List.indexedMap (\index item -> getAttrItem index item bank.attrs) bank.attrs.list
+
+        line0 = List.Extra.zip data0 attrs
+        line1 = List.Extra.zip data1 attrs
+        line2 = List.Extra.zip data2 attrs
+        line3 = List.Extra.zip data3 attrs
+        line4 = List.Extra.zip data4 attrs
+        line5 = List.Extra.zip data5 attrs
+        line6 = List.Extra.zip data6 attrs
+        line7 = List.Extra.zip data7 attrs
+
+        l0 = List.map (\(data, attr) -> {colour=attr, data=data}) line0
+        l1 = List.map (\(data, attr) -> {colour=attr, data=data}) line1
+        l2 = List.map (\(data, attr) -> {colour=attr, data=data}) line2
+        l3 = List.map (\(data, attr) -> {colour=attr, data=data}) line3
+        l4 = List.map (\(data, attr) -> {colour=attr, data=data}) line4
+        l5 = List.map (\(data, attr) -> {colour=attr, data=data}) line5
+        l6 = List.map (\(data, attr) -> {colour=attr, data=data}) line6
+        l7 = List.map (\(data, attr) -> {colour=attr, data=data}) line7
+
+        -- line key is lineOffset + n (N = 0..7)
+        --x = List.map (\line -> line) [l0, l1, l2, l3, l4, l5, l6, l7]
+        -- something not quite right as this should produce 64 keys not 8
     in
-    Dict.empty
+        Dict.empty
+            |> Dict.insert (bank.lineOffset + 0) (rawToLines l0)
+            |> Dict.insert (bank.lineOffset + 1) (rawToLines l1)
+            |> Dict.insert (bank.lineOffset + 2) (rawToLines l2)
+            |> Dict.insert (bank.lineOffset + 3) (rawToLines l3)
+            |> Dict.insert (bank.lineOffset + 4) (rawToLines l4)
+            |> Dict.insert (bank.lineOffset + 5) (rawToLines l5)
+            |> Dict.insert (bank.lineOffset + 6) (rawToLines l6)
+            |> Dict.insert (bank.lineOffset + 7) (rawToLines l7)
+
 
 screenLines: Z80Screen -> Dict Int (List ScreenLine)
 screenLines z80env =
