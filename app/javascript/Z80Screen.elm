@@ -4,7 +4,7 @@ import Array exposing (Array)
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Byte exposing (Byte, getBit)
 import Dict exposing (Dict)
-import List.Extra
+import List.Extra exposing (zip)
 import Maybe exposing (withDefault)
 import Z80Memory exposing (Z80Memory, getValue)
 
@@ -21,13 +21,8 @@ type alias AttributeRow =
        dict: Dict Int Int
     }
 
---default_attrs = List.repeat 8 (List.repeat 32 0x38)
---default_data = List.repeat 64 (List.repeat 32 0)
-default_attrs = List.repeat 32 0x38
-default_data = List.repeat 32 0
-
-type alias ScreenBank =
-    {
+type alias CharacterRow =
+  {
        lineOffset: Int,
        line0: DataRow,
        line1: DataRow,
@@ -37,25 +32,57 @@ type alias ScreenBank =
        line5: DataRow,
        line6: DataRow,
        line7: DataRow,
-       attrs: AttributeRow,
-       line_dict: Dict Int Int
+       attrs: DataRow
+  }
+
+type alias ScreenBank =
+    {
+       lineOffset: Int,
+       attrOffset: Int,
+       line0: CharacterRow,
+       line1: CharacterRow,
+       line2: CharacterRow,
+       line3: CharacterRow,
+       line4: CharacterRow,
+       line5: CharacterRow,
+       line6: CharacterRow,
+       line7: CharacterRow,
+       line_dict: Dict Int Int,
+       attr_dict: Dict Int Int
     }
 
-fromOffsets: Int -> Int -> ScreenBank
-fromOffsets lineNum attrOffset =
+characterRow: Int -> Int -> CharacterRow
+characterRow lineNum attrOffset =
     let
+       default_data = List.repeat 32 0
+       default_attrs = List.repeat 32 0x38
+
        dataOffset = lineNum * 256
-       l0 = DataRow dataOffset default_data
-       l1 = DataRow (dataOffset + 32 * 8) default_data
+       l0 = DataRow (dataOffset + 32 * 8 * 0) default_data
+       l1 = DataRow (dataOffset + 32 * 8 * 1) default_data
        l2 = DataRow (dataOffset + 32 * 8 * 2) default_data
        l3 = DataRow (dataOffset + 32 * 8 * 3) default_data
        l4 = DataRow (dataOffset + 32 * 8 * 4) default_data
        l5 = DataRow (dataOffset + 32 * 8 * 5) default_data
        l6 = DataRow (dataOffset + 32 * 8 * 6) default_data
        l7 = DataRow (dataOffset + 32 * 8 * 7) default_data
-       a = AttributeRow attrOffset default_attrs Dict.empty
+       a = DataRow attrOffset default_attrs
     in
-       ScreenBank lineNum l0 l1 l2 l3 l4 l5 l6 l7 a Dict.empty
+       CharacterRow lineNum l0 l1 l2 l3 l4 l5 l6 l7 a
+
+fromOffsets: Int -> Int -> ScreenBank
+fromOffsets lineNum attrOffset =
+    let
+       c0 = characterRow lineNum attrOffset
+       c1 = characterRow (lineNum + 1) (attrOffset + 32)
+       c2 = characterRow (lineNum + 2) (attrOffset + 64)
+       c3 = characterRow (lineNum + 3) (attrOffset + 96)
+       c4 = characterRow (lineNum + 4) (attrOffset + 128)
+       c5 = characterRow (lineNum + 5) (attrOffset + 160)
+       c6 = characterRow (lineNum + 6) (attrOffset + 192)
+       c7 = characterRow (lineNum + 7) (attrOffset + 224)
+    in
+       ScreenBank lineNum attrOffset c0 c1 c2 c3 c4 c5 c6 c7 Dict.empty Dict.empty
 
 type alias ScreenMemory =
     {
@@ -96,19 +123,19 @@ set_screen_value addr value mem =
         bank1 = mem.bank1
         bank2 = mem.bank2
         bank3 = mem.bank3
-        bank3_attrs = mem.bank3.attrs
-        bank2_attrs = mem.bank2.attrs
-        bank1_attrs = mem.bank1.attrs
+        bank3_attrs = mem.bank3.attr_dict
+        bank2_attrs = mem.bank2.attr_dict
+        bank1_attrs = mem.bank1.attr_dict
     in
-    if addr >= bank3_attrs.addr then
-       { mem | bank3 = { bank3 | attrs = { bank3_attrs | dict = bank3_attrs.dict |> Dict.insert addr value } } }
-    else if addr >= bank2_attrs.addr then
-       { mem | bank2 = { bank2 | attrs = { bank2_attrs | dict = bank2_attrs.dict |>  Dict.insert addr value } } }
-    else if addr >= bank1_attrs.addr then
-       { mem | bank1 = { bank1 | attrs = { bank1_attrs | dict = bank1_attrs.dict |> Dict.insert addr value } } }
-    else if addr >= mem.bank3.line0.addr then
+    if addr >= mem.bank3.attrOffset then
+       { mem | bank3 = { bank3 | attr_dict = bank3_attrs |> Dict.insert addr value } }
+    else if addr >= mem.bank2.attrOffset then
+       { mem | bank2 = { bank2 | attr_dict = bank2_attrs |>  Dict.insert addr value } }
+    else if addr >= mem.bank1.attrOffset then
+       { mem | bank1 = { bank1 | attr_dict = bank1_attrs |> Dict.insert addr value } }
+    else if addr >= mem.bank3.lineOffset then
        { mem | bank3 = { bank3 | line_dict = mem.bank3.line_dict |> Dict.insert addr value } }
-    else if addr >= mem.bank2.line0.addr then
+    else if addr >= mem.bank2.lineOffset then
        { mem | bank2 = { bank2 | line_dict = mem.bank2.line_dict |> Dict.insert addr value } }
     else
        { mem | bank1 = { bank1 | line_dict = mem.bank1.line_dict |> Dict.insert addr value } }
@@ -297,25 +324,26 @@ getDataItem index item screenrow =
 screenBank: ScreenBank -> Dict Int (List ScreenLine)
 screenBank bank =
     let
-        attrs = List.indexedMap (\index item -> getDataItem index item bank.attrs.dict) bank.attrs.list
-        data0 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.list
-        data1 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line1.list
-        data2 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line2.list
-        data3 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line3.list
-        data4 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line4.list
-        data5 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line5.list
-        data6 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line6.list
-        data7 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line7.list
+        attrs = List.indexedMap (\index item -> getDataItem index item bank.attr_dict) bank.line0.attrs.list
+        data0 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line0.list
+        data1 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line1.list
+        data2 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line2.list
+        data3 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line3.list
+        data4 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line4.list
+        data5 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line5.list
+        data6 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line6.list
+        data7 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line7.list
 
-        line0 = List.Extra.zip data0 attrs
-        line1 = List.Extra.zip data1 attrs
-        line2 = List.Extra.zip data2 attrs
-        line3 = List.Extra.zip data3 attrs
-        line4 = List.Extra.zip data4 attrs
-        line5 = List.Extra.zip data5 attrs
-        line6 = List.Extra.zip data6 attrs
-        line7 = List.Extra.zip data7 attrs
+        line0 = zip data0 attrs
+        line1 = zip data1 attrs
+        line2 = zip data2 attrs
+        line3 = zip data3 attrs
+        line4 = zip data4 attrs
+        line5 = zip data5 attrs
+        line6 = zip data6 attrs
+        line7 = zip data7 attrs
 
+        -- This is the first pixel row (8 lines)
         l0 = List.map (\(data, attr) -> {colour=attr, data=data}) line0
         l1 = List.map (\(data, attr) -> {colour=attr, data=data}) line1
         l2 = List.map (\(data, attr) -> {colour=attr, data=data}) line2
@@ -328,6 +356,8 @@ screenBank bank =
         -- line key is lineOffset + n (N = 0..7)
         --x = List.map (\line -> line) [l0, l1, l2, l3, l4, l5, l6, l7]
         -- something not quite right as this should produce 64 keys not 8
+        --lineOffset is 0, 32 * 8, 32 * 8 * 2, 32 * 8 * 3 etc up to 32 * 8 * 7
+        -- 32 * 8 * 8 === 16 * 2 * 16 * 2 * 2 === 256 * 8 === 2048
     in
         Dict.empty
             |> Dict.insert (bank.lineOffset + 0) (rawToLines l0)
