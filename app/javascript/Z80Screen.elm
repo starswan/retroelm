@@ -1,17 +1,17 @@
 module Z80Screen exposing (..)
 
 import Array exposing (Array)
+import Array.Extra exposing (zip)
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Byte exposing (Byte, getBit)
 import Dict exposing (Dict)
-import List.Extra exposing (zip)
 import Maybe exposing (withDefault)
 import Z80Memory exposing (Z80Memory, getValue)
 
 type alias DataRow =
     {
        addr: Int,
-       list: List Int
+       list: Array Int
     }
 
 type alias AttributeRow =
@@ -54,8 +54,8 @@ type alias ScreenBank =
 characterRow: Int -> Int -> CharacterRow
 characterRow lineNum attrOffset =
     let
-       default_data = List.repeat 32 0
-       default_attrs = List.repeat 32 0x38
+       default_data = List.repeat 32 0 |> Array.fromList
+       default_attrs = List.repeat 32 0x38 |> Array.fromList
 
        dataOffset = lineNum * 256
        l0 = DataRow (dataOffset + 32 * 8 * 0) default_data
@@ -324,15 +324,15 @@ getDataItem index item screenrow =
 screenBank: ScreenBank -> Dict Int (List ScreenLine)
 screenBank bank =
     let
-        attrs = List.indexedMap (\index item -> getDataItem index item bank.attr_dict) bank.line0.attrs.list
-        data0 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line0.list
-        data1 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line1.list
-        data2 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line2.list
-        data3 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line3.list
-        data4 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line4.list
-        data5 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line5.list
-        data6 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line6.list
-        data7 = List.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line7.list
+        attrs = Array.indexedMap (\index item -> getDataItem index item bank.attr_dict) bank.line0.attrs.list
+        data0 = Array.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line0.list
+        data1 = Array.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line1.list
+        data2 = Array.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line2.list
+        data3 = Array.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line3.list
+        data4 = Array.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line4.list
+        data5 = Array.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line5.list
+        data6 = Array.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line6.list
+        data7 = Array.indexedMap (\index item -> getDataItem index item bank.line_dict) bank.line0.line7.list
 
         line0 = zip data0 attrs
         line1 = zip data1 attrs
@@ -344,14 +344,14 @@ screenBank bank =
         line7 = zip data7 attrs
 
         -- This is the first pixel row (8 lines)
-        l0 = List.map (\(data, attr) -> {colour=attr, data=data}) line0
-        l1 = List.map (\(data, attr) -> {colour=attr, data=data}) line1
-        l2 = List.map (\(data, attr) -> {colour=attr, data=data}) line2
-        l3 = List.map (\(data, attr) -> {colour=attr, data=data}) line3
-        l4 = List.map (\(data, attr) -> {colour=attr, data=data}) line4
-        l5 = List.map (\(data, attr) -> {colour=attr, data=data}) line5
-        l6 = List.map (\(data, attr) -> {colour=attr, data=data}) line6
-        l7 = List.map (\(data, attr) -> {colour=attr, data=data}) line7
+        l0 = Array.map (\(data, attr) -> {colour=attr, data=data}) line0 |> Array.toList
+        l1 = Array.map (\(data, attr) -> {colour=attr, data=data}) line1 |> Array.toList
+        l2 = Array.map (\(data, attr) -> {colour=attr, data=data}) line2 |> Array.toList
+        l3 = Array.map (\(data, attr) -> {colour=attr, data=data}) line3 |> Array.toList
+        l4 = Array.map (\(data, attr) -> {colour=attr, data=data}) line4 |> Array.toList
+        l5 = Array.map (\(data, attr) -> {colour=attr, data=data}) line5 |> Array.toList
+        l6 = Array.map (\(data, attr) -> {colour=attr, data=data}) line6 |> Array.toList
+        l7 = Array.map (\(data, attr) -> {colour=attr, data=data}) line7 |> Array.toList
 
         -- line key is lineOffset + n (N = 0..7)
         --x = List.map (\line -> line) [l0, l1, l2, l3, l4, l5, l6, l7]
@@ -369,6 +369,27 @@ screenBank bank =
             |> Dict.insert (bank.lineOffset + 6) (rawToLines l6)
             |> Dict.insert (bank.lineOffset + 7) (rawToLines l7)
 
+getBankAttr: ScreenBank -> Int -> Maybe Int
+getBankAttr bank addr =
+  let
+    x = bank.attr_dict |> Dict.get addr
+  in
+    case x of
+      Just _ -> x
+      Nothing ->
+        if addr >= bank.line7.attrs.addr then
+          bank.line7.attrs.list |> Array.get (addr - bank.line7.attrs.addr)
+        else
+          Just 0
+
+getScreenValue: Int -> ScreenMemory -> Int
+getScreenValue addr screen =
+  if addr >= screen.bank3.attrOffset then
+    getBankAttr screen.bank3 addr |> Maybe.withDefault 0
+  else if addr >= screen.bank2.attrOffset then
+    getBankAttr screen.bank2 addr |> Maybe.withDefault 0
+ else
+    getBankAttr screen.bank1 addr |> Maybe.withDefault 0
 
 screenLines: Z80Screen -> Dict Int (List ScreenLine)
 screenLines z80env =
