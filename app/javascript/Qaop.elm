@@ -15,7 +15,7 @@ import Loader exposing (LoadAction(..), Loader, paramHandler, trimActionList)
 import Params exposing (StringPair)
 import Spectrum exposing (Spectrum, frames)
 import String exposing (fromChar)
-import Z80Tape exposing (Tapfile, parseTapFile)
+import Tapfile exposing (Tapfile, parseTapFile)
 import Time
 import Utils exposing (compact)
 import Z80Debug exposing (debug_log)
