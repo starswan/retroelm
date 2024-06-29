@@ -5,7 +5,7 @@ module Qaop exposing (..)
 import Array exposing (Array)
 import Bitwise exposing (complement)
 import Bytes exposing (Bytes, Endianness(..), width)
-import Bytes.Decode exposing (Decoder, Step(..), andThen, loop, map, succeed, unsignedInt16, unsignedInt8)
+import Bytes.Decode exposing (Decoder, Step(..), loop, map, succeed, unsignedInt8)
 import Char exposing (toUpper)
 import Dict
 import Http exposing (Error, Expect, Metadata, Response)
@@ -13,11 +13,11 @@ import Http.Detailed
 import Keyboard exposing (ControlKey(..), KeyEvent(..), c_CONTROL_KEY_MAP)
 import Loader exposing (LoadAction(..), Loader, paramHandler, trimActionList)
 import Params exposing (StringPair)
-import Spectrum exposing (Spectrum, frames, new_tape)
+import Spectrum exposing (Spectrum, frames)
 import String exposing (fromChar)
 import Z80Tape exposing (Tapfile, parseTapFile)
 import Time
-import Utils exposing (compact, delay)
+import Utils exposing (compact)
 import Z80Debug exposing (debug_log)
 
 type alias Qaop =
@@ -106,16 +106,16 @@ type Message
   | KeyRepeat
   | LoadTape
 
-list_decoder : Int -> Decoder Int -> Decoder (List Int)
-list_decoder size decoder =
-   loop (size, []) (listStep decoder)
+--list_decoder : Int -> Decoder Int -> Decoder (List Int)
+--list_decoder size decoder =
+--   loop (size, []) (listStep decoder)
 
-listStep : Decoder Int -> (Int, List Int) -> Decoder (Step (Int, List Int) (List Int))
-listStep decoder (n, xs) =
-   if n <= 0 then
-     succeed (Done xs)
-   else
-     map (\x -> Loop (n - 1, x :: xs)) decoder
+--listStep : Decoder Int -> (Int, List Int) -> Decoder (Step (Int, List Int) (List Int))
+--listStep decoder (n, xs) =
+--   if n <= 0 then
+--     succeed (Done xs)
+--   else
+--     map (\x -> Loop (n - 1, x :: xs)) decoder
 
 array_decoder : Int -> Decoder Int -> Decoder (Array Int)
 array_decoder size decoder =
