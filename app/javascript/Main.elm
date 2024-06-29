@@ -12,6 +12,7 @@ import Html.Events exposing (onClick)
 import Http
 import Http.Detailed
 import Json.Decode as Decode
+import Tapfile exposing (Tapfile)
 import Z80Debug exposing (debug_log)
 import Z80Screen exposing (ScreenLine, screenLines, spectrumColour)
 import Spectrum exposing (new_tape, set_rom)
@@ -23,7 +24,6 @@ import Html.Attributes exposing (disabled, id, style)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Message(..), Qaop, ctrlKeyDownEvent, ctrlKeyUpEvent, keyDownEvent, keyUpEvent, pause)
 import Utils exposing (speed_in_hz, time_display)
-import Z80Tape exposing (Tapfile)
 
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:

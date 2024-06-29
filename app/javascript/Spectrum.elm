@@ -7,11 +7,12 @@ import Array exposing (Array)
 import Bitwise exposing (complement, shiftRightBy)
 import Dict
 import Keyboard exposing (KeyEvent, Keyboard, update_keyboard)
+import Tapfile exposing (Tapfile)
 import Z80 exposing (execute, interrupt)
 import Z80Debug exposing (debug_log)
 import Z80Env exposing (reset_cpu_time)
 import Z80Ram exposing (c_FRSTART, c_FRTIME)
-import Z80Tape exposing (Tapfile, Z80Tape)
+import Z80Tape exposing (Z80Tape)
 import Z80Types exposing (Z80)
 
 type alias Audio =
@@ -62,7 +63,7 @@ new_border_refresh =
 new_tape: List Tapfile -> Spectrum -> Spectrum
 new_tape tapfile_list spectrum =
     let
-        x = debug_log "new_tape list" (tapfile_list |> List.length) Nothing
+        --x = debug_log "new_tape list" (tapfile_list |> List.length) Nothing
         map = tapfile_list |> List.indexedMap (\index tap -> (index, tap))
     in
       --  w/o this change, the code crashes with a recursion error
@@ -83,13 +84,13 @@ set_rom romdata spectrum =
    in
       { spectrum | cpu = { z80 | env = z80.env |> Z80Env.set_rom romdata } }
 
-c_Mh = 6 -- margin
-c_Mv = 5
-c_W = 256 + 8*c_Mh*2 -- 352
+--c_Mh = 6 -- margin
+--c_Mv = 5
+--c_W = 256 + 8*c_Mh*2 -- 352
 --c_H = 192 + 8*c_Mv*2 -- 272
 
 --c_REFRESH_END = 99999
-c_BORDER_START = -224*8*c_Mv - 4*c_Mh + 4
+--c_BORDER_START = -224*8*c_Mv - 4*c_Mh + 4
 
 --c_CHANNEL_VOLUME = 26000
 --c_SPEAKER_VOLUME = 49000
@@ -253,12 +254,12 @@ frames keys speccy =
 --do_load thing flag z80  =
 --    z80
 
-refresh_new: ScreenRefresh -> BorderRefresh -> (ScreenRefresh, BorderRefresh)
-refresh_new screen_refresh border_refresh =
-    let
-        new_border = { border_refresh | refrb_x = -c_Mh, refrb_y = -8*c_Mv, refrb_t = c_BORDER_START }
-    in
-        ({ screen_refresh | refrs_t = 0, refrs_b = 0, refrs_s = c_Mv*c_W + c_Mh, refrs_a = 0x1800}, new_border)
+--refresh_new: ScreenRefresh -> BorderRefresh -> (ScreenRefresh, BorderRefresh)
+--refresh_new screen_refresh border_refresh =
+--    let
+--        new_border = { border_refresh | refrb_x = -c_Mh, refrb_y = -8*c_Mv, refrb_t = c_BORDER_START }
+--    in
+--        ({ screen_refresh | refrs_t = 0, refrs_b = 0, refrs_s = c_Mv*c_W + c_Mh, refrs_a = 0x1800}, new_border)
 
 --
 --	boolean paused = true;

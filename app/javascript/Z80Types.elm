@@ -2,8 +2,7 @@ module Z80Types exposing (..)
 
 import Bitwise
 import CpuTimeCTime exposing (CpuTimePcAndValue, add_cpu_time_time)
-import Utils exposing (shiftRightBy8)
-import Z80Env exposing (Z80Env, add_cpu_time_env, mem, mem16, set_mem)
+import Z80Env exposing (Z80Env, add_cpu_time_env, mem, mem16)
 import Z80Flags exposing (FlagRegisters)
 type alias MainRegisters =
    {
