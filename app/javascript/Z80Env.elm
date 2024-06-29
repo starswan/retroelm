@@ -7,7 +7,8 @@ import Array exposing (Array)
 import Bitwise exposing (and, or, shiftLeftBy, shiftRightBy)
 import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, add_cpu_time_time, c_NOCONT, cont, cont1, cont_port)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
-import Utils exposing (shiftLeftBy8, shiftRightBy8, toHexString)
+import Utils exposing (shiftLeftBy8, shiftRightBy8, toHexString, toHexString2)
+import Z80Debug exposing (debug_log)
 import Z80Ram exposing (Z80Ram, c_FRSTART, getRamValue)
 import Z80Rom exposing (Z80ROM, getROMValue, set_spectrum_rom)
 
@@ -357,8 +358,12 @@ z80_in portnum env_in =
       env = env_in |> cont_port_env portnum
       --x = debug_log "z80_in" (portnum |> toHexString) Nothing
       value = env.keyboard |> z80_keyboard_input portnum
+      x = if value /= 0xFF then
+            debug_log "keyboard value" (toHexString2 value) value
+          else
+            value
    in
-      Z80EnvWithValue env value
+      Z80EnvWithValue env x
 
 add_cpu_time_env: Int -> Z80Env -> Z80Env
 add_cpu_time_env value z80env =
@@ -376,8 +381,8 @@ reset_cpu_time z80env =
 --	env.mem(SP = (char)(sp-2), v&0xFF);
 --	time += 3;
 --}
-push: Int -> Z80Env -> Z80Env
-push v z80 =
+z80_push: Int -> Z80Env -> Z80Env
+z80_push v z80 =
    let
       --a = debug_log "push" ((v |> toHexString) ++ " onto " ++ (z80.sp |> toHexString)) Nothing
       sp_minus_1 = Bitwise.and (z80.sp - 1) 0xFFFF

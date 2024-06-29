@@ -97,3 +97,48 @@ delay : Float -> msg -> Cmd msg
 delay time msg =
     Process.sleep time
         |> Task.perform (\_ -> msg)
+
+
+c_DECIMAL_PLACES =
+    3
+
+
+loop_time_in_ms : Int -> Int -> Int
+loop_time_in_ms elapsed_millis count =
+    (10 ^ c_DECIMAL_PLACES) * elapsed_millis // count
+
+
+time_display : Int -> Int -> String
+time_display elapsed_millis count =
+    let
+        elapsed_string =
+            (elapsed_millis // 1000) |> String.fromInt
+
+        loop_time =
+            loop_time_in_ms elapsed_millis count
+
+        time_string =
+            loop_time |> String.fromInt |> String.reverse |> String.toList |> List.drop c_DECIMAL_PLACES |> String.fromList |> String.reverse
+
+        last =
+            loop_time |> modBy (10 ^ c_DECIMAL_PLACES) |> digitToString c_DECIMAL_PLACES
+    in
+    elapsed_string ++ " sec, time " ++ time_string ++ "." ++ last ++ " ms "
+
+
+speed_in_hz : Int -> Int -> String
+speed_in_hz elapsed_millis count =
+    let
+        loop_time =
+            loop_time_in_ms elapsed_millis count
+
+        speed_in_mhz =
+            1000000 / (loop_time |> toFloat) * 1000 |> round
+
+        speed_in_hz_mant =
+            speed_in_mhz // 1000
+
+        speed_in_hz_frac =
+            speed_in_mhz |> modBy 1000
+    in
+    (speed_in_hz_mant |> String.fromInt) ++ "." ++ (speed_in_hz_frac |> String.fromInt |> String.padLeft 3 '0')

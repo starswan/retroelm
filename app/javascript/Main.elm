@@ -22,7 +22,7 @@ import Html exposing (Html, button, div, h2, span, text)
 import Html.Attributes exposing (disabled, id, style)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Message(..), Qaop, ctrlKeyDownEvent, ctrlKeyUpEvent, keyDownEvent, keyUpEvent, pause)
-import Utils exposing (delay, digitToString)
+import Utils exposing (speed_in_hz, time_display)
 import Z80Tape exposing (Tapfile)
 
 -- meant to be run every 20 msec(50Hz)
@@ -62,30 +62,6 @@ init data =
    in
       ((Model newQaop c_TICKTIME 0 0 Nothing), cmd)
 
-c_DECIMAL_PLACES = 3
-
-loop_time_in_ms: Model -> Int
-loop_time_in_ms model =
-    (10 ^ c_DECIMAL_PLACES) * model.elapsed_millis // model.count
-
-time_display: Model -> String
-time_display model =
-   let
-      elapsed_string = (model.elapsed_millis // 1000) |> String.fromInt
-      time_string = model |> loop_time_in_ms |> String.fromInt |> String.reverse |> String.toList |> List.drop c_DECIMAL_PLACES |> String.fromList |> String.reverse
-      last = model |> loop_time_in_ms |> modBy (10 ^ c_DECIMAL_PLACES) |> digitToString c_DECIMAL_PLACES
-   in
-      elapsed_string ++ " sec, time " ++ time_string ++ "." ++ last ++ " ms "
-
-speed_in_hz: Model -> String
-speed_in_hz model =
-   let
-      speed_in_mhz = 1000000 / (model |> loop_time_in_ms |> toFloat) * 1000 |> round
-      speed_in_hz_mant = speed_in_mhz // 1000
-      speed_in_hz_frac = speed_in_mhz |> modBy 1000
-   in
-      (speed_in_hz_mant |> String.fromInt) ++ "." ++ (speed_in_hz_frac |> String.fromInt |> String.padLeft 3 '0')
-
 lineToSvg: Int -> ScreenLine -> Svg Message
 lineToSvg y_index linedata =
    line [
@@ -114,6 +90,8 @@ view model =
       load_disabled = case model.qaop.spectrum.tape of
         Just a -> False
         Nothing -> True
+      speed = speed_in_hz model.elapsed_millis model.count
+      time_disp = time_display model.elapsed_millis model.count
    in
      -- The inline style is being used for example purposes in order to keep this example simple and
      -- avoid loading additional resources. Use a proper stylesheet when building your own app.
@@ -122,7 +100,7 @@ view model =
         h2 [] [text ("Refresh Interval " ++ (model.tickInterval |> String.fromInt) ++ "ms ")]
         ,div [style "display" "flex", style "justify-content" "center"]
         [
-            div [] [text (String.fromInt model.count), text " in ", text (model |> time_display), span [id "hz"] [text (model |> speed_in_hz)], text " Hz"]
+            div [] [text (String.fromInt model.count), text " in ", text time_disp, span [id "hz"] [text speed], text " Hz"]
            ,button [ onClick Pause ] [ text (if model.qaop.spectrum.paused then "Unpause" else "Pause") ]
            ,button [ (onClick LoadTape), (disabled load_disabled) ] [ text "Load Tape" ]
         ]
@@ -132,21 +110,6 @@ view model =
          screen_data_list
         --,svg [style "height" "192px", style "width" "256px"] (List.indexedMap lineListToSvg lines |> List.concat)
      ]
-
---posixToString: Maybe Time.Posix -> String
---posixToString maybe_time =
---   case maybe_time of
---      Just time ->
---         digitToString 2 (toHour utc time)
---           ++ ":" ++
---           digitToString 2 (toMinute utc time)
---           ++ ":" ++
---           digitToString 2 (toSecond utc time)
---           ++ "." ++
---           digitToString 3 (toMillis utc time)
---           ++ " (UTC)"
---      Nothing ->
---         "Time N/A"
 
 gotRom: Qaop -> Result (Http.Detailed.Error Bytes) (Http.Metadata, Array Int) -> (Qaop, Cmd Message)
 gotRom qaop result =

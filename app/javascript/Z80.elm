@@ -11,7 +11,7 @@ import Loop
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8, toHexString, toHexString2)
 import Z80Debug exposing (debug_log, debug_todo)
 import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta)
-import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, pop, push, set_mem, set_mem16, z80_in, z80env_constructor)
+import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, pop, set_mem, set_mem16, z80_in, z80_push, z80env_constructor)
 import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (subName)
@@ -398,7 +398,7 @@ call y z80 =
       let
          --b = debug_log "call" (a.value |> subName) Nothing
          --z80_1 = z80_2 |> push z80_2.pc |> set_pc a.value
-         pushed = z80_2.env |> push z80_2.pc
+         pushed = z80_2.env |> z80_push z80_2.pc
          z80_1 = { z80_2 | env = pushed, pc = a.value }
       in
          z80_1
@@ -2823,7 +2823,7 @@ execute_0xCD z80 =
       v = z80 |> imm16
       z80_1 = { z80 | env = v.env }
       --d = debug_log "call" ("from " ++ (v.z80.pc |> toHexString) ++ " to " ++ (v.value |> subName)) Nothing
-      pushed = z80_1.env |> push v.pc
+      pushed = z80_1.env |> z80_push v.pc
    in
       --{ z80_1 | env = pushed, pc = v.value }
       EnvWithPc pushed v.value
@@ -2834,7 +2834,7 @@ execute_0xC5 z80 =
     --z80 |> push (z80 |> get_bc)
     let
         bc =  (z80 |> get_bc)
-        pushed = z80.env |> push bc
+        pushed = z80.env |> z80_push bc
     in
         { z80 | env = pushed }
 
@@ -2874,7 +2874,7 @@ execute_0xF5 z80 =
    -- case 0xF5: push(A<<8|flags()); break;
    let
       a = z80 |> get_af
-      pushed = z80.env |> push a
+      pushed = z80.env |> z80_push a
    in
       { z80 | env = pushed }
 
@@ -2882,7 +2882,7 @@ execute_0xC7CFD7DFE7EFF7FF: Int -> Z80 -> Z80
 execute_0xC7CFD7DFE7EFF7FF c z80 =
     --z80 |> push z80.pc |> set_pc (c - 199)
     let
-        pushed  = z80.env |> push z80.pc
+        pushed  = z80.env |> z80_push z80.pc
     in
         { z80 | env = pushed, pc = (c - 199) }
 
@@ -2899,7 +2899,7 @@ execute_0xE5: Z80 -> Z80
 execute_0xE5 z80 =
    -- case 0xE5: push(HL); break;
    let
-       pushed = z80.env |> push z80.main.hl
+       pushed = z80.env |> z80_push z80.main.hl
    in
       { z80 | env = pushed }
 
@@ -2919,7 +2919,7 @@ execute_0xE3 z80 =
    let
       v = z80.env |> pop
       z80_1 = { z80 | env = v.env }
-      pushed = z80_1.env |> push z80_1.main.hl
+      pushed = z80_1.env |> z80_push z80_1.main.hl
    in
       { z80_1 | env = pushed } |> set_hl v.value |> add_cpu_time 2
 
@@ -2964,7 +2964,7 @@ execute_0xD5 z80 =
    --z80 |> push (z80 |> get_de)
    let
       de = z80 |> get_de
-      pushed = z80.env |> push de
+      pushed = z80.env |> z80_push de
    in
       { z80 | env = pushed }
 
@@ -3617,7 +3617,7 @@ interrupt bus z80 =
             --z81 = debug_log "interrupt" "keyboard scan" z80
             new_ints = { ints | iff = 0, halted = False }
             z80_1 = { z80 | interrupts = new_ints }
-            pushed = z80_1.env |> push z80_1.pc
+            pushed = z80_1.env |> z80_push z80_1.pc
             new_z80 = { z80_1 | env = pushed |> add_cpu_time_env 6 }
         in
             case ints.iM of
