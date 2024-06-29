@@ -2,8 +2,13 @@ module Z80Tape exposing (..)
 
 import Bytes exposing (Bytes, Endianness(..), width)
 import Bytes.Decode exposing (Decoder, Step(..), andThen, fail, loop, map, map2, map3, map4, map5, string, succeed, unsignedInt16, unsignedInt8)
+import Dict exposing (Dict)
 import Z80Debug exposing (debug_log)
 
+
+type alias Z80Tape =
+    { tapfiles : Dict Int Tapfile
+    }
 
 parseTapFile : Bytes -> List Tapfile
 parseTapFile bytes =
@@ -60,10 +65,6 @@ type alias Tapfile =
     { header : TapfileHeader
     , data : TapfileBlock
     }
-
-
-
--- inferred as Decoder Int
 
 
 spectrumUnsigned16Bit =
