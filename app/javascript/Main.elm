@@ -19,7 +19,7 @@ import Svg exposing (Svg, line, rect, svg)
 import Svg.Attributes exposing (fill, height, rx, stroke, viewBox, width, x1, x2, y1, y2)
 import Time exposing (posixToMillis)
 import Html exposing (Html, button, div, h2, span, text)
-import Html.Attributes exposing (id, style)
+import Html.Attributes exposing (disabled, id, style)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Message(..), Qaop, ctrlKeyDownEvent, ctrlKeyUpEvent, keyDownEvent, keyUpEvent, pause)
 import Utils exposing (delay, digitToString)
@@ -111,6 +111,9 @@ view model =
       border_colour = spectrumColour screen.border False
       background = [rect [height "100%", width "100%", fill border_colour, rx "15"] []]
       screen_data_list = background :: screen_data |> List.concat
+      load_disabled = case model.qaop.spectrum.tape of
+        Just a -> False
+        Nothing -> True
    in
      -- The inline style is being used for example purposes in order to keep this example simple and
      -- avoid loading additional resources. Use a proper stylesheet when building your own app.
@@ -121,6 +124,7 @@ view model =
         [
             div [] [text (String.fromInt model.count), text " in ", text (model |> time_display), span [id "hz"] [text (model |> speed_in_hz)], text " Hz"]
            ,button [ onClick Pause ] [ text (if model.qaop.spectrum.paused then "Unpause" else "Pause") ]
+           ,button [ (onClick LoadTape), (disabled load_disabled) ] [ text "Load Tape" ]
         ]
         ,svg
          [height (272 * c_SCALEFACTOR |> String.fromInt), width (352 * c_SCALEFACTOR |> String.fromInt), viewBox "0 0 352 272"]
@@ -156,6 +160,10 @@ gotTap: Qaop -> Result Http.Error (List Tapfile) -> (Qaop, Cmd Message)
 gotTap qaop result =
     case result of
       Ok value ->
+         -- THe infinite recursion issue goes away if tape is a Dict rather than a List or Array
+         -- it only happens when the VM starts running - if this is replaced with Cmd.none
+         -- and we unpause manually, it crashes on the unpause - so something to do with Qaop.run
+         -- and copying the Array
          { qaop | spectrum = qaop.spectrum |> new_tape value } |> Qaop.run
       Err _ ->
          (qaop, Cmd.none)
@@ -177,9 +185,9 @@ update message model =
        GotTAP result ->
             let
                 (qaop, cmd) = gotTap model.qaop result
-                run_after_30_sec = delay 30000 LoadTape
+                --run_after_30_sec = delay 30000 LoadTape
             in
-                ({ model | qaop = qaop, count = model.count + 1 }, Cmd.batch [cmd, run_after_30_sec])
+                ({ model | qaop = qaop, count = model.count + 1 }, cmd)
        Tick posix ->
           let
              state = if model.qaop.spectrum.paused then

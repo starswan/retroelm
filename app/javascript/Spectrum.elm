@@ -5,12 +5,13 @@ module Spectrum exposing (..)
 
 import Array exposing (Array)
 import Bitwise exposing (complement, shiftRightBy)
+import Dict
 import Keyboard exposing (KeyEvent, Keyboard, update_keyboard)
 import Z80 exposing (execute, interrupt)
 import Z80Debug exposing (debug_log)
 import Z80Env exposing (reset_cpu_time)
 import Z80Ram exposing (c_FRSTART, c_FRTIME)
-import Z80Tape exposing (Tapfile)
+import Z80Tape exposing (Tapfile, Z80Tape)
 import Z80Types exposing (Z80)
 
 type alias Audio =
@@ -62,10 +63,14 @@ new_tape: List Tapfile -> Spectrum -> Spectrum
 new_tape tapfile_list spectrum =
     let
         x = debug_log "new_tape list" (tapfile_list |> List.length) Nothing
+        map = tapfile_list |> List.indexedMap (\index tap -> (index, tap))
     in
       --  w/o this change, the code crashes with a recursion error
       --{ spectrum | tape = Just (Z80Tape False tape_string 0 0 True True) }
-       spectrum
+      -- spectrum
+      -- This is weird - it only works if the tape is a dict (rather than list or Array)
+      -- otherwise we just an infinite recursion error
+       { spectrum | tape = Just (Z80Tape (Dict.fromList map)) }
   -- let
   --    z80 = spectrum.cpu
   -- in
@@ -96,7 +101,7 @@ type alias Spectrum =
         cpu: Z80,
         paused: Bool,
         want_pause: Int,
-        tape: Maybe Tape,
+        tape: Maybe Z80Tape,
         --audio: Audio,
         screen_refresh: ScreenRefresh,
         border_refresh: BorderRefresh
@@ -218,14 +223,15 @@ constructor =
 --	}
 frames: List KeyEvent -> Spectrum -> Spectrum
 frames keys speccy =
-    let
-      --tap = 0
-      --tend = False
-      sz80 = speccy.cpu
-      env = sz80.env |> reset_cpu_time
-      cpu = { sz80 | time_limit = c_FRSTART + c_FRTIME,
-                     env = { env | keyboard = keys |> update_keyboard } } |> interrupt 0xFF |> execute
-      spectrum = { speccy | cpu = cpu }
+  let
+    --tap = 0
+    --tend = False
+    sz80 = speccy.cpu
+    env = sz80.env |> reset_cpu_time
+    cpu = { sz80 | time_limit = c_FRSTART + c_FRTIME,
+                   env = { env | keyboard = keys |> update_keyboard } } |> interrupt 0xFF |> execute
+  in
+    { speccy | cpu = cpu }
       --x = if spectrum.paused then
       --       1
       --   else
@@ -242,8 +248,6 @@ frames keys speccy =
       --                       loaded
       --               Nothing ->
       --                   execute spectrum.cpu
-    in
-        spectrum
 
 --do_load: number -> Bool -> Z80 -> Z80
 --do_load thing flag z80  =
