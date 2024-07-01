@@ -2,7 +2,9 @@ module Keyboard exposing (..)
 
 import Array exposing (Array)
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
+import Char exposing (toUpper)
 import Dict
+import String exposing (fromChar)
 import Z80Debug exposing (debug_log)
 
 
@@ -435,3 +437,99 @@ key event =
 --			arrows[i] = c;
 --		}
 --	}
+-- need to do case-insensitive check as keyboard
+-- can come in as Z and leave as z - but also , -> < and ? -> /(oh dear)
+-- convert to upper case on way in - really want physical key (ish)
+
+
+keyNotEqual : KeyEvent -> Char -> Bool
+keyNotEqual event character =
+    case event of
+        KeyDownEvent char ->
+            char /= character
+
+        ControlKeyDownEvent _ ->
+            True
+
+
+keyDownEvent : Char -> List KeyEvent -> List KeyEvent
+keyDownEvent character keys =
+    let
+        upperchar =
+            character |> toUpper
+
+        event =
+            KeyDownEvent upperchar
+
+        newkeys =
+            event :: keys
+
+        o =
+            debug_log ("key down " ++ (character |> fromChar) ++ " keys ") newkeys Nothing
+    in
+    event :: keys
+
+
+keyUpEvent : Char -> List KeyEvent -> List KeyEvent
+keyUpEvent character keys =
+    let
+        upperchar =
+            character |> toUpper
+
+        newkeys =
+            keys |> List.filter (\item -> keyNotEqual item upperchar)
+
+        o =
+            debug_log ("key up " ++ (character |> fromChar) ++ " keys ") newkeys Nothing
+    in
+    newkeys
+
+
+ctrlKeyNotEqual : KeyEvent -> ControlKey -> Bool
+ctrlKeyNotEqual event str =
+    case event of
+        KeyDownEvent _ ->
+            True
+
+        ControlKeyDownEvent string ->
+            str /= string
+
+
+ctrlKeyDownEvent : String -> List KeyEvent -> List KeyEvent
+ctrlKeyDownEvent string keys =
+    let
+        control_key =
+            c_CONTROL_KEY_MAP |> Dict.get string
+
+        newkeys =
+            case control_key of
+                Just a ->
+                    ControlKeyDownEvent a :: keys
+
+                Nothing ->
+                    keys
+
+        o =
+            debug_log ("control key down " ++ string ++ " keys ") newkeys Nothing
+    in
+    newkeys
+
+
+ctrlKeyUpEvent : String -> List KeyEvent -> List KeyEvent
+ctrlKeyUpEvent string keys =
+    let
+        maybe_control_key =
+            c_CONTROL_KEY_MAP |> Dict.get string
+
+        newkeys =
+            case maybe_control_key of
+                Just control_key ->
+                    keys |> List.filter (\item -> ctrlKeyNotEqual item control_key)
+
+                Nothing ->
+                    keys
+
+        o =
+            debug_log ("control key up " ++ string ++ " keys ") newkeys Nothing
+    in
+    newkeys
