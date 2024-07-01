@@ -3,22 +3,16 @@
 --
 module Main exposing (..)
 
-import Array exposing (Array)
-import Bitwise exposing (complement)
 import Browser
 import Browser.Events exposing (onKeyDown, onKeyUp)
-import Bytes exposing (Bytes)
 import Dict exposing (values)
 import Html.Events exposing (onClick)
-import Http
-import Http.Detailed
 import Json.Decode as Decode
-import Loader exposing (LoadAction(..), trimActionList)
-import MessageHandler exposing (Message(..), loadRom, loadTap)
-import Tapfile exposing (Tapfile)
+import Loader exposing (LoadAction(..))
+import MessageHandler exposing (Message(..), gotRom, gotTap, run)
 import Z80Debug exposing (debug_log)
 import Z80Screen exposing (ScreenLine, screenLines, spectrumColour)
-import Spectrum exposing (frames, new_tape, set_rom)
+import Spectrum
 import Svg exposing (Svg, line, rect, svg)
 import Svg.Attributes exposing (fill, height, rx, stroke, viewBox, width, x1, x2, y1, y2)
 import Time exposing (posixToMillis)
@@ -91,7 +85,7 @@ view model =
       background = [rect [height "100%", width "100%", fill border_colour, rx "15"] []]
       screen_data_list = background :: screen_data |> List.concat
       load_disabled = case model.qaop.spectrum.tape of
-        Just a -> False
+        Just _ -> False
         Nothing -> True
       speed = speed_in_hz model.elapsed_millis model.count
       time_disp = time_display model.elapsed_millis model.count
@@ -113,26 +107,6 @@ view model =
          screen_data_list
         --,svg [style "height" "192px", style "width" "256px"] (List.indexedMap lineListToSvg lines |> List.concat)
      ]
-
-gotRom: Qaop -> Result (Http.Detailed.Error Bytes) (Http.Metadata, Array Int) -> (Qaop, Cmd Message)
-gotRom qaop result =
-    case result of
-        Ok (_, value) ->
-           { qaop | spectrum = qaop.spectrum |> set_rom value } |> run
-        Err _ ->
-            (qaop, Cmd.none)
-
-gotTap: Qaop -> Result Http.Error (List Tapfile) -> (Qaop, Cmd Message)
-gotTap qaop result =
-    case result of
-      Ok value ->
-         -- THe infinite recursion issue goes away if tape is a Dict rather than a List or Array
-         -- it only happens when the VM starts running - if this is replaced with Cmd.none
-         -- and we unpause manually, it crashes on the unpause - so something to do with Qaop.run
-         -- and copying the Array
-         { qaop | spectrum = qaop.spectrum |> new_tape value } |> run
-      Err _ ->
-         (qaop, Cmd.none)
 
 update : Message -> Model -> (Model, Cmd Message)
 update message model =
@@ -236,51 +210,3 @@ main =
       subscriptions = subscriptions
     }
 
---	public void run() {
---		Loader l;
---		for(;;) try {
---			synchronized(queue) {
---				if(queue.isEmpty()) {
---					state &= ~2;
---					spectrum.pause(010);
---					queue.wait();
---					continue;
---				}
---				state |= 2;
---				l = (Loader)queue.remove(0);
---			}
---			l.exec();
---		} catch(InterruptedException x) {
---			break;
---		} catch(Exception x) {
---			x.printStackTrace();
---		}
---	}
-run: Qaop -> (Qaop, Cmd Message)
-run qaop =
-   if qaop.spectrum.paused then
-      let
-        loader = qaop.loader
-        nextAction = List.head loader.actions
-        qaop_1 = { qaop | loader = { loader | actions = (List.tail loader.actions) |> trimActionList } }
-
-        newQaop = if List.isEmpty loader.actions then
-                    { qaop_1 | state = (Bitwise.and qaop.state (complement 2)), spectrum = qaop_1.spectrum |> Spectrum.pause 0x08 }
-                  else
-                     qaop_1
-        (q2, cmd) = case nextAction of
-                      Just action ->
-                        let
-                           cmd_1 = case action of
-                                      LoadTAP fileName ->
-                                         loadTap fileName
-                                      LoadROM url ->
-                                         loadRom url
-                        in
-                           (newQaop, cmd_1)
-                      Nothing ->
-                        (newQaop, Cmd.none)
-      in
-         (q2, cmd)
-   else
-      ({ qaop | spectrum = qaop.spectrum |> frames qaop.keys}, Cmd.none)
