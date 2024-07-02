@@ -3288,30 +3288,6 @@ group_xy ixiy old_z80 =
 --		PC = (char)(PC+1); time += 4;
 --		switch(c) {
 
-group_ed_dict: Dict Int (Z80 -> Z80)
-group_ed_dict = Dict.fromList
-    [
-          (0x47, execute_ED47),
-            -- case 0x4F: r(A); time++; break;
-            -- case 0x57: ld_a_ir(IR>>>8); break;
-            -- case 0x5F: ld_a_ir(r()); break;
-            -- case 0x67: rrd(); break;
-            -- case 0x6F: rld(); break;
-          (0x6F, rld),
-          (0x78, execute_ED78),
-          (0x52, execute_ED52),
-          (0x43, execute_ED43),
-          (0x53, execute_ED53),
-          (0xB8, execute_EDB8),
-          (0xB0, execute_EDB0),
-          (0x7B, execute_ED7B),
-          (0x4B, execute_ED4B),
-          (0x73, execute_ED73),
-          (0x5B, execute_ED5B),
-          (0x42, execute_ED42),
-          (0x72, execute_ED72)
-    ]
-
 execute_ED47: Z80 -> Z80
 execute_ED47 z80 =
    -- case 0x47: i(A); time++; break;
@@ -3417,6 +3393,102 @@ execute_ED72 z80 =
   -- case 0x72: sbc_hl(SP); break;
   z80 |> sbc_hl z80.env.sp
 
+group_ed_dict: Dict Int (Z80 -> Z80)
+group_ed_dict = Dict.fromList
+    [
+          (0x47, execute_ED47),
+            -- case 0x4F: r(A); time++; break;
+            -- case 0x57: ld_a_ir(IR>>>8); break;
+            -- case 0x5F: ld_a_ir(r()); break;
+            -- case 0x67: rrd(); break;
+            -- case 0x6F: rld(); break;
+          (0x6F, rld),
+          (0x78, execute_ED78),
+          (0x52, execute_ED52),
+          (0x43, execute_ED43),
+          (0x53, execute_ED53),
+          (0xB8, execute_EDB8),
+          (0xB0, execute_EDB0),
+          (0x7B, execute_ED7B),
+          (0x4B, execute_ED4B),
+          (0x73, execute_ED73),
+          (0x5B, execute_ED5B),
+          (0x42, execute_ED42),
+          (0x72, execute_ED72),
+          (0x46, execute_ED46),
+          (0x4E, execute_ED4E),
+          (0x56, execute_ED56),
+          (0x5E, execute_ED5E),
+          (0x66, execute_ED66),
+          (0x6E, execute_ED6E),
+          (0x76, execute_ED76),
+          (0x7E, execute_ED7E)
+    ]
+
+-- case 0x46:
+-- case 0x4E:
+-- case 0x56:
+-- case 0x5E:
+-- case 0x66:
+-- case 0x6E:
+-- case 0x76:
+-- case 0x7E: IM = c>>3&3; break;
+execute_ED46: Z80 -> Z80
+execute_ED46 z80 =
+  let
+    value = 0x46
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED4E: Z80 -> Z80
+execute_ED4E z80 =
+  let
+    value = 0x4E
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED56: Z80 -> Z80
+execute_ED56 z80 =
+  let
+    value = 0x56
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED5E: Z80 -> Z80
+execute_ED5E z80 =
+  let
+    value = 0x5E
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED66: Z80 -> Z80
+execute_ED66 z80 =
+  let
+    value = 0x66
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED6E: Z80 -> Z80
+execute_ED6E z80 =
+  let
+    value = 0x6E
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED76: Z80 -> Z80
+execute_ED76 z80 =
+  let
+    value = 0x76
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED7E: Z80 -> Z80
+execute_ED7E z80 =
+  let
+    value = 0x7E
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
 group_ed: Z80 -> Z80
 group_ed z80_0 =
    let
@@ -3439,17 +3511,7 @@ group_ed z80_0 =
           --0x5A -> z80 |> adc_hl (z80 |> get_de)
           ---- case 0x4A: adc_hl(B<<8|C); break;
           --0x4A -> z80 |> adc_hl (z80 |> get_bc)
-          -- case 0x46:
-         -- case 0x4E:
-         -- case 0x56:
-         -- case 0x5E:
-         -- case 0x66:
-         -- case 0x6E:
-         -- case 0x76:
-         -- case 0x7E: IM = c>>3&3; break;
-          if List.member c.value [0x46, 0x4E, 0x56, 0x5E, 0x66, 0x6E, 0x76, 0x7E] then
-             z80 |> set_im_direct (and (shiftRightBy 3 c.value) 3)
-          else if List.member c.value [0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70] then
+          if List.member c.value [0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70] then
             -- case 0x40: f_szh0n0p(B=env.in(B<<8|C)); time+=4; break;
             -- case 0x48: f_szh0n0p(C=env.in(B<<8|C)); time+=4; break;
             -- case 0x50: f_szh0n0p(D=env.in(B<<8|C)); time+=4; break;
