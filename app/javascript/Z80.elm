@@ -292,20 +292,6 @@ sbc_hl b z80 =
    in
       { z80 | main = { main | hl = r }, flags = { flags | ff = ff, fa = fa, fb = fb, fr = fr} } |> add_cpu_time 7
 --
---	private int getd(int xy)
---	{
---		int d = env.mem(PC);
---		PC = (char)(PC+1);
---		time += 8;
---		return MP = (char)(xy + (byte)d);
---	}
-getd: Int -> Z80 -> CpuTimePcAndValue
-getd xy z80 =
-   let
-      d = z80.env |> mem z80.pc
-   in
-      CpuTimePcAndValue (d.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (xy + byte d.value))
---
 --
 --	private void rrd()
 --	{
@@ -1718,49 +1704,59 @@ execute_0x6B ixiyhl z80 =
    --z80 |> set_l_z80 z80.main.e ixiyhl
    MainRegsWithPc (z80.main |> set_l z80.main.e ixiyhl) z80.pc
 
-execute_0x6C: IXIYHL -> Z80 -> Z80
+execute_0x6C: IXIYHL -> Z80 -> Z80Delta
 execute_0x6C ixiyhl z80 =
    -- case 0x6C: HL=HL&0xFF00|HL>>>8; break;
    -- case 0x6C: xy=xy&0xFF00|xy>>>8; break;
-   z80 |> set_l_z80 (get_h ixiyhl z80.main) ixiyhl
+   --z80 |> set_l_z80 (get_h ixiyhl z80.main) ixiyhl
+   MainRegsWithPc (z80.main |> set_l (get_h ixiyhl z80.main) ixiyhl) z80.pc
 
-execute_0x6E: IXIYHL -> Z80 -> Z80
+execute_0x6E: IXIYHL -> Z80 -> Z80Delta
 execute_0x6E ixiyhl z80 =
    -- case 0x6E: HL=HL&0xFF00|env.mem(HL); time+=3; break;
    -- case 0x6E: HL=HL&0xFF00|env.mem(getd(xy)); time+=3; break;
    let
       value = hl_deref_with_z80 ixiyhl z80
+      main = z80.main
       env_1 = z80.env
    in
-      { z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_l_z80 value.value HL |> add_cpu_time 3
+      --{ z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_l_z80 value.value HL |> add_cpu_time 3
+      MainRegsWithPcAndCpuTime (main |> set_h value.value HL) value.pc (value.time |> add_cpu_time_time 3)
 
-execute_0x6F: IXIYHL -> Z80 -> Z80
+execute_0x6F: IXIYHL -> Z80 -> Z80Delta
 execute_0x6F ixiyhl z80 =
     -- case 0x6F: HL=HL&0xFF00|A; break;
     -- case 0x6F: xy=xy&0xFF00|A; break;
-    z80 |> set_l_z80 z80.flags.a ixiyhl
+    --z80 |> set_l_z80 z80.flags.a ixiyhl
+   MainRegsWithPc (z80.main |> set_l z80.flags.a ixiyhl) z80.pc
 
-execute_0x70: IXIYHL -> Z80 -> Z80
+execute_0x70: IXIYHL -> Z80 -> Z80Delta
 execute_0x70 ixiyhl z80 =
     -- case 0x70: env.mem(HL,B); time+=3; break;
     -- case 0x70: env.mem(getd(xy),B); time+=3; break;
     let
        mem_target = z80 |> env_mem_hl ixiyhl
        env_1 = z80.env
-       new_env = { env_1 | time = mem_target.time } |> set_mem mem_target.value z80.main.b
+       new_env = { env_1 | time = mem_target.time }
+                 |> set_mem mem_target.value z80.main.b
+                 |> add_cpu_time_env 3
     in
-       { z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
+       --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
+       EnvWithPc new_env mem_target.pc
 
-execute_0x71: IXIYHL -> Z80 -> Z80
+execute_0x71: IXIYHL -> Z80 -> Z80Delta
 execute_0x71 ixiyhl z80 =
     -- case 0x71: env.mem(HL,C); time+=3; break;
     -- case 0x71: env.mem(getd(xy),C); time+=3; break;
     let
         mem_target = z80 |> env_mem_hl ixiyhl
         env_1 = z80.env
-        new_env = { env_1 | time = mem_target.time } |> set_mem mem_target.value z80.main.c
+        new_env = { env_1 | time = mem_target.time }
+                  |> set_mem mem_target.value z80.main.c
+                  |> add_cpu_time_env 3
     in
-        { z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
+        --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
+        EnvWithPc new_env mem_target.pc
 
 execute_0x72: IXIYHL -> Z80 -> Z80
 execute_0x72 ixiyhl z80 =
@@ -2340,18 +2336,18 @@ lt40_delta_dict = Dict.fromList
           (0x68, execute_0x68),
           (0x69, execute_0x69),
           (0x6A, execute_0x6A),
-          (0x6B, execute_0x6B)
+          (0x6B, execute_0x6B),
+          (0x6C, execute_0x6C),
+          (0x6E, execute_0x6E),
+          (0x6F, execute_0x6F),
+          (0x70, execute_0x70),
+          (0x71, execute_0x71)
     ]
 
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
-          (0x6C, execute_0x6C),
-          (0x6E, execute_0x6E),
-          (0x6F, execute_0x6F),
-          (0x70, execute_0x70),
-          (0x71, execute_0x71),
           (0x72, execute_0x72),
           (0x73, execute_0x73),
           (0x74, execute_0x74),
@@ -2386,16 +2382,34 @@ lt40_dict = Dict.fromList
           (0xBE, execute_0xBE),
           (0xE9, execute_0xE9)
     ]
-
+--
+--	private int getd(int xy)
+--	{
+--		int d = env.mem(PC);
+--		PC = (char)(PC+1);
+--		time += 8;
+--		return MP = (char)(xy + (byte)d);
+--	}
+--getd_value: Int -> Z80 -> CpuTimePcAndValue
+--getd_value xy z80 =
+--   let
+--      d = z80.env |> mem z80.pc
+--   in
+--      CpuTimePcAndValue (d.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (xy + byte d.value))
 env_mem_hl: IXIYHL -> Z80 -> CpuTimePcAndValue
 env_mem_hl ixiyhl z80 =
-    let
-       xy = get_xy ixiyhl z80.main
-     in
-        case ixiyhl of
-            IX -> getd xy z80
-            IY -> getd xy z80
-            HL -> CpuTimePcAndValue z80.env.time z80.pc xy
+  case ixiyhl of
+    HL -> CpuTimePcAndValue z80.env.time z80.pc z80.main.hl
+    IX ->
+      let
+        dval = z80.env |> mem z80.pc
+      in
+        CpuTimePcAndValue (dval.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (z80.main.ix + byte dval.value))
+    IY ->
+      let
+        dval = z80.env |> mem z80.pc
+      in
+        CpuTimePcAndValue (dval.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (z80.main.iy + byte dval.value))
 
 execute_0xA0: Z80 -> Z80
 execute_0xA0 z80 =
@@ -3273,6 +3287,208 @@ group_xy ixiy old_z80 =
 --		int v, c = env.m1(PC, IR|R++&0x7F);
 --		PC = (char)(PC+1); time += 4;
 --		switch(c) {
+
+execute_ED47: Z80 -> Z80
+execute_ED47 z80 =
+   -- case 0x47: i(A); time++; break;
+   z80 |> set_i z80.flags.a |> add_cpu_time 1
+
+execute_ED78: Z80 -> Z80
+execute_ED78 z80 =
+   --  case 0x78: MP=(v=B<<8|C)+1; f_szh0n0p(A=env.in(v)); time+=4; break;
+   let
+      v = z80 |> get_bc
+      new_a = z80.env |> z80_in v
+      flags = z80.flags
+   in
+      { z80 | env = new_a.env, flags = { flags | a = new_a.value } } |> f_szh0n0p new_a.value |> add_cpu_time 4
+
+execute_ED52: Z80 -> Z80
+execute_ED52 z80 =
+   -- case 0x52: sbc_hl(D<<8|E); break;
+   z80 |> sbc_hl (or (shiftLeftBy8 z80.main.d) z80.main.e)
+
+execute_ED43: Z80 -> Z80
+execute_ED43 z80 =
+   -- case 0x43: MP=(v=imm16())+1; env.mem16(v,B<<8|C); time+=6; break;
+   let
+     v = imm16 z80
+     z80_2 = { z80 | pc = v.pc }
+     env = v.env |> set_mem16 v.value (or (shiftLeftBy8 z80.main.b) z80.main.c)
+   in
+     { z80_2 | env = env } |> add_cpu_time 6
+
+execute_ED53: Z80 -> Z80
+execute_ED53 z80 =
+   -- case 0x53: MP=(v=imm16())+1; env.mem16(v,D<<8|E); time+=6; break;
+   let
+     v = imm16 z80
+     z80_1 = { z80 | pc = v.pc }
+     env = v.env |> set_mem16 v.value (or (shiftLeftBy8 z80.main.d) z80.main.e)
+   in
+     { z80_1 | env = env } |> add_cpu_time 6
+
+execute_EDB8: Z80 -> Z80
+execute_EDB8 z80 =
+   -- case 0xB8: ldir(-1,true); break;
+   z80 |> ldir -1 True
+
+execute_EDB0: Z80 -> Z80
+execute_EDB0 z80 =
+   --0xB0 -> debug_log "LDIR" ("HL " ++ (z80.main.hl |> toHexString) ++ " BC " ++ (z80 |> get_bc |> toHexString2)) (z80 |> ldir 1 True)
+   -- case 0xB0: ldir(1,true); break;
+   z80 |> ldir 1 True
+
+execute_ED7B: Z80 -> Z80
+execute_ED7B z80 =
+   -- case 0x7B: MP=(v=imm16())+1; SP=env.mem16(v); time+=6; break;
+  let
+    v = z80 |> imm16
+    z80_1 = { z80 | pc = v.pc }
+    sp = v.env |> mem16 v.value
+  in
+    { z80_1 | env = sp.env } |> add_cpu_time 6
+
+execute_ED4B: Z80 -> Z80
+execute_ED4B z80 =
+   -- case 0x4B: MP=(v=imm16())+1; v=env.mem16(v); B=v>>>8; C=v&0xFF; time+=6; break;
+  let
+    v1 = z80 |> imm16
+    z80_1 = { z80 | pc = v1.pc }
+    v2 = v1.env |> mem16 v1.value
+    --x = debug_log "LD BC,(nnnn)" (v2.value |> toHexString) Nothing
+  in
+    { z80_1 | env = v2.env } |> set_bc v2.value |> add_cpu_time 6
+
+execute_ED73: Z80 -> Z80
+execute_ED73 z80 =
+  -- case 0x73: MP=(v=imm16())+1; env.mem16(v,SP); time+=6; break;
+  let
+    v = z80 |> imm16
+    z80_1 = { z80 | pc = v.pc }
+    env = v.env |> set_mem16 v.value z80_1.env.sp
+  in
+    { z80 | env = env } |> add_cpu_time 6
+
+execute_ED5B: Z80 -> Z80
+execute_ED5B z80 =
+  -- case 0x5B: MP=(v=imm16())+1; v=env.mem16(v); D=v>>>8; E=v&0xFF; time+=6; break;
+  let
+    v1 = z80 |> imm16
+    z80_1 = { z80 | pc = v1.pc }
+    v2 = v1.env |> mem16 v1.value
+  in
+    { z80_1 | env = v2.env } |> set_de v2.value |> add_cpu_time 6
+
+execute_ED42: Z80 -> Z80
+execute_ED42 z80 =
+  -- case 0x42: sbc_hl(B<<8|C); break;
+  let
+    bc = z80 |> get_bc
+  in
+    z80 |> sbc_hl bc
+
+execute_ED72: Z80 -> Z80
+execute_ED72 z80 =
+  -- case 0x72: sbc_hl(SP); break;
+  z80 |> sbc_hl z80.env.sp
+
+group_ed_dict: Dict Int (Z80 -> Z80)
+group_ed_dict = Dict.fromList
+    [
+          (0x47, execute_ED47),
+            -- case 0x4F: r(A); time++; break;
+            -- case 0x57: ld_a_ir(IR>>>8); break;
+            -- case 0x5F: ld_a_ir(r()); break;
+            -- case 0x67: rrd(); break;
+            -- case 0x6F: rld(); break;
+          (0x6F, rld),
+          (0x78, execute_ED78),
+          (0x52, execute_ED52),
+          (0x43, execute_ED43),
+          (0x53, execute_ED53),
+          (0xB8, execute_EDB8),
+          (0xB0, execute_EDB0),
+          (0x7B, execute_ED7B),
+          (0x4B, execute_ED4B),
+          (0x73, execute_ED73),
+          (0x5B, execute_ED5B),
+          (0x42, execute_ED42),
+          (0x72, execute_ED72),
+          (0x46, execute_ED46),
+          (0x4E, execute_ED4E),
+          (0x56, execute_ED56),
+          (0x5E, execute_ED5E),
+          (0x66, execute_ED66),
+          (0x6E, execute_ED6E),
+          (0x76, execute_ED76),
+          (0x7E, execute_ED7E)
+    ]
+
+-- case 0x46:
+-- case 0x4E:
+-- case 0x56:
+-- case 0x5E:
+-- case 0x66:
+-- case 0x6E:
+-- case 0x76:
+-- case 0x7E: IM = c>>3&3; break;
+execute_ED46: Z80 -> Z80
+execute_ED46 z80 =
+  let
+    value = 0x46
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED4E: Z80 -> Z80
+execute_ED4E z80 =
+  let
+    value = 0x4E
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED56: Z80 -> Z80
+execute_ED56 z80 =
+  let
+    value = 0x56
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED5E: Z80 -> Z80
+execute_ED5E z80 =
+  let
+    value = 0x5E
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED66: Z80 -> Z80
+execute_ED66 z80 =
+  let
+    value = 0x66
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED6E: Z80 -> Z80
+execute_ED6E z80 =
+  let
+    value = 0x6E
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED76: Z80 -> Z80
+execute_ED76 z80 =
+  let
+    value = 0x76
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
+execute_ED7E: Z80 -> Z80
+execute_ED7E z80 =
+  let
+    value = 0x7E
+  in
+    z80 |> set_im_direct (and (shiftRightBy 3 value) 3)
+
 group_ed: Z80 -> Z80
 group_ed z80_0 =
    let
@@ -3282,99 +3498,20 @@ group_ed z80_0 =
       old_z80 = { z80_0 | interrupts = { ints | r = new_r } }
       new_pc = old_z80 |> inc_pc
       z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
+
+      ed_func = group_ed_dict |> Dict.get c.value
    in
-      --// -------------- >8 ed
-      case c.value of
-      -- case 0x47: i(A); time++; break;
-      0x47 -> z80 |> set_i z80.flags.a |> add_cpu_time 1
-      -- case 0x4F: r(A); time++; break;
-      -- case 0x57: ld_a_ir(IR>>>8); break;
-      -- case 0x5F: ld_a_ir(r()); break;
-      -- case 0x67: rrd(); break;
-      -- case 0x6F: rld(); break;
-      0x6F -> z80 |> rld
-      --  case 0x78: MP=(v=B<<8|C)+1; f_szh0n0p(A=env.in(v)); time+=4; break;
-      0x78 -> let
-                    v = z80 |> get_bc
-                    new_a = z80.env |> z80_in v
-                    flags = z80.flags
-               in
-                    { z80 | env = new_a.env, flags = { flags | a = new_a.value } } |> f_szh0n0p new_a.value |> add_cpu_time 4
-      -- case 0x52: sbc_hl(D<<8|E); break;
-      0x52 -> z80 |> sbc_hl (or (shiftLeftBy8 z80.main.d) z80.main.e)
-      -- case 0x43: MP=(v=imm16())+1; env.mem16(v,B<<8|C); time+=6; break;
-      0x43 -> let
-                 v = imm16 z80
-                 z80_1 = { z80 | pc = v.pc }
-                 env = v.env |> set_mem16 v.value (or (shiftLeftBy8 z80.main.b) z80.main.c)
-              in
-                 { z80_1 | env = env } |> add_cpu_time 6
-      -- case 0x53: MP=(v=imm16())+1; env.mem16(v,D<<8|E); time+=6; break;
-      0x53 -> let
-                 v = imm16 z80
-                 z80_1 = { z80 | pc = v.pc }
-                 env = v.env |> set_mem16 v.value (or (shiftLeftBy8 z80.main.d) z80.main.e)
-              in
-                 { z80_1 | env = env } |> add_cpu_time 6
-      -- case 0xB8: ldir(-1,true); break;
-      0xB8 -> z80 |> ldir -1 True
-      -- case 0xB0: ldir(1,true); break;
-      0xB0 -> z80 |> ldir 1 True
-      --0xB0 -> debug_log "LDIR" ("HL " ++ (z80.main.hl |> toHexString) ++ " BC " ++ (z80 |> get_bc |> toHexString2)) (z80 |> ldir 1 True)
-      -- case 0x7B: MP=(v=imm16())+1; SP=env.mem16(v); time+=6; break;
-      0x7B -> let
-                 v = z80 |> imm16
-                 z80_1 = { z80 | pc = v.pc }
-                 sp = v.env |> mem16 v.value
-              in
-                 { z80_1 | env = sp.env } |> add_cpu_time 6
-      -- case 0x4B: MP=(v=imm16())+1; v=env.mem16(v); B=v>>>8; C=v&0xFF; time+=6; break;
-      0x4B -> let
-                 v1 = z80 |> imm16
-                 z80_1 = { z80 | pc = v1.pc }
-                 v2 = v1.env |> mem16 v1.value
-                 --x = debug_log "LD BC,(nnnn)" (v2.value |> toHexString) Nothing
-              in
-                 { z80_1 | env = v2.env } |> set_bc v2.value |> add_cpu_time 6
-      -- case 0x73: MP=(v=imm16())+1; env.mem16(v,SP); time+=6; break;
-      0x73 -> let
-                 v = z80 |> imm16
-                 z80_1 = { z80 | pc = v.pc }
-                 env = v.env |> set_mem16 v.value z80_1.env.sp
-              in
-                 { z80 | env = env } |> add_cpu_time 6
-      -- case 0x5B: MP=(v=imm16())+1; v=env.mem16(v); D=v>>>8; E=v&0xFF; time+=6; break;
-      0x5B -> let
-                 v1 = z80 |> imm16
-                 z80_1 = { z80 | pc = v1.pc }
-                 v2 = v1.env |> mem16 v1.value
-              in
-                 { z80_1 | env = v2.env } |> set_de v2.value |> add_cpu_time 6
-      -- case 0x42: sbc_hl(B<<8|C); break;
-      0x42 -> let
-                 bc = z80 |> get_bc
-              in
-                 z80 |> sbc_hl bc
-      -- case 0x72: sbc_hl(SP); break;
-      0x72 -> z80 |> sbc_hl z80.env.sp
-      ---- case 0x6A: adc_hl(HL); break;
-      --0x6A -> z80 |> adc_hl z80.main.hl
-      ---- case 0x5A: adc_hl(D<<8|E); break;
-      --0x5A -> z80 |> adc_hl (z80 |> get_de)
-      ---- case 0x4A: adc_hl(B<<8|C); break;
-      --0x4A -> z80 |> adc_hl (z80 |> get_bc)
-      _ ->
-         -- case 0x46:
-         -- case 0x4E:
-         -- case 0x56:
-         -- case 0x5E:
-         -- case 0x66:
-         -- case 0x6E:
-         -- case 0x76:
-         -- case 0x7E: IM = c>>3&3; break;
-         if List.member c.value [0x46, 0x4E, 0x56, 0x5E, 0x66, 0x6E, 0x76, 0x7E] then
-            z80 |> set_im_direct (and (shiftRightBy 3 c.value) 3)
-         else if List.member c.value [0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70] then
+      case ed_func of
+        Just f -> z80 |> f
+        Nothing ->
+          --// -------------- >8 ed
+          ---- case 0x6A: adc_hl(HL); break;
+          --0x6A -> z80 |> adc_hl z80.main.hl
+          ---- case 0x5A: adc_hl(D<<8|E); break;
+          --0x5A -> z80 |> adc_hl (z80 |> get_de)
+          ---- case 0x4A: adc_hl(B<<8|C); break;
+          --0x4A -> z80 |> adc_hl (z80 |> get_bc)
+          if List.member c.value [0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70] then
             -- case 0x40: f_szh0n0p(B=env.in(B<<8|C)); time+=4; break;
             -- case 0x48: f_szh0n0p(C=env.in(B<<8|C)); time+=4; break;
             -- case 0x50: f_szh0n0p(D=env.in(B<<8|C)); time+=4; break;
