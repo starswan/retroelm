@@ -292,20 +292,6 @@ sbc_hl b z80 =
    in
       { z80 | main = { main | hl = r }, flags = { flags | ff = ff, fa = fa, fb = fb, fr = fr} } |> add_cpu_time 7
 --
---	private int getd(int xy)
---	{
---		int d = env.mem(PC);
---		PC = (char)(PC+1);
---		time += 8;
---		return MP = (char)(xy + (byte)d);
---	}
-getd_value: Int -> Z80 -> CpuTimePcAndValue
-getd_value xy z80 =
-   let
-      d = z80.env |> mem z80.pc
-   in
-      CpuTimePcAndValue (d.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (xy + byte d.value))
---
 --
 --	private void rrd()
 --	{
@@ -2396,16 +2382,34 @@ lt40_dict = Dict.fromList
           (0xBE, execute_0xBE),
           (0xE9, execute_0xE9)
     ]
-
+--
+--	private int getd(int xy)
+--	{
+--		int d = env.mem(PC);
+--		PC = (char)(PC+1);
+--		time += 8;
+--		return MP = (char)(xy + (byte)d);
+--	}
+--getd_value: Int -> Z80 -> CpuTimePcAndValue
+--getd_value xy z80 =
+--   let
+--      d = z80.env |> mem z80.pc
+--   in
+--      CpuTimePcAndValue (d.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (xy + byte d.value))
 env_mem_hl: IXIYHL -> Z80 -> CpuTimePcAndValue
 env_mem_hl ixiyhl z80 =
-    let
-       xy = get_xy ixiyhl z80.main
-     in
-        case ixiyhl of
-            IX -> getd_value xy z80
-            IY -> getd_value xy z80
-            HL -> CpuTimePcAndValue z80.env.time z80.pc xy
+  case ixiyhl of
+    HL -> CpuTimePcAndValue z80.env.time z80.pc z80.main.hl
+    IX ->
+      let
+        dval = z80.env |> mem z80.pc
+      in
+        CpuTimePcAndValue (dval.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (z80.main.ix + byte dval.value))
+    IY ->
+      let
+        dval = z80.env |> mem z80.pc
+      in
+        CpuTimePcAndValue (dval.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (z80.main.iy + byte dval.value))
 
 execute_0xA0: Z80 -> Z80
 execute_0xA0 z80 =
