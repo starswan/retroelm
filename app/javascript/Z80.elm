@@ -3287,6 +3287,75 @@ group_xy ixiy old_z80 =
 --		int v, c = env.m1(PC, IR|R++&0x7F);
 --		PC = (char)(PC+1); time += 4;
 --		switch(c) {
+
+group_ed_dict: Dict Int (Z80 -> Z80)
+group_ed_dict = Dict.fromList
+    [
+          (0x47, execute_ED47),
+            -- case 0x4F: r(A); time++; break;
+            -- case 0x57: ld_a_ir(IR>>>8); break;
+            -- case 0x5F: ld_a_ir(r()); break;
+            -- case 0x67: rrd(); break;
+            -- case 0x6F: rld(); break;
+          (0x6F, rld),
+          (0x78, execute_ED78),
+          (0x52, execute_ED52),
+          (0x43, execute_ED43),
+          (0x53, execute_ED53),
+          (0xB8, execute_EDB8),
+          (0xB0, execute_EDB0)
+    ]
+
+execute_ED47: Z80 -> Z80
+execute_ED47 z80 =
+   -- case 0x47: i(A); time++; break;
+   z80 |> set_i z80.flags.a |> add_cpu_time 1
+
+execute_ED78: Z80 -> Z80
+execute_ED78 z80 =
+   --  case 0x78: MP=(v=B<<8|C)+1; f_szh0n0p(A=env.in(v)); time+=4; break;
+   let
+      v = z80 |> get_bc
+      new_a = z80.env |> z80_in v
+      flags = z80.flags
+   in
+      { z80 | env = new_a.env, flags = { flags | a = new_a.value } } |> f_szh0n0p new_a.value |> add_cpu_time 4
+
+execute_ED52: Z80 -> Z80
+execute_ED52 z80 =
+   -- case 0x52: sbc_hl(D<<8|E); break;
+   z80 |> sbc_hl (or (shiftLeftBy8 z80.main.d) z80.main.e)
+
+execute_ED43: Z80 -> Z80
+execute_ED43 z80 =
+   -- case 0x43: MP=(v=imm16())+1; env.mem16(v,B<<8|C); time+=6; break;
+   let
+     v = imm16 z80
+     z80_2 = { z80 | pc = v.pc }
+     env = v.env |> set_mem16 v.value (or (shiftLeftBy8 z80.main.b) z80.main.c)
+   in
+     { z80_2 | env = env } |> add_cpu_time 6
+
+execute_ED53: Z80 -> Z80
+execute_ED53 z80 =
+   -- case 0x53: MP=(v=imm16())+1; env.mem16(v,D<<8|E); time+=6; break;
+   let
+     v = imm16 z80
+     z80_1 = { z80 | pc = v.pc }
+     env = v.env |> set_mem16 v.value (or (shiftLeftBy8 z80.main.d) z80.main.e)
+   in
+     { z80_1 | env = env } |> add_cpu_time 6
+
+execute_EDB8: Z80 -> Z80
+execute_EDB8 z80 =
+   -- case 0xB8: ldir(-1,true); break;
+   z80 |> ldir -1 True
+
+execute_EDB0: Z80 -> Z80
+execute_EDB0 z80 =
+   -- case 0xB0: ldir(1,true); break;
+   z80 |> ldir 1 True
+
 group_ed: Z80 -> Z80
 group_ed z80_0 =
    let
@@ -3296,128 +3365,98 @@ group_ed z80_0 =
       old_z80 = { z80_0 | interrupts = { ints | r = new_r } }
       new_pc = old_z80 |> inc_pc
       z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
+
+      ed_func = group_ed_dict |> Dict.get c.value
    in
-      --// -------------- >8 ed
-      case c.value of
-      -- case 0x47: i(A); time++; break;
-      0x47 -> z80 |> set_i z80.flags.a |> add_cpu_time 1
-      -- case 0x4F: r(A); time++; break;
-      -- case 0x57: ld_a_ir(IR>>>8); break;
-      -- case 0x5F: ld_a_ir(r()); break;
-      -- case 0x67: rrd(); break;
-      -- case 0x6F: rld(); break;
-      0x6F -> z80 |> rld
-      --  case 0x78: MP=(v=B<<8|C)+1; f_szh0n0p(A=env.in(v)); time+=4; break;
-      0x78 -> let
-                    v = z80 |> get_bc
-                    new_a = z80.env |> z80_in v
-                    flags = z80.flags
-               in
-                    { z80 | env = new_a.env, flags = { flags | a = new_a.value } } |> f_szh0n0p new_a.value |> add_cpu_time 4
-      -- case 0x52: sbc_hl(D<<8|E); break;
-      0x52 -> z80 |> sbc_hl (or (shiftLeftBy8 z80.main.d) z80.main.e)
-      -- case 0x43: MP=(v=imm16())+1; env.mem16(v,B<<8|C); time+=6; break;
-      0x43 -> let
-                 v = imm16 z80
-                 z80_1 = { z80 | pc = v.pc }
-                 env = v.env |> set_mem16 v.value (or (shiftLeftBy8 z80.main.b) z80.main.c)
-              in
-                 { z80_1 | env = env } |> add_cpu_time 6
-      -- case 0x53: MP=(v=imm16())+1; env.mem16(v,D<<8|E); time+=6; break;
-      0x53 -> let
-                 v = imm16 z80
-                 z80_1 = { z80 | pc = v.pc }
-                 env = v.env |> set_mem16 v.value (or (shiftLeftBy8 z80.main.d) z80.main.e)
-              in
-                 { z80_1 | env = env } |> add_cpu_time 6
-      -- case 0xB8: ldir(-1,true); break;
-      0xB8 -> z80 |> ldir -1 True
-      -- case 0xB0: ldir(1,true); break;
-      0xB0 -> z80 |> ldir 1 True
-      --0xB0 -> debug_log "LDIR" ("HL " ++ (z80.main.hl |> toHexString) ++ " BC " ++ (z80 |> get_bc |> toHexString2)) (z80 |> ldir 1 True)
-      -- case 0x7B: MP=(v=imm16())+1; SP=env.mem16(v); time+=6; break;
-      0x7B -> let
-                 v = z80 |> imm16
-                 z80_1 = { z80 | pc = v.pc }
-                 sp = v.env |> mem16 v.value
-              in
-                 { z80_1 | env = sp.env } |> add_cpu_time 6
-      -- case 0x4B: MP=(v=imm16())+1; v=env.mem16(v); B=v>>>8; C=v&0xFF; time+=6; break;
-      0x4B -> let
-                 v1 = z80 |> imm16
-                 z80_1 = { z80 | pc = v1.pc }
-                 v2 = v1.env |> mem16 v1.value
-                 --x = debug_log "LD BC,(nnnn)" (v2.value |> toHexString) Nothing
-              in
-                 { z80_1 | env = v2.env } |> set_bc v2.value |> add_cpu_time 6
-      -- case 0x73: MP=(v=imm16())+1; env.mem16(v,SP); time+=6; break;
-      0x73 -> let
-                 v = z80 |> imm16
-                 z80_1 = { z80 | pc = v.pc }
-                 env = v.env |> set_mem16 v.value z80_1.env.sp
-              in
-                 { z80 | env = env } |> add_cpu_time 6
-      -- case 0x5B: MP=(v=imm16())+1; v=env.mem16(v); D=v>>>8; E=v&0xFF; time+=6; break;
-      0x5B -> let
-                 v1 = z80 |> imm16
-                 z80_1 = { z80 | pc = v1.pc }
-                 v2 = v1.env |> mem16 v1.value
-              in
-                 { z80_1 | env = v2.env } |> set_de v2.value |> add_cpu_time 6
-      -- case 0x42: sbc_hl(B<<8|C); break;
-      0x42 -> let
-                 bc = z80 |> get_bc
-              in
-                 z80 |> sbc_hl bc
-      -- case 0x72: sbc_hl(SP); break;
-      0x72 -> z80 |> sbc_hl z80.env.sp
-      ---- case 0x6A: adc_hl(HL); break;
-      --0x6A -> z80 |> adc_hl z80.main.hl
-      ---- case 0x5A: adc_hl(D<<8|E); break;
-      --0x5A -> z80 |> adc_hl (z80 |> get_de)
-      ---- case 0x4A: adc_hl(B<<8|C); break;
-      --0x4A -> z80 |> adc_hl (z80 |> get_bc)
-      _ ->
-         -- case 0x46:
-         -- case 0x4E:
-         -- case 0x56:
-         -- case 0x5E:
-         -- case 0x66:
-         -- case 0x6E:
-         -- case 0x76:
-         -- case 0x7E: IM = c>>3&3; break;
-         if List.member c.value [0x46, 0x4E, 0x56, 0x5E, 0x66, 0x6E, 0x76, 0x7E] then
-            z80 |> set_im_direct (and (shiftRightBy 3 c.value) 3)
-         else if List.member c.value [0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70] then
-            -- case 0x40: f_szh0n0p(B=env.in(B<<8|C)); time+=4; break;
-            -- case 0x48: f_szh0n0p(C=env.in(B<<8|C)); time+=4; break;
-            -- case 0x50: f_szh0n0p(D=env.in(B<<8|C)); time+=4; break;
-            -- case 0x58: f_szh0n0p(E=env.in(B<<8|C)); time+=4; break;
-            -- case 0x60: f_szh0n0p(v=env.in(B<<8|C)); HL=HL&0xFF|v<<8; time+=4; break;
-            -- case 0x68: f_szh0n0p(v=env.in(B<<8|C)); HL=HL&0xFF00|v; time+=4; break;
-            -- case 0x70: f_szh0n0p(env.in(B<<8|C)); time+=4; break;
-            let
-              bc = z80 |> get_bc
-              inval = z80.env |> z80_in bc
-              z80_1 = z80 |> set408bit (shiftRightBy 3 (c.value - 0x40)) inval.value HL
-            in
-              z80_1 |> f_szh0n0p inval.value |> add_cpu_time 4
-         --else if List.member c.value [0x44, 0x4C, 0x54, 0x5C, 0x64, 0x6C, 0x74, 0x7C] then
-         --   -- case 0x44:
-         --   -- case 0x4C:
-         --   -- case 0x54:
-         --   -- case 0x5C:
-         --   -- case 0x64:
-         --   -- case 0x6C:
-         --   -- case 0x74:
-         --   -- case 0x7C: v=A; A=0; sub(v); break;
-         --   let
-         --      flags = z80.flags
-         --      flags_1 = { flags | a = 0 } |> z80_sub flags.a
-         --   in
-         --      z80 |> set_flag_regs flags_1
-         else
-            debug_todo "group_ed" (c.value |> toHexString2) z80
+      case ed_func of
+        Just f -> z80 |> f
+        Nothing ->
+          --// -------------- >8 ed
+          case c.value of
+            --0xB0 -> debug_log "LDIR" ("HL " ++ (z80.main.hl |> toHexString) ++ " BC " ++ (z80 |> get_bc |> toHexString2)) (z80 |> ldir 1 True)
+            -- case 0x7B: MP=(v=imm16())+1; SP=env.mem16(v); time+=6; break;
+            0x7B -> let
+                       v = z80 |> imm16
+                       z80_1 = { z80 | pc = v.pc }
+                       sp = v.env |> mem16 v.value
+                    in
+                       { z80_1 | env = sp.env } |> add_cpu_time 6
+            -- case 0x4B: MP=(v=imm16())+1; v=env.mem16(v); B=v>>>8; C=v&0xFF; time+=6; break;
+            0x4B -> let
+                       v1 = z80 |> imm16
+                       z80_1 = { z80 | pc = v1.pc }
+                       v2 = v1.env |> mem16 v1.value
+                       --x = debug_log "LD BC,(nnnn)" (v2.value |> toHexString) Nothing
+                    in
+                       { z80_1 | env = v2.env } |> set_bc v2.value |> add_cpu_time 6
+              -- case 0x73: MP=(v=imm16())+1; env.mem16(v,SP); time+=6; break;
+            0x73 -> let
+                         v = z80 |> imm16
+                         z80_1 = { z80 | pc = v.pc }
+                         env = v.env |> set_mem16 v.value z80_1.env.sp
+                    in
+                         { z80 | env = env } |> add_cpu_time 6
+              -- case 0x5B: MP=(v=imm16())+1; v=env.mem16(v); D=v>>>8; E=v&0xFF; time+=6; break;
+            0x5B -> let
+                         v1 = z80 |> imm16
+                         z80_1 = { z80 | pc = v1.pc }
+                         v2 = v1.env |> mem16 v1.value
+                    in
+                         { z80_1 | env = v2.env } |> set_de v2.value |> add_cpu_time 6
+              -- case 0x42: sbc_hl(B<<8|C); break;
+            0x42 -> let
+                         bc = z80 |> get_bc
+                    in
+                         z80 |> sbc_hl bc
+              -- case 0x72: sbc_hl(SP); break;
+            0x72 -> z80 |> sbc_hl z80.env.sp
+              ---- case 0x6A: adc_hl(HL); break;
+              --0x6A -> z80 |> adc_hl z80.main.hl
+              ---- case 0x5A: adc_hl(D<<8|E); break;
+              --0x5A -> z80 |> adc_hl (z80 |> get_de)
+              ---- case 0x4A: adc_hl(B<<8|C); break;
+              --0x4A -> z80 |> adc_hl (z80 |> get_bc)
+            _ ->
+                 -- case 0x46:
+                 -- case 0x4E:
+                 -- case 0x56:
+                 -- case 0x5E:
+                 -- case 0x66:
+                 -- case 0x6E:
+                 -- case 0x76:
+                 -- case 0x7E: IM = c>>3&3; break;
+                 if List.member c.value [0x46, 0x4E, 0x56, 0x5E, 0x66, 0x6E, 0x76, 0x7E] then
+                    z80 |> set_im_direct (and (shiftRightBy 3 c.value) 3)
+                 else if List.member c.value [0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70] then
+                    -- case 0x40: f_szh0n0p(B=env.in(B<<8|C)); time+=4; break;
+                    -- case 0x48: f_szh0n0p(C=env.in(B<<8|C)); time+=4; break;
+                    -- case 0x50: f_szh0n0p(D=env.in(B<<8|C)); time+=4; break;
+                    -- case 0x58: f_szh0n0p(E=env.in(B<<8|C)); time+=4; break;
+                    -- case 0x60: f_szh0n0p(v=env.in(B<<8|C)); HL=HL&0xFF|v<<8; time+=4; break;
+                    -- case 0x68: f_szh0n0p(v=env.in(B<<8|C)); HL=HL&0xFF00|v; time+=4; break;
+                    -- case 0x70: f_szh0n0p(env.in(B<<8|C)); time+=4; break;
+                    let
+                      bc = z80 |> get_bc
+                      inval = z80.env |> z80_in bc
+                      z80_1 = z80 |> set408bit (shiftRightBy 3 (c.value - 0x40)) inval.value HL
+                    in
+                      z80_1 |> f_szh0n0p inval.value |> add_cpu_time 4
+                 --else if List.member c.value [0x44, 0x4C, 0x54, 0x5C, 0x64, 0x6C, 0x74, 0x7C] then
+                 --   -- case 0x44:
+                 --   -- case 0x4C:
+                 --   -- case 0x54:
+                 --   -- case 0x5C:
+                 --   -- case 0x64:
+                 --   -- case 0x6C:
+                 --   -- case 0x74:
+                 --   -- case 0x7C: v=A; A=0; sub(v); break;
+                 --   let
+                 --      flags = z80.flags
+                 --      flags_1 = { flags | a = 0 } |> z80_sub flags.a
+                 --   in
+                 --      z80 |> set_flag_regs flags_1
+                 else
+                    debug_todo "group_ed" (c.value |> toHexString2) z80
 -- case 0x78: MP=(v=B<<8|C)+1; f_szh0n0p(A=env.in(v)); time+=4; break;
 -- case 0x41: env.out(B<<8|C,B); time+=4; break;
 -- case 0x49: env.out(B<<8|C,C); time+=4; break;
