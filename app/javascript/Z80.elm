@@ -1718,49 +1718,59 @@ execute_0x6B ixiyhl z80 =
    --z80 |> set_l_z80 z80.main.e ixiyhl
    MainRegsWithPc (z80.main |> set_l z80.main.e ixiyhl) z80.pc
 
-execute_0x6C: IXIYHL -> Z80 -> Z80
+execute_0x6C: IXIYHL -> Z80 -> Z80Delta
 execute_0x6C ixiyhl z80 =
    -- case 0x6C: HL=HL&0xFF00|HL>>>8; break;
    -- case 0x6C: xy=xy&0xFF00|xy>>>8; break;
-   z80 |> set_l_z80 (get_h ixiyhl z80.main) ixiyhl
+   --z80 |> set_l_z80 (get_h ixiyhl z80.main) ixiyhl
+   MainRegsWithPc (z80.main |> set_l (get_h ixiyhl z80.main) ixiyhl) z80.pc
 
-execute_0x6E: IXIYHL -> Z80 -> Z80
+execute_0x6E: IXIYHL -> Z80 -> Z80Delta
 execute_0x6E ixiyhl z80 =
    -- case 0x6E: HL=HL&0xFF00|env.mem(HL); time+=3; break;
    -- case 0x6E: HL=HL&0xFF00|env.mem(getd(xy)); time+=3; break;
    let
       value = hl_deref_with_z80 ixiyhl z80
+      main = z80.main
       env_1 = z80.env
    in
-      { z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_l_z80 value.value HL |> add_cpu_time 3
+      --{ z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_l_z80 value.value HL |> add_cpu_time 3
+      MainRegsWithPcAndCpuTime (main |> set_h value.value HL) value.pc (value.time |> add_cpu_time_time 3)
 
-execute_0x6F: IXIYHL -> Z80 -> Z80
+execute_0x6F: IXIYHL -> Z80 -> Z80Delta
 execute_0x6F ixiyhl z80 =
     -- case 0x6F: HL=HL&0xFF00|A; break;
     -- case 0x6F: xy=xy&0xFF00|A; break;
-    z80 |> set_l_z80 z80.flags.a ixiyhl
+    --z80 |> set_l_z80 z80.flags.a ixiyhl
+   MainRegsWithPc (z80.main |> set_l z80.flags.a ixiyhl) z80.pc
 
-execute_0x70: IXIYHL -> Z80 -> Z80
+execute_0x70: IXIYHL -> Z80 -> Z80Delta
 execute_0x70 ixiyhl z80 =
     -- case 0x70: env.mem(HL,B); time+=3; break;
     -- case 0x70: env.mem(getd(xy),B); time+=3; break;
     let
        mem_target = z80 |> env_mem_hl ixiyhl
        env_1 = z80.env
-       new_env = { env_1 | time = mem_target.time } |> set_mem mem_target.value z80.main.b
+       new_env = { env_1 | time = mem_target.time }
+                 |> set_mem mem_target.value z80.main.b
+                 |> add_cpu_time_env 3
     in
-       { z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
+       --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
+       EnvWithPc new_env mem_target.pc
 
-execute_0x71: IXIYHL -> Z80 -> Z80
+execute_0x71: IXIYHL -> Z80 -> Z80Delta
 execute_0x71 ixiyhl z80 =
     -- case 0x71: env.mem(HL,C); time+=3; break;
     -- case 0x71: env.mem(getd(xy),C); time+=3; break;
     let
         mem_target = z80 |> env_mem_hl ixiyhl
         env_1 = z80.env
-        new_env = { env_1 | time = mem_target.time } |> set_mem mem_target.value z80.main.c
+        new_env = { env_1 | time = mem_target.time }
+                  |> set_mem mem_target.value z80.main.c
+                  |> add_cpu_time_env 3
     in
-        { z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
+        --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
+        EnvWithPc new_env mem_target.pc
 
 execute_0x72: IXIYHL -> Z80 -> Z80
 execute_0x72 ixiyhl z80 =
@@ -2340,18 +2350,18 @@ lt40_delta_dict = Dict.fromList
           (0x68, execute_0x68),
           (0x69, execute_0x69),
           (0x6A, execute_0x6A),
-          (0x6B, execute_0x6B)
+          (0x6B, execute_0x6B),
+          (0x6C, execute_0x6C),
+          (0x6E, execute_0x6E),
+          (0x6F, execute_0x6F),
+          (0x70, execute_0x70),
+          (0x71, execute_0x71)
     ]
 
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
-          (0x6C, execute_0x6C),
-          (0x6E, execute_0x6E),
-          (0x6F, execute_0x6F),
-          (0x70, execute_0x70),
-          (0x71, execute_0x71),
           (0x72, execute_0x72),
           (0x73, execute_0x73),
           (0x74, execute_0x74),
