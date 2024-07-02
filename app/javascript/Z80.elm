@@ -299,8 +299,8 @@ sbc_hl b z80 =
 --		time += 8;
 --		return MP = (char)(xy + (byte)d);
 --	}
-getd: Int -> Z80 -> CpuTimePcAndValue
-getd xy z80 =
+getd_value: Int -> Z80 -> CpuTimePcAndValue
+getd_value xy z80 =
    let
       d = z80.env |> mem z80.pc
    in
@@ -2403,8 +2403,8 @@ env_mem_hl ixiyhl z80 =
        xy = get_xy ixiyhl z80.main
      in
         case ixiyhl of
-            IX -> getd xy z80
-            IY -> getd xy z80
+            IX -> getd_value xy z80
+            IY -> getd_value xy z80
             HL -> CpuTimePcAndValue z80.env.time z80.pc xy
 
 execute_0xA0: Z80 -> Z80
