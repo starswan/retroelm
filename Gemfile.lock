@@ -335,6 +335,7 @@ DEPENDENCIES
   rails-controller-testing
   rexml
   rspec-rails
+  rubyzip (< 3)
   rvm-capistrano
   sass-rails (>= 6)
   selenium-webdriver (< 4.11)

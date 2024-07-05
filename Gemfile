@@ -34,6 +34,9 @@ gem 'matrix', require: false
 gem 'net-smtp', require: false
 gem 'rexml', require: false
 
+# This is needed for deploy
+gem 'rubyzip', '< 3'
+
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
   gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
