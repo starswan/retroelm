@@ -1860,47 +1860,73 @@ execute_0x77 ixiyhl z80 =
    --   { z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
     execute_0x7077 ixiyhl z80 z80.flags.a
 
-execute_0x78: Z80 -> Z80
+execute_0x78: Z80 -> Z80Delta
 execute_0x78 z80 =
    -- case 0x78: A=B; break;
-   z80 |> set_a z80.main.b
+   --z80 |> set_a z80.main.b
+   let
+       flags = z80.flags
+   in
+      FlagRegs { flags | a = z80.main.b }
 
-execute_0x79: Z80 -> Z80
+execute_0x79: Z80 -> Z80Delta
 execute_0x79 z80 =
    -- case 0x79: A=C; break;
-   z80 |> set_a z80.main.c
+   --z80 |> set_a z80.main.c
+   let
+       flags = z80.flags
+   in
+      FlagRegs { flags | a = z80.main.c }
 
-execute_0x7A: Z80 -> Z80
+execute_0x7A: Z80 -> Z80Delta
 execute_0x7A z80 =
    -- case 0x7A: A=D; break;
-   z80 |> set_a z80.main.d
+   --z80 |> set_a z80.main.d
+   let
+       flags = z80.flags
+   in
+      FlagRegs { flags | a = z80.main.d }
 
-execute_0x7B: Z80 -> Z80
+execute_0x7B: Z80 -> Z80Delta
 execute_0x7B z80 =
    -- case 0x7B: A=E; break;
-   z80 |> set_a z80.main.e
+   --z80 |> set_a z80.main.e
+   let
+       flags = z80.flags
+   in
+      FlagRegs { flags | a = z80.main.e }
 
-execute_0x7C: IXIYHL -> Z80 -> Z80
+execute_0x7C: IXIYHL -> Z80 -> Z80Delta
 execute_0x7C ixiyhl z80 =
    -- case 0x7C: A=HL>>>8; break;
    -- case 0x7C: A=xy>>>8; break;
-   z80 |> set_a (get_h ixiyhl z80.main)
+   --z80 |> set_a (get_h ixiyhl z80.main)
+   let
+       flags = z80.flags
+   in
+      FlagRegs { flags | a = (get_h ixiyhl z80.main) }
 
-execute_0x7D: IXIYHL -> Z80 -> Z80
+execute_0x7D: IXIYHL -> Z80 -> Z80Delta
 execute_0x7D ixiyhl z80 =
    -- case 0x7D: A=HL&0xFF; break;
    -- case 0x7D: A=xy&0xFF; break;
-   z80 |> set_a (get_l ixiyhl z80.main)
+   --z80 |> set_a (get_l ixiyhl z80.main)
+   let
+       flags = z80.flags
+   in
+      FlagRegs { flags | a = (get_l ixiyhl z80.main) }
 
-execute_0x7E: IXIYHL -> Z80 -> Z80
+execute_0x7E: IXIYHL -> Z80 -> Z80Delta
 execute_0x7E ixiyhl z80 =
    -- case 0x7E: A=env.mem(HL); time+=3; break;
    -- case 0x7E: A=env.mem(getd(xy)); time+=3; break;
    let
       value = hl_deref_with_z80 ixiyhl z80
       env_1 = z80.env
+      flags = z80.flags
    in
-      { z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_a value.value
+      --{ z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_a value.value
+      EnvWithFlagsAndPc { env_1 | time = value.time } { flags | a = value.value } value.pc
 
 execute_0x80: Z80 -> Z80
 execute_0x80 z80 =
@@ -2221,6 +2247,12 @@ lt40_delta_dict_lite = Dict.fromList
           (0x64, delta_noop),
           -- case 0x6D: break;
           (0x6D, delta_noop),
+          (0x78, execute_0x78),
+          (0x79, execute_0x79),
+          (0x7A, execute_0x7A),
+          (0x7B, execute_0x7B),
+          -- case 0x7F: break;
+          (0x7F, delta_noop),
           (0xCD, execute_0xCD),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
@@ -2231,12 +2263,6 @@ lt40_dict_lite = Dict.fromList
     [
           -- case 0x76: halt(); break;
           (0x76, halt),
-          (0x78, execute_0x78),
-          (0x79, execute_0x79),
-          (0x7A, execute_0x7A),
-          (0x7B, execute_0x7B),
-          -- case 0x7F: break;
-          (0x7F, noop),
           (0x80, execute_0x80),
           (0x81, execute_0x81),
           (0x82, execute_0x82),
@@ -2371,15 +2397,16 @@ lt40_delta_dict = Dict.fromList
           (0x73, execute_0x73),
           (0x74, execute_0x74),
           (0x75, execute_0x75),
-          (0x77, execute_0x77)
+          (0x77, execute_0x77),
+          (0x7C, execute_0x7C),
+          (0x7D, execute_0x7D),
+          (0x7E, execute_0x7E),
+          (0xE9, execute_0xE9)
     ]
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
-          (0x7C, execute_0x7C),
-          (0x7D, execute_0x7D),
-          (0x7E, execute_0x7E),
           (0x84, execute_0x84),
           (0x85, execute_0x85),
           (0x86, execute_0x86),
@@ -2403,8 +2430,7 @@ lt40_dict = Dict.fromList
           (0xB6, execute_0xB6),
           (0xBC, execute_0xBC),
           (0xBD, execute_0xBD),
-          (0xBE, execute_0xBE),
-          (0xE9, execute_0xE9)
+          (0xBE, execute_0xBE)
     ]
 --
 --	private int getd(int xy)
@@ -3006,7 +3032,7 @@ execute_0xD5 z80 =
    in
       { z80 | env = pushed }
 
-execute_0xE9: IXIYHL -> Z80 -> Z80
+execute_0xE9: IXIYHL -> Z80 -> Z80Delta
 execute_0xE9 ixiyhl z80 =
     -- case 0xE9: PC=HL; break;
     -- case 0xE9: PC=xy; break;
@@ -3017,7 +3043,8 @@ execute_0xE9 ixiyhl z80 =
       --    else
       --      debug_log ("JP (" ++ (toString ixiyhl) ++ ")") (xy |> subName) Nothing
     in
-       { z80 | pc = xy }
+       --{ z80 | pc = xy }
+       OnlyPc xy
 
 execute_0xD2: Z80 -> Z80
 execute_0xD2 z80 =
