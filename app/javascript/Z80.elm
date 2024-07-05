@@ -3177,7 +3177,8 @@ execute_delta tmp_z80 =
     let
        interrupts = tmp_z80.interrupts
        c = tmp_z80.env |> m1 tmp_z80.pc (or interrupts.ir (and interrupts.r 0x7F))
-       old_z80 = { tmp_z80 | env = c.env, interrupts = { interrupts | r = interrupts.r + 1 } }
+       env = tmp_z80.env
+       old_z80 = { tmp_z80 | env = { env | time = c.time }, interrupts = { interrupts | r = interrupts.r + 1 } }
        new_pc = Bitwise.and (old_z80.pc + 1) 0xFFFF
        z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
     in
@@ -3249,7 +3250,8 @@ group_xy ixiy old_z80 =
    let
       c = m1 old_z80.pc (or old_z80.interrupts.ir (and old_z80.interrupts.r 0x7F)) old_z80.env
       intr = old_z80.interrupts
-      z80_1 = { old_z80 | env = c.env, interrupts = { intr | r = intr.r + 1 } }
+      env = old_z80.env
+      z80_1 = { old_z80 | env = { env | time = c.time }, interrupts = { intr | r = intr.r + 1 } }
       new_pc = z80_1 |> inc_pc
       z80 = { z80_1 | pc = new_pc } |> add_cpu_time 4
 
@@ -3654,7 +3656,8 @@ group_cb tmp_z80 =
       new_r = and (tmp_z80.interrupts.r + 1) 0x7F
       ir_or_r = or tmp_z80.interrupts.ir new_r
       c = m1 tmp_z80.pc (or tmp_z80.interrupts.ir ir_or_r) tmp_z80.env
-      old_z80 = { tmp_z80 | env = c.env }
+      env = tmp_z80.env
+      old_z80 = { tmp_z80 | env = { env | time = c.time } }
       new_pc = old_z80 |> inc_pc
       z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
       o = Bitwise.and (c.value |> shiftRightBy 3) 7

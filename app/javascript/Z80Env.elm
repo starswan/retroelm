@@ -78,7 +78,7 @@ set_rom romdata z80env =
 --}
 
 
-m1 : Int -> Int -> Z80Env -> Z80EnvWithValue
+m1 : Int -> Int -> Z80Env -> CpuTimeAndValue
 m1 tmp_addr ir z80env =
     let
         n =
@@ -116,7 +116,7 @@ m1 tmp_addr ir z80env =
                 -- not implementing IF1 switching for now
                 z80env.rom48k |> getROMValue tmp_addr
     in
-    Z80EnvWithValue { z80env | time = CpuTimeCTime z80env_1_time.cpu_time ctime } value
+    CpuTimeAndValue (CpuTimeCTime z80env_1_time.cpu_time ctime) value
 
 
 
