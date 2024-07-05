@@ -28,6 +28,7 @@ type Z80Delta
     | EnvWithPc Z80Env Int
     | CpuTimeWithPc CpuTimeCTime Int
     | NoChange
+    | OnlyPc Int
 
 
 type alias DeltaWithChanges =
@@ -120,6 +121,9 @@ apply_delta z80 z80delta =
 
         MainRegsWithPc mainWithIndexRegisters pc ->
             { z80 | main = mainWithIndexRegisters, pc = pc, env = z80delta.env, interrupts = z80delta.interrupts }
+
+        OnlyPc pc ->
+            { z80 | pc = pc, env = z80delta.env, interrupts = z80delta.interrupts }
 
 
 
