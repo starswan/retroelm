@@ -150,7 +150,10 @@ apply_delta z80 z80delta =
             { z80 | main = mainWithIndexRegisters, pc = pc, env = { env | time = z80delta.time }, interrupts = z80delta.interrupts }
 
         OnlyPc pc ->
-            { z80 | pc = pc, env = z80delta.env, interrupts = z80delta.interrupts }
+          let
+            env = z80.env
+          in
+            { z80 | pc = pc, env = { env | time = z80delta.time }, interrupts = z80delta.interrupts }
 
 
 
