@@ -3180,18 +3180,19 @@ execute_delta tmp_z80 =
        env = tmp_z80.env
        old_z80 = { tmp_z80 | env = { env | time = c.time }, interrupts = { interrupts | r = interrupts.r + 1 } }
        new_pc = Bitwise.and (old_z80.pc + 1) 0xFFFF
+       new_time = old_z80.env.time |> add_cpu_time_time 4
        z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
     in
       case execute_ltC0 c.value HL z80 of
-          Just a_z80 -> DeltaWithChanges a_z80 interrupts new_pc z80.env
+          Just a_z80 -> DeltaWithChanges a_z80 interrupts new_pc new_time
           Nothing ->
             case c.value of
-                0xDD -> DeltaWithChanges (group_xy IXIY_IX z80) interrupts new_pc z80.env
-                0xFD -> DeltaWithChanges (group_xy IXIY_IY z80) interrupts new_pc z80.env
-                0xCB -> DeltaWithChanges (Whole (group_cb z80)) interrupts new_pc z80.env
-                0xED -> DeltaWithChanges (Whole (group_ed z80)) interrupts new_pc z80.env
-                0xCD -> DeltaWithChanges (execute_0xCD z80) interrupts new_pc z80.env
-                _ -> DeltaWithChanges (execute_gtc0 c.value HL z80) interrupts new_pc z80.env
+                0xDD -> DeltaWithChanges (group_xy IXIY_IX z80) interrupts new_pc new_time
+                0xFD -> DeltaWithChanges (group_xy IXIY_IY z80) interrupts new_pc new_time
+                0xCB -> DeltaWithChanges (Whole (group_cb z80)) interrupts new_pc new_time
+                0xED -> DeltaWithChanges (Whole (group_ed z80)) interrupts new_pc new_time
+                0xCD -> DeltaWithChanges (execute_0xCD z80) interrupts new_pc new_time
+                _ -> DeltaWithChanges (execute_gtc0 c.value HL z80) interrupts new_pc new_time
 -- case 0xD4: call((Ff&0x100)==0); break;
 -- case 0xE0: time++; if((flags()&FP)==0) MP=PC=pop(); break;
 -- case 0xE2: jp((flags()&FP)==0); break;
