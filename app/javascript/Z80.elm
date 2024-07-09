@@ -2277,52 +2277,60 @@ execute_0xAF z80 =
    --z80 |> set_flag_regs (z80_xor z80.flags.a z80.flags)
    z80.flags |> z80_xor z80.flags.a |> FlagRegs
 
-execute_0xB0: Z80 -> Z80
+execute_0xB0: Z80 -> Z80Delta
 execute_0xB0 z80 =
     -- case 0xB0: or(B); break;
-    z80 |> set_flag_regs (z80_or z80.main.b z80.flags)
+    --z80 |> set_flag_regs (z80_or z80.main.b z80.flags)
+   z80.flags |> z80_or z80.main.b |> FlagRegs
 
-execute_0xB1: Z80 -> Z80
+execute_0xB1: Z80 -> Z80Delta
 execute_0xB1 z80 =
     -- case 0xB1: or(C); break;
-    z80 |> set_flag_regs (z80_or z80.main.c z80.flags)
+    --z80 |> set_flag_regs (z80_or z80.main.c z80.flags)
+   z80.flags |> z80_or z80.main.c |> FlagRegs
 
-execute_0xB2: Z80 -> Z80
+execute_0xB2: Z80 -> Z80Delta
 execute_0xB2 z80 =
     -- case 0xB2: or(D); break;
-    z80 |> set_flag_regs (z80_or z80.main.d z80.flags)
+    --z80 |> set_flag_regs (z80_or z80.main.d z80.flags)
+   z80.flags |> z80_or z80.main.d |> FlagRegs
 
-execute_0xB3: Z80 -> Z80
+execute_0xB3: Z80 -> Z80Delta
 execute_0xB3 z80 =
     -- case 0xB3: or(E); break;
-    z80 |> set_flag_regs (z80_or z80.main.e z80.flags)
+    --z80 |> set_flag_regs (z80_or z80.main.e z80.flags)
+   z80.flags |> z80_or z80.main.e |> FlagRegs
 
-execute_0xB4: IXIYHL -> Z80 -> Z80
+execute_0xB4: IXIYHL -> Z80 -> Z80Delta
 execute_0xB4 ixiyhl z80 =
     -- case 0xB4: or(HL>>>8); break;
     -- case 0xB4: or(xy>>>8); break;
-    z80 |> set_flag_regs (z80_or (get_h ixiyhl z80.main) z80.flags)
+    --z80 |> set_flag_regs (z80_or (get_h ixiyhl z80.main) z80.flags)
+   z80.flags |> z80_or (get_h ixiyhl z80.main) |> FlagRegs
 
-execute_0xB5: IXIYHL -> Z80 -> Z80
+execute_0xB5: IXIYHL -> Z80 -> Z80Delta
 execute_0xB5 ixiyhl z80 =
     -- case 0xB5: or(HL&0xFF); break;
     -- case 0xB5: or(xy&0xFF); break;
-    z80 |> set_flag_regs (z80_or (get_l ixiyhl z80.main) z80.flags)
+    --z80 |> set_flag_regs (z80_or (get_l ixiyhl z80.main) z80.flags)
+   z80.flags |> z80_or (get_l ixiyhl z80.main) |> FlagRegs
 
-execute_0xB6: IXIYHL -> Z80 -> Z80
+execute_0xB6: IXIYHL -> Z80 -> Z80Delta
 execute_0xB6 ixiyhl z80 =
-    -- case 0xB6: or(env.mem(HL)); time+=3; break;
-    -- case 0xB6: or(env.mem(getd(xy))); time+=3; break;
-    let
-       value = hl_deref_with_z80 ixiyhl z80
-       env_1 = z80.env
-    in
-       { z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (z80_or value.value z80.flags)
+  -- case 0xB6: or(env.mem(HL)); time+=3; break;
+  -- case 0xB6: or(env.mem(getd(xy))); time+=3; break;
+  let
+    value = hl_deref_with_z80 ixiyhl z80
+    --env_1 = z80.env
+  in
+    --{ z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (z80_or value.value z80.flags)
+    FlagsWithPcAndTime (z80.flags |> z80_or value.value) value.pc value.time
 
-execute_0xB7: Z80 -> Z80
+execute_0xB7: Z80 -> Z80Delta
 execute_0xB7 z80 =
     -- case 0xB7: or(A); break;
-    z80 |> set_flag_regs (z80_or z80.flags.a z80.flags)
+    --z80 |> set_flag_regs (z80_or z80.flags.a z80.flags)
+   z80.flags |> z80_or z80.flags.a |> FlagRegs
 
 execute_0xB8: Z80 -> Z80
 execute_0xB8 z80 =
@@ -2538,6 +2546,11 @@ lt40_delta_dict_lite = Dict.fromList
           (0xAA, execute_0xAA),
           (0xAB ,execute_0xAB),
           (0xAF, execute_0xAF),
+          (0xB0, execute_0xB0),
+          (0xB1, execute_0xB1),
+          (0xB2, execute_0xB2),
+          (0xB3, execute_0xB3),
+          (0xB7, execute_0xB7),
           (0xCD, execute_0xCD),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
@@ -2546,11 +2559,6 @@ lt40_delta_dict_lite = Dict.fromList
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
-          (0xB0, execute_0xB0),
-          (0xB1, execute_0xB1),
-          (0xB2, execute_0xB2),
-          (0xB3, execute_0xB3),
-          (0xB7, execute_0xB7),
           (0xB8, execute_0xB8),
           (0xB9, execute_0xB9),
           (0xBA, execute_0xBA),
@@ -2583,7 +2591,6 @@ lt40_dict_lite = Dict.fromList
           (0xC1, execute_0xC1),
           (0xE3, execute_0xE3),
           (0xF1, execute_0xF1),
-          (0xFE, execute_0xFE),
           (0xD8, execute_0xD8),
           (0xD5, execute_0xD5),
           (0xD2, execute_0xD2),
@@ -2595,8 +2602,58 @@ lt40_dict_lite = Dict.fromList
           (0xF2, execute_0xF2),
           (0xFA, execute_0xFA),
           (0xDA, execute_0xDA),
-          (0xCE, execute_0xCE)
+          (0xCE, execute_0xCE),
+          (0xFE, execute_0xFE),
+          (0xC7, execute_0xC7),
+          (0xCF, execute_0xCF),
+          (0xD7, execute_0xD7),
+          (0xDF, execute_0xDF),
+          (0xE7, execute_0xE7),
+          (0xEF, execute_0xEF),
+          (0xF7, execute_0xF7),
+          (0xFF, execute_0xFF)
     ]
+
+-- case 0xC7:
+-- case 0xCF:
+-- case 0xD7:
+-- case 0xDF:
+-- case 0xE7:
+-- case 0xEF:
+-- case 0xF7:
+-- case 0xFF: push(PC); PC=c-199; break;
+
+execute_0xC7: Z80 -> Z80
+execute_0xC7 z80 =
+    z80 |> execute_0xC7CFD7DFE7EFF7FF 0xC7
+
+execute_0xCF: Z80 -> Z80
+execute_0xCF z80 =
+    z80 |> execute_0xC7CFD7DFE7EFF7FF 0xCF
+
+execute_0xD7: Z80 -> Z80
+execute_0xD7 z80 =
+    z80 |> execute_0xC7CFD7DFE7EFF7FF 0xD7
+
+execute_0xDF: Z80 -> Z80
+execute_0xDF z80 =
+    z80 |> execute_0xC7CFD7DFE7EFF7FF 0xDF
+
+execute_0xE7: Z80 -> Z80
+execute_0xE7 z80 =
+    z80 |> execute_0xC7CFD7DFE7EFF7FF 0xE7
+
+execute_0xEF: Z80 -> Z80
+execute_0xEF z80 =
+    z80 |> execute_0xC7CFD7DFE7EFF7FF 0xEF
+
+execute_0xF7: Z80 -> Z80
+execute_0xF7 z80 =
+    z80 |> execute_0xC7CFD7DFE7EFF7FF 0xF7
+
+execute_0xFF: Z80 -> Z80
+execute_0xFF z80 =
+    z80 |> execute_0xC7CFD7DFE7EFF7FF 0xFF
 
 lt40_delta_dict: Dict Int (IXIYHL -> Z80 -> Z80Delta)
 lt40_delta_dict = Dict.fromList
@@ -2672,15 +2729,15 @@ lt40_delta_dict = Dict.fromList
           (0xAC, execute_0xAC),
           (0xAD, execute_0xAD),
           (0xAE, execute_0xAE),
+          (0xB4, execute_0xB4),
+          (0xB5, execute_0xB5),
+          (0xB6, execute_0xB6),
           (0xE9, execute_0xE9)
     ]
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
-          (0xB4, execute_0xB4),
-          (0xB5, execute_0xB5),
-          (0xB6, execute_0xB6),
           (0xBC, execute_0xBC),
           (0xBD, execute_0xBD),
           (0xBE, execute_0xBE)
@@ -3211,40 +3268,40 @@ execute_0xCE z80 =
    in
       {z80 | pc = v.pc, env = { env_1 | time = v.time }, flags = flags }
 
-execute_gtc0: Int -> IXIYHL -> Z80 -> Z80Delta
-execute_gtc0 c ixiyhl z80 =
-   case c of
-      -- case 0xC7:
-      -- case 0xCF:
-      -- case 0xD7:
-      -- case 0xDF:
-      -- case 0xE7:
-      -- case 0xEF:
-      -- case 0xF7:
-      -- case 0xFF: push(PC); PC=c-199; break;
-      0xC7 -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xC7 |> Whole
-      0xCF -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xCF |> Whole
-      0xD7 -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xD7 |> Whole
-      0xDF -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xDF |> Whole
-      0xE7 -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xE7 |> Whole
-      0xEF -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xEF |> Whole
-      0xF7 -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xF7 |> Whole
-      0xFF -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xFF |> Whole
-      ---- case 0xDC: call((Ff&0x100)!=0); break;
-      --0xDC -> z80 |> call (Bitwise.and z80.flags.ff 0x100 /= 0)
-      ---- case 0xF2: jp((Ff&FS)==0); break;
-      --0xF2 -> z80 |> jp (Bitwise.and z80.flags.ff c_FS == 0)
-      ---- case 0xFA: jp((Ff&FS)!=0); break;
-      --0xFA -> z80 |> jp (Bitwise.and z80.flags.ff c_FS /= 0)
-      -- case 0xDA: jp((Ff&0x100)!=0); break;
-      --0xDA -> z80 |> jp ((Bitwise.and z80.flags.ff 0x100) /= 0)
-      -- case 0xCE: adc(imm8()); break;
-      --0xCE -> let
-      --           v = z80 |> imm8
-      --           flags = z80.flags |> adc v.value
-      --        in
-      --           {z80 | pc = v.pc, env = v.env, flags = flags }
-      _ -> debug_todo "execute" (c |> toHexString) z80  |> Whole
+--execute_gtc0: Int -> IXIYHL -> Z80 -> Z80Delta
+--execute_gtc0 c ixiyhl z80 =
+--   case c of
+--      -- case 0xC7:
+--      -- case 0xCF:
+--      -- case 0xD7:
+--      -- case 0xDF:
+--      -- case 0xE7:
+--      -- case 0xEF:
+--      -- case 0xF7:
+--      -- case 0xFF: push(PC); PC=c-199; break;
+--      0xC7 -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xC7 |> Whole
+--      0xCF -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xCF |> Whole
+--      0xD7 -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xD7 |> Whole
+--      0xDF -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xDF |> Whole
+--      0xE7 -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xE7 |> Whole
+--      0xEF -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xEF |> Whole
+--      0xF7 -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xF7 |> Whole
+--      0xFF -> z80 |> execute_0xC7CFD7DFE7EFF7FF 0xFF |> Whole
+--      ---- case 0xDC: call((Ff&0x100)!=0); break;
+--      --0xDC -> z80 |> call (Bitwise.and z80.flags.ff 0x100 /= 0)
+--      ---- case 0xF2: jp((Ff&FS)==0); break;
+--      --0xF2 -> z80 |> jp (Bitwise.and z80.flags.ff c_FS == 0)
+--      ---- case 0xFA: jp((Ff&FS)!=0); break;
+--      --0xFA -> z80 |> jp (Bitwise.and z80.flags.ff c_FS /= 0)
+--      -- case 0xDA: jp((Ff&0x100)!=0); break;
+--      --0xDA -> z80 |> jp ((Bitwise.and z80.flags.ff 0x100) /= 0)
+--      -- case 0xCE: adc(imm8()); break;
+--      --0xCE -> let
+--      --           v = z80 |> imm8
+--      --           flags = z80.flags |> adc v.value
+--      --        in
+--      --           {z80 | pc = v.pc, env = v.env, flags = flags }
+--      _ -> debug_todo "execute" (c |> toHexString) z80  |> Whole
 
 execute_delta: Z80 -> DeltaWithChanges
 execute_delta tmp_z80 =
@@ -3269,7 +3326,11 @@ execute_delta tmp_z80 =
                 0xCB -> DeltaWithChanges (Whole (group_cb z80)) interrupts new_pc new_time
                 0xED -> DeltaWithChanges (Whole (group_ed z80)) interrupts new_pc new_time
                 0xCD -> DeltaWithChanges (execute_0xCD z80) interrupts new_pc new_time
-                _ -> DeltaWithChanges (execute_gtc0 c.value HL z80) interrupts new_pc new_time
+                _ ->
+                    let
+                        delta = debug_todo "execute" (c.value |> toHexString) z80  |> Whole
+                    in
+                        DeltaWithChanges delta interrupts new_pc new_time
 -- case 0xD4: call((Ff&0x100)==0); break;
 -- case 0xE0: time++; if((flags()&FP)==0) MP=PC=pop(); break;
 -- case 0xE2: jp((flags()&FP)==0); break;
@@ -3343,9 +3404,10 @@ group_xy ixiy old_z80 =
           Nothing ->
              case c.value of
                 0xCB -> group_xy_cb ixiy z80 |> Whole
-                _ -> case ixiy of
-                        IXIY_IX -> execute_gtc0 c.value IX z80
-                        IXIY_IY -> execute_gtc0 c.value IY z80
+                _ -> debug_todo "group_xy" (c.value |> toHexString) z80 |> Whole
+                --_ -> case ixiy of
+                --        IXIY_IX -> execute_gtc0 c.value IX z80
+                --        IXIY_IY -> execute_gtc0 c.value IY z80
 --      case c.value of
 -- case 0xED: group_ed(); break;
 -- case 0xC0: time++; if(Fr!=0) MP=PC=pop(); break;
