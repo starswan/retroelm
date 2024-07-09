@@ -1983,54 +1983,61 @@ execute_0x87: Z80 -> Z80Delta
 execute_0x87 z80 =
    -- case 0x87: add(A); break;
    --z80 |> set_flag_regs (z80_add z80.flags.a z80.flags)
-   FlagRegs (z80_add z80.flags.a z80.flags)
+   z80.flags |> z80_add z80.flags.a |> FlagRegs
 
-execute_0x88: Z80 -> Z80
+execute_0x88: Z80 -> Z80Delta
 execute_0x88 z80 =
    -- case 0x88: adc(B); break;
-   z80 |> set_flag_regs (adc z80.main.b z80.flags)
+   --z80 |> set_flag_regs (adc z80.main.b z80.flags)
+   z80.flags |> adc z80.main.b |> FlagRegs
 
-execute_0x89: Z80 -> Z80
+execute_0x89: Z80 -> Z80Delta
 execute_0x89 z80 =
    -- case 0x89: adc(C); break;
-   z80 |> set_flag_regs (adc z80.main.c z80.flags)
+   --z80 |> set_flag_regs (adc z80.main.c z80.flags)
+   z80.flags |> adc z80.main.c |> FlagRegs
 
-execute_0x8A: Z80 -> Z80
+execute_0x8A: Z80 -> Z80Delta
 execute_0x8A z80 =
    -- case 0x8A: adc(D); break;
-   z80 |> set_flag_regs (adc z80.main.d z80.flags)
+   --z80 |> set_flag_regs (adc z80.main.d z80.flags)
+   z80.flags |> adc z80.main.d |> FlagRegs
 
-execute_0x8B: Z80 -> Z80
+execute_0x8B: Z80 -> Z80Delta
 execute_0x8B z80 =
    -- case 0x8B: adc(E); break;
-   z80 |> set_flag_regs (adc z80.main.e z80.flags)
+   --z80 |> set_flag_regs (adc z80.main.e z80.flags)
+   z80.flags |> adc z80.main.e |> FlagRegs
 
-execute_0x8C: IXIYHL -> Z80 -> Z80
+execute_0x8C: IXIYHL -> Z80 -> Z80Delta
 execute_0x8C ixiyhl z80 =
    -- case 0x8C: adc(HL>>>8); break;
    -- case 0x8C: adc(xy>>>8); break;
-   z80 |> set_flag_regs (adc (get_h ixiyhl z80.main) z80.flags)
+   --z80 |> set_flag_regs (adc (get_h ixiyhl z80.main) z80.flags)
+   z80.flags |> adc (get_h ixiyhl z80.main) |> FlagRegs
 
-execute_0x8D: IXIYHL -> Z80 -> Z80
+execute_0x8D: IXIYHL -> Z80 -> Z80Delta
 execute_0x8D ixiyhl z80 =
    -- case 0x8D: adc(HL&0xFF); break;
    -- case 0x8D: adc(xy&0xFF); break;
-   z80 |> set_flag_regs (adc (get_l ixiyhl z80.main) z80.flags)
+   --z80 |> set_flag_regs (adc (get_l ixiyhl z80.main) z80.flags)
+   z80.flags |> adc (get_l ixiyhl z80.main) |> FlagRegs
 
-execute_0x8E: IXIYHL -> Z80 -> Z80
+execute_0x8E: IXIYHL -> Z80 -> Z80Delta
 execute_0x8E ixiyhl z80 =
    -- case 0x8E: adc(env.mem(HL)); time+=3; break;
    -- case 0x8E: adc(env.mem(getd(xy))); time+=3; break;
    let
       value = hl_deref_with_z80 ixiyhl z80
-      env_1 = z80.env
+      --env_1 = z80.env
    in
-      { z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (adc value.value z80.flags)
+      --{ z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (adc value.value z80.flags)
+      FlagsWithPcAndTime (z80.flags |> adc value.value) value.pc value.time
 
-execute_0x8F: Z80 -> Z80
+execute_0x8F: Z80 -> Z80Delta
 execute_0x8F z80 =
    -- case 0x8F: adc(A); break;
-   z80 |> set_flag_regs (z80_sub z80.flags.a z80.flags)
+   z80.flags |> adc z80.flags.a |> FlagRegs
 
 execute_0x90: Z80 -> Z80
 execute_0x90 z80 =
@@ -2266,6 +2273,11 @@ lt40_delta_dict_lite = Dict.fromList
           (0x82, execute_0x82),
           (0x83, execute_0x83),
           (0x87, execute_0x87),
+          (0x88, execute_0x88),
+          (0x89, execute_0x89),
+          (0x8A, execute_0x8A),
+          (0x8B, execute_0x8B),
+          (0x8F, execute_0x8F),
           (0xCD, execute_0xCD),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
@@ -2276,11 +2288,6 @@ lt40_dict_lite = Dict.fromList
     [
           -- case 0x76: halt(); break;
           (0x76, halt),
-          (0x88, execute_0x88),
-          (0x89, execute_0x89),
-          (0x8A, execute_0x8A),
-          (0x8B, execute_0x8B),
-          (0x8F, execute_0x8F),
           (0x90, execute_0x90),
           (0x91, execute_0x91),
           (0x92, execute_0x92),
@@ -2412,15 +2419,15 @@ lt40_delta_dict = Dict.fromList
           (0x84, execute_0x84),
           (0x85, execute_0x85),
           (0x86, execute_0x86),
+          (0x8C, execute_0x8C),
+          (0x8D, execute_0x8D),
+          (0x8E, execute_0x8E),
           (0xE9, execute_0xE9)
     ]
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
-          (0x8C, execute_0x8C),
-          (0x8D, execute_0x8D),
-          (0x8E, execute_0x8E),
           (0x94, execute_0x94),
           (0x95, execute_0x95),
           (0x96, execute_0x96),
