@@ -1923,11 +1923,12 @@ execute_0x7E ixiyhl z80 =
    -- case 0x7E: A=env.mem(getd(xy)); time+=3; break;
    let
       value = hl_deref_with_z80 ixiyhl z80
-      env_1 = z80.env
+      --env_1 = z80.env
       flags = z80.flags
    in
       --{ z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_a value.value
-      EnvWithFlagsAndPc { env_1 | time = value.time } { flags | a = value.value } value.pc
+      --EnvWithFlagsAndPc { env_1 | time = value.time } { flags | a = value.value } value.pc
+      FlagsWithPcAndTime { flags | a = value.value } value.pc value.time
 
 execute_0x80: Z80 -> Z80Delta
 execute_0x80 z80 =
@@ -1973,9 +1974,9 @@ execute_0x86 ixiyhl z80 =
    -- case 0x86: add(env.mem(getd(xy))); time+=3; break;
   let
     value = hl_deref_with_z80 ixiyhl z80
-    env_1 = z80.env
-    z80_1 = { z80 | pc = value.pc, env = { env_1 | time = value.time } }
-    flags_one = z80_add value.value z80_1.flags
+    --env_1 = z80.env
+    --z80_1 = { z80 | pc = value.pc, env = { env_1 | time = value.time } }
+    flags_one = z80_add value.value z80.flags
   in
     FlagsWithPcAndTime flags_one value.pc value.time
        --{ z80_1 | flags = flags_one }
@@ -2084,7 +2085,7 @@ execute_0x96 ixiyhl z80 =
    -- case 0x96: sub(env.mem(getd(xy))); time+=3; break;
    let
        value = hl_deref_with_z80 ixiyhl z80
-       env_1 = z80.env
+       --env_1 = z80.env
    in
        --{ z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (z80_sub value.value z80.flags)
       FlagsWithPcAndTime (z80.flags |> z80_sub value.value) value.pc value.time
@@ -2095,395 +2096,60 @@ execute_0x97 z80 =
    --z80 |> set_flag_regs (z80_sub z80.flags.a z80.flags)
    z80.flags |> z80_sub z80.flags.a |> FlagRegs
 
-execute_0x98: Z80 -> Z80
+execute_0x98: Z80 -> Z80Delta
 execute_0x98 z80 =
    -- case 0x98: sbc(B); break;
-   z80 |> set_flag_regs (sbc z80.main.b z80.flags)
+   --z80 |> set_flag_regs (sbc z80.main.b z80.flags)
+   z80.flags |> sbc z80.main.b |> FlagRegs
 
-execute_0x99: Z80 -> Z80
+execute_0x99: Z80 -> Z80Delta
 execute_0x99 z80 =
    -- case 0x99: sbc(C); break;
-   z80 |> set_flag_regs (sbc z80.main.c z80.flags)
+   --z80 |> set_flag_regs (sbc z80.main.c z80.flags)
+   z80.flags |> sbc z80.main.c |> FlagRegs
 
-execute_0x9A: Z80 -> Z80
+execute_0x9A: Z80 -> Z80Delta
 execute_0x9A z80 =
    -- case 0x9A: sbc(D); break;
-   z80 |> set_flag_regs (sbc z80.main.d z80.flags)
+   --z80 |> set_flag_regs (sbc z80.main.d z80.flags)
+   z80.flags |> sbc z80.main.d |> FlagRegs
 
-execute_0x9B: Z80 -> Z80
+execute_0x9B: Z80 -> Z80Delta
 execute_0x9B z80 =
    -- case 0x9B: sbc(E); break;
-   z80 |> set_flag_regs (sbc z80.main.e z80.flags)
+   --z80 |> set_flag_regs (sbc z80.main.e z80.flags)
+   z80.flags |> sbc z80.main.e |> FlagRegs
 
-execute_0x9C: IXIYHL -> Z80 -> Z80
+execute_0x9C: IXIYHL -> Z80 -> Z80Delta
 execute_0x9C ixiyhl z80 =
     -- case 0x9C: sbc(HL>>>8); break;
     -- case 0x9C: sbc(xy>>>8); break;
-    z80 |> set_flag_regs (sbc (get_h ixiyhl z80.main) z80.flags)
+    --z80 |> set_flag_regs (sbc (get_h ixiyhl z80.main) z80.flags)
+   z80.flags |> sbc (get_h ixiyhl z80.main) |> FlagRegs
 
-execute_0x9D: IXIYHL -> Z80 -> Z80
+execute_0x9D: IXIYHL -> Z80 -> Z80Delta
 execute_0x9D ixiyhl z80 =
     -- case 0x9D: sbc(HL&0xFF); break;
     -- case 0x9D: sbc(xy&0xFF); break;
-    z80 |> set_flag_regs (sbc (get_l ixiyhl z80.main) z80.flags)
+    --z80 |> set_flag_regs (sbc (get_l ixiyhl z80.main) z80.flags)
+   z80.flags |> sbc (get_l ixiyhl z80.main) |> FlagRegs
 
-execute_0x9E: IXIYHL -> Z80 -> Z80
+execute_0x9E: IXIYHL -> Z80 -> Z80Delta
 execute_0x9E ixiyhl z80 =
     -- case 0x9E: sbc(env.mem(HL)); time+=3; break;
     -- case 0x9E: sbc(env.mem(getd(xy))); time+=3; break;
     let
        value = hl_deref_with_z80 ixiyhl z80
-       env_1 = z80.env
+       --env_1 = z80.env
     in
-       { z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (sbc value.value z80.flags)
+       --{ z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (sbc value.value z80.flags)
+      FlagsWithPcAndTime (z80.flags |> sbc value.value) value.pc value.time
 
-execute_0x9F: Z80 -> Z80
+execute_0x9F: Z80 -> Z80Delta
 execute_0x9F z80 =
    -- case 0x9F: sbc(A); break;
-   z80 |> set_flag_regs (sbc z80.flags.a z80.flags)
-
-lt40_array_lite: Array (Maybe (Z80 -> Z80Delta))
-lt40_array_lite = makeLiteArray
-
-list0255 = List.range 0 255
-
-z80_to_delta: Maybe (Z80 -> Z80) -> Maybe (Z80 -> Z80Delta)
-z80_to_delta z80func =
-    case z80func of
-        Just f ->  Just (\z80 -> Whole (z80 |> f))
-        Nothing -> Nothing
-
-ixiyhl_z80_to_delta: Maybe (IXIYHL -> Z80 -> Z80) -> Maybe (IXIYHL -> Z80 -> Z80Delta)
-ixiyhl_z80_to_delta z80func =
-    case z80func of
-        Just f ->  Just (\ixiyhl z80  -> Whole (z80 |> f ixiyhl))
-        Nothing -> Nothing
-
-mergeFuncList:  Maybe (Z80 -> Z80Delta) -> Maybe (Z80 -> Z80Delta) -> Maybe (Z80 -> Z80Delta)
-mergeFuncList afunc bfunc =
-    case afunc of
-        Just a -> Just a
-        Nothing -> case bfunc of
-                        Just b -> Just b
-                        Nothing -> Nothing
-
-mergeIxiyFuncList:  Maybe (IXIYHL -> Z80 -> Z80Delta) -> Maybe (IXIYHL -> Z80 -> Z80Delta) -> Maybe (IXIYHL -> Z80 -> Z80Delta)
-mergeIxiyFuncList afunc bfunc =
-    case afunc of
-        Just a -> Just a
-        Nothing -> case bfunc of
-                        Just b -> Just b
-                        Nothing -> Nothing
-
-makeLiteArray: Array (Maybe (Z80 -> Z80Delta))
-makeLiteArray =
-    let
-       z80_funcs = list0255 |> List.map (\index -> lt40_dict_lite |> Dict.get index |> z80_to_delta)
-       delta_funcs = list0255 |> List.map (\index -> lt40_delta_dict_lite |> Dict.get index)
-    in
-       List.map2 mergeFuncList z80_funcs delta_funcs |> Array.fromList
-
-lt40_array: Array (Maybe ((IXIYHL -> Z80 -> Z80Delta)))
-lt40_array = makeLt40Array
-
-makeLt40Array: Array (Maybe ((IXIYHL -> Z80 -> Z80Delta)))
-makeLt40Array =
-    let
-       z80_funcs = list0255 |> List.map (\index -> lt40_dict |> Dict.get index |> ixiyhl_z80_to_delta)
-       delta_funcs = list0255 |> List.map (\index -> lt40_delta_dict |> Dict.get index)
-    in
-       List.map2 mergeIxiyFuncList z80_funcs delta_funcs |> Array.fromList
-
-lt40_delta_dict_lite: Dict Int (Z80 -> Z80Delta)
-lt40_delta_dict_lite = Dict.fromList
-    [
-          (0x01, execute_0x01),
-          (0x02, execute_0x02),
-          (0x03, execute_0x03),
-          (0x04, execute_0x04),
-          (0x05, execute_0x05),
-          (0x06, execute_0x06),
-          (0x07, execute_0x07),
-          (0x08, ex_af),
-          (0x0A, execute_0x0A),
-          (0x0B, execute_0x0B),
-          (0x0C, execute_0x0C),
-          (0x0D, execute_0x0D),
-          (0x0E, execute_0x0E),
-          (0x0F, execute_0x0F),
-          (0x10, execute_0x10),
-          (0x11, execute_0x11),
-          (0x12, execute_0x12),
-          (0x13, execute_0x13),
-          (0x14, execute_0x14),
-          (0x15, execute_0x15),
-          (0x16, execute_0x16),
-          (0x17, execute_0x17),
-          (0x18, execute_0x18),
-          (0x1A, execute_0x1A),
-          (0x1B, execute_0x1B),
-          (0x1C, execute_0x1C),
-          (0x1D, execute_0x1D),
-          (0x1E, execute_0x1E),
-          (0x1F, execute_0x1F),
-          (0x20, execute_0x20),
-          (0x22, execute_0x22),
-          (0x27, execute_0x27),
-          (0x28, execute_0x28),
-          (0x2F, execute_0x2F),
-          (0x30, execute_0x30),
-          (0x31, execute_0x31),
-          (0x32, execute_0x32),
-          (0x33, execute_0x33),
-          (0x37, execute_0x37),
-          (0x38, execute_0x38),
-          (0x3A, execute_0x3A),
-          (0x3B, execute_0x3B),
-          (0x3C, execute_0x3C),
-          (0x3D, execute_0x3D),
-          (0x3E, execute_0x3E),
-          (0x3F, execute_0x3F),
-          -- case 0x40: break;
-          (0x40, delta_noop),
-          (0x00, delta_noop),
-          (0x41, execute_0x41),
-          (0x42, execute_0x42),
-          (0x43, execute_0x43),
-          (0x47, execute_0x47),
-          (0x48, execute_0x48),
-          -- case 0x49: break;
-          (0x49, delta_noop),
-          (0x4A, execute_0x4A),
-          (0x4B, execute_0x4B),
-          (0x4F, execute_0x4F),
-          (0x50, execute_0x50),
-          (0x51, execute_0x51),
-          (0x52, delta_noop),
-          (0x53, execute_0x53),
-          (0x57, execute_0x57),
-          (0x58, execute_0x58),
-          (0x59, execute_0x59),
-          (0x5A, execute_0x5A),
-          -- case 0x5B: break;
-          (0x5B, delta_noop),
-          (0x5F, execute_0x5F),
-          -- case 0x64: break;
-          (0x64, delta_noop),
-          -- case 0x6D: break;
-          (0x6D, delta_noop),
-          (0x78, execute_0x78),
-          (0x79, execute_0x79),
-          (0x7A, execute_0x7A),
-          (0x7B, execute_0x7B),
-          -- case 0x7F: break;
-          (0x7F, delta_noop),
-          (0x80, execute_0x80),
-          (0x81, execute_0x81),
-          (0x82, execute_0x82),
-          (0x83, execute_0x83),
-          (0x87, execute_0x87),
-          (0x88, execute_0x88),
-          (0x89, execute_0x89),
-          (0x8A, execute_0x8A),
-          (0x8B, execute_0x8B),
-          (0x8F, execute_0x8F),
-          (0x90, execute_0x90),
-          (0x91, execute_0x91),
-          (0x92, execute_0x92),
-          (0x93, execute_0x93),
-          (0x97, execute_0x97),
-          (0xCD, execute_0xCD),
-          (0xDD, (\z80 -> group_xy IXIY_IX z80)),
-          (0xFD, (\z80 -> group_xy IXIY_IY z80))
-    ]
-
-lt40_dict_lite: Dict Int (Z80 -> Z80)
-lt40_dict_lite = Dict.fromList
-    [
-          -- case 0x76: halt(); break;
-          (0x76, halt),
-          (0x98, execute_0x98),
-          (0x99, execute_0x99),
-          (0x9A, execute_0x9A),
-          (0x9B, execute_0x9B),
-          (0x9F, execute_0x9F),
-          (0xA0, execute_0xA0),
-          (0xA1, execute_0xA1),
-          (0xA2, execute_0xA2),
-          (0xA3, execute_0xA3),
-          (0xA7, execute_0xA7),
-          (0xA8, execute_0xA8),
-          (0xA9, execute_0xA9),
-          (0xAA, execute_0xAA),
-          (0xAB ,execute_0xAB),
-          (0xAF, execute_0xAF),
-          (0xB0, execute_0xB0),
-          (0xB1, execute_0xB1),
-          (0xB2, execute_0xB2),
-          (0xB3, execute_0xB3),
-          (0xB7, execute_0xB7),
-          (0xB8, execute_0xB8),
-          (0xB9, execute_0xB9),
-          (0xBA, execute_0xBA),
-          (0xBB, execute_0xBB),
-          (0xBF, execute_0xBF),
-          (0xC0, execute_0xC0),
-          (0xC2, execute_0xC2),
-          (0xC4, execute_0xC4),
-          (0xC8, execute_0xC8),
-          (0xCA, execute_0xCA),
-          (0xCC, execute_0xCC),
-          (0xD0, execute_0xD0),
-          (0xF3, execute_0xF3),
-          (0xC3, execute_0xC3),
-          (0xD3, execute_0xD3),
-          -- case 0xD9: exx(); break;
-          (0xD9, exx),
-          (0xEB, execute_0xEB),
-          (0xF9, execute_0xF9),
-          (0xFB, execute_0xFB),
-          (0xC6, execute_0xC6),
-          (0xC5, execute_0xC5),
-          (0xE6, execute_0xE6),
-          (0xF6, execute_0xF6),
-          (0xC9, execute_0xC9),
-          (0xF5, execute_0xF5),
-          (0xED, group_ed),
-          (0xE1, execute_0xE1),
-          (0xE5, execute_0xE5),
-          (0xC1, execute_0xC1),
-          (0xE3, execute_0xE3),
-          (0xF1, execute_0xF1),
-          (0xFE, execute_0xFE),
-          (0xD8, execute_0xD8),
-          (0xD5, execute_0xD5),
-          (0xD2, execute_0xD2),
-          (0xD1, execute_0xD1),
-          (0xDB, execute_0xDB),
-          (0xF8, execute_0xF8),
-          (0xEE, execute_0xEE),
-          (0xD6, execute_0xD6),
-          (0xF2, execute_0xF2),
-          (0xFA, execute_0xFA),
-          (0xDA, execute_0xDA),
-          (0xCE, execute_0xCE)
-    ]
-
-lt40_delta_dict: Dict Int (IXIYHL -> Z80 -> Z80Delta)
-lt40_delta_dict = Dict.fromList
-    [
-          (0x09, execute_0x09),
-          (0x19, execute_0x19),
-          (0x21, execute_0x21),
-          (0x23, execute_0x23),
-          (0x24, execute_0x24),
-          (0x25, execute_0x25),
-          (0x26, execute_0x26),
-          (0x29, execute_0x29),
-          (0x2A, execute_0x2A),
-          (0x2B, execute_0x2B),
-          (0x2C, execute_0x2C),
-          (0x2D, execute_0x2D),
-          (0x2E, execute_0x2E),
-          (0x34, execute_0x34),
-          (0x35, execute_0x35),
-          (0x36, execute_0x36),
-          (0x39, execute_0x39),
-          (0x44, execute_0x44),
-          (0x45, execute_0x45),
-          (0x46, execute_0x46),
-          (0x4C, execute_0x4C),
-          (0x4D, execute_0x4D),
-          (0x4E, execute_0x4E),
-          (0x54, execute_0x54),
-          (0x55, execute_0x55),
-          (0x56, execute_0x56),
-          (0x5C, execute_0x5C),
-          (0x5D, execute_0x5D),
-          (0x5E, execute_0x5E),
-          (0x60, execute_0x60),
-          (0x61, execute_0x61),
-          (0x62, execute_0x62),
-          (0x63, execute_0x63),
-          (0x65, execute_0x65),
-          (0x66, execute_0x66),
-          (0x67, execute_0x67),
-          (0x68, execute_0x68),
-          (0x69, execute_0x69),
-          (0x6A, execute_0x6A),
-          (0x6B, execute_0x6B),
-          (0x6C, execute_0x6C),
-          (0x6E, execute_0x6E),
-          (0x6F, execute_0x6F),
-          (0x70, execute_0x70),
-          (0x71, execute_0x71),
-          (0x72, execute_0x72),
-          (0x73, execute_0x73),
-          (0x74, execute_0x74),
-          (0x75, execute_0x75),
-          (0x77, execute_0x77),
-          (0x7C, execute_0x7C),
-          (0x7D, execute_0x7D),
-          (0x7E, execute_0x7E),
-          (0x84, execute_0x84),
-          (0x85, execute_0x85),
-          (0x86, execute_0x86),
-          (0x8C, execute_0x8C),
-          (0x8D, execute_0x8D),
-          (0x8E, execute_0x8E),
-          (0x94, execute_0x94),
-          (0x95, execute_0x95),
-          (0x96, execute_0x96),
-          (0xE9, execute_0xE9)
-    ]
-
-lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
-lt40_dict = Dict.fromList
-    [
-          (0x9C, execute_0x9C),
-          (0x9D, execute_0x9D),
-          (0x9E, execute_0x9E),
-          (0xA4, execute_0xA4),
-          (0xA5, execute_0xA5),
-          (0xA6, execute_0xA6),
-          (0xAC, execute_0xAC),
-          (0xAD, execute_0xAD),
-          (0xAE, execute_0xAE),
-          (0xB4, execute_0xB4),
-          (0xB5, execute_0xB5),
-          (0xB6, execute_0xB6),
-          (0xBC, execute_0xBC),
-          (0xBD, execute_0xBD),
-          (0xBE, execute_0xBE)
-    ]
---
---	private int getd(int xy)
---	{
---		int d = env.mem(PC);
---		PC = (char)(PC+1);
---		time += 8;
---		return MP = (char)(xy + (byte)d);
---	}
---getd_value: Int -> Z80 -> CpuTimePcAndValue
---getd_value xy z80 =
---   let
---      d = z80.env |> mem z80.pc
---   in
---      CpuTimePcAndValue (d.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (xy + byte d.value))
-env_mem_hl: IXIYHL -> Z80 -> CpuTimePcAndValue
-env_mem_hl ixiyhl z80 =
-  case ixiyhl of
-    HL -> CpuTimePcAndValue z80.env.time z80.pc z80.main.hl
-    IX ->
-      let
-        dval = z80.env |> mem z80.pc
-      in
-        CpuTimePcAndValue (dval.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (z80.main.ix + byte dval.value))
-    IY ->
-      let
-        dval = z80.env |> mem z80.pc
-      in
-        CpuTimePcAndValue (dval.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (z80.main.iy + byte dval.value))
+   --z80 |> set_flag_regs (sbc z80.flags.a z80.flags)
+   z80.flags |> sbc z80.flags.a |> FlagRegs
 
 execute_0xA0: Z80 -> Z80
 execute_0xA0 z80 =
@@ -2673,6 +2339,350 @@ execute_0xBF: Z80 -> Z80
 execute_0xBF z80 =
     -- case 0xBF: cp(A); break;
     z80 |> set_flag_regs (cp z80.flags.a z80.flags)
+
+lt40_array_lite: Array (Maybe (Z80 -> Z80Delta))
+lt40_array_lite = makeLiteArray
+
+list0255 = List.range 0 255
+
+z80_to_delta: Maybe (Z80 -> Z80) -> Maybe (Z80 -> Z80Delta)
+z80_to_delta z80func =
+    case z80func of
+        Just f ->  Just (\z80 -> Whole (z80 |> f))
+        Nothing -> Nothing
+
+ixiyhl_z80_to_delta: Maybe (IXIYHL -> Z80 -> Z80) -> Maybe (IXIYHL -> Z80 -> Z80Delta)
+ixiyhl_z80_to_delta z80func =
+    case z80func of
+        Just f ->  Just (\ixiyhl z80  -> Whole (z80 |> f ixiyhl))
+        Nothing -> Nothing
+
+mergeFuncList:  Maybe (Z80 -> Z80Delta) -> Maybe (Z80 -> Z80Delta) -> Maybe (Z80 -> Z80Delta)
+mergeFuncList afunc bfunc =
+    case afunc of
+        Just a -> Just a
+        Nothing -> case bfunc of
+                        Just b -> Just b
+                        Nothing -> Nothing
+
+mergeIxiyFuncList:  Maybe (IXIYHL -> Z80 -> Z80Delta) -> Maybe (IXIYHL -> Z80 -> Z80Delta) -> Maybe (IXIYHL -> Z80 -> Z80Delta)
+mergeIxiyFuncList afunc bfunc =
+    case afunc of
+        Just a -> Just a
+        Nothing -> case bfunc of
+                        Just b -> Just b
+                        Nothing -> Nothing
+
+makeLiteArray: Array (Maybe (Z80 -> Z80Delta))
+makeLiteArray =
+    let
+       z80_funcs = list0255 |> List.map (\index -> lt40_dict_lite |> Dict.get index |> z80_to_delta)
+       delta_funcs = list0255 |> List.map (\index -> lt40_delta_dict_lite |> Dict.get index)
+    in
+       List.map2 mergeFuncList z80_funcs delta_funcs |> Array.fromList
+
+lt40_array: Array (Maybe ((IXIYHL -> Z80 -> Z80Delta)))
+lt40_array = makeLt40Array
+
+makeLt40Array: Array (Maybe ((IXIYHL -> Z80 -> Z80Delta)))
+makeLt40Array =
+    let
+       z80_funcs = list0255 |> List.map (\index -> lt40_dict |> Dict.get index |> ixiyhl_z80_to_delta)
+       delta_funcs = list0255 |> List.map (\index -> lt40_delta_dict |> Dict.get index)
+    in
+       List.map2 mergeIxiyFuncList z80_funcs delta_funcs |> Array.fromList
+
+lt40_delta_dict_lite: Dict Int (Z80 -> Z80Delta)
+lt40_delta_dict_lite = Dict.fromList
+    [
+          (0x01, execute_0x01),
+          (0x02, execute_0x02),
+          (0x03, execute_0x03),
+          (0x04, execute_0x04),
+          (0x05, execute_0x05),
+          (0x06, execute_0x06),
+          (0x07, execute_0x07),
+          (0x08, ex_af),
+          (0x0A, execute_0x0A),
+          (0x0B, execute_0x0B),
+          (0x0C, execute_0x0C),
+          (0x0D, execute_0x0D),
+          (0x0E, execute_0x0E),
+          (0x0F, execute_0x0F),
+          (0x10, execute_0x10),
+          (0x11, execute_0x11),
+          (0x12, execute_0x12),
+          (0x13, execute_0x13),
+          (0x14, execute_0x14),
+          (0x15, execute_0x15),
+          (0x16, execute_0x16),
+          (0x17, execute_0x17),
+          (0x18, execute_0x18),
+          (0x1A, execute_0x1A),
+          (0x1B, execute_0x1B),
+          (0x1C, execute_0x1C),
+          (0x1D, execute_0x1D),
+          (0x1E, execute_0x1E),
+          (0x1F, execute_0x1F),
+          (0x20, execute_0x20),
+          (0x22, execute_0x22),
+          (0x27, execute_0x27),
+          (0x28, execute_0x28),
+          (0x2F, execute_0x2F),
+          (0x30, execute_0x30),
+          (0x31, execute_0x31),
+          (0x32, execute_0x32),
+          (0x33, execute_0x33),
+          (0x37, execute_0x37),
+          (0x38, execute_0x38),
+          (0x3A, execute_0x3A),
+          (0x3B, execute_0x3B),
+          (0x3C, execute_0x3C),
+          (0x3D, execute_0x3D),
+          (0x3E, execute_0x3E),
+          (0x3F, execute_0x3F),
+          -- case 0x40: break;
+          (0x40, delta_noop),
+          (0x00, delta_noop),
+          (0x41, execute_0x41),
+          (0x42, execute_0x42),
+          (0x43, execute_0x43),
+          (0x47, execute_0x47),
+          (0x48, execute_0x48),
+          -- case 0x49: break;
+          (0x49, delta_noop),
+          (0x4A, execute_0x4A),
+          (0x4B, execute_0x4B),
+          (0x4F, execute_0x4F),
+          (0x50, execute_0x50),
+          (0x51, execute_0x51),
+          (0x52, delta_noop),
+          (0x53, execute_0x53),
+          (0x57, execute_0x57),
+          (0x58, execute_0x58),
+          (0x59, execute_0x59),
+          (0x5A, execute_0x5A),
+          -- case 0x5B: break;
+          (0x5B, delta_noop),
+          (0x5F, execute_0x5F),
+          -- case 0x64: break;
+          (0x64, delta_noop),
+          -- case 0x6D: break;
+          (0x6D, delta_noop),
+          (0x78, execute_0x78),
+          (0x79, execute_0x79),
+          (0x7A, execute_0x7A),
+          (0x7B, execute_0x7B),
+          -- case 0x7F: break;
+          (0x7F, delta_noop),
+          (0x80, execute_0x80),
+          (0x81, execute_0x81),
+          (0x82, execute_0x82),
+          (0x83, execute_0x83),
+          (0x87, execute_0x87),
+          (0x88, execute_0x88),
+          (0x89, execute_0x89),
+          (0x8A, execute_0x8A),
+          (0x8B, execute_0x8B),
+          (0x8F, execute_0x8F),
+          (0x90, execute_0x90),
+          (0x91, execute_0x91),
+          (0x92, execute_0x92),
+          (0x93, execute_0x93),
+          (0x97, execute_0x97),
+          (0x98, execute_0x98),
+          (0x99, execute_0x99),
+          (0x9A, execute_0x9A),
+          (0x9B, execute_0x9B),
+          (0x9F, execute_0x9F),
+          (0xCD, execute_0xCD),
+          (0xDD, (\z80 -> group_xy IXIY_IX z80)),
+          (0xFD, (\z80 -> group_xy IXIY_IY z80))
+    ]
+
+lt40_dict_lite: Dict Int (Z80 -> Z80)
+lt40_dict_lite = Dict.fromList
+    [
+          -- case 0x76: halt(); break;
+          (0x76, halt),
+          (0xA0, execute_0xA0),
+          (0xA1, execute_0xA1),
+          (0xA2, execute_0xA2),
+          (0xA3, execute_0xA3),
+          (0xA7, execute_0xA7),
+          (0xA8, execute_0xA8),
+          (0xA9, execute_0xA9),
+          (0xAA, execute_0xAA),
+          (0xAB ,execute_0xAB),
+          (0xAF, execute_0xAF),
+          (0xB0, execute_0xB0),
+          (0xB1, execute_0xB1),
+          (0xB2, execute_0xB2),
+          (0xB3, execute_0xB3),
+          (0xB7, execute_0xB7),
+          (0xB8, execute_0xB8),
+          (0xB9, execute_0xB9),
+          (0xBA, execute_0xBA),
+          (0xBB, execute_0xBB),
+          (0xBF, execute_0xBF),
+          (0xC0, execute_0xC0),
+          (0xC2, execute_0xC2),
+          (0xC4, execute_0xC4),
+          (0xC8, execute_0xC8),
+          (0xCA, execute_0xCA),
+          (0xCC, execute_0xCC),
+          (0xD0, execute_0xD0),
+          (0xF3, execute_0xF3),
+          (0xC3, execute_0xC3),
+          (0xD3, execute_0xD3),
+          -- case 0xD9: exx(); break;
+          (0xD9, exx),
+          (0xEB, execute_0xEB),
+          (0xF9, execute_0xF9),
+          (0xFB, execute_0xFB),
+          (0xC6, execute_0xC6),
+          (0xC5, execute_0xC5),
+          (0xE6, execute_0xE6),
+          (0xF6, execute_0xF6),
+          (0xC9, execute_0xC9),
+          (0xF5, execute_0xF5),
+          (0xED, group_ed),
+          (0xE1, execute_0xE1),
+          (0xE5, execute_0xE5),
+          (0xC1, execute_0xC1),
+          (0xE3, execute_0xE3),
+          (0xF1, execute_0xF1),
+          (0xFE, execute_0xFE),
+          (0xD8, execute_0xD8),
+          (0xD5, execute_0xD5),
+          (0xD2, execute_0xD2),
+          (0xD1, execute_0xD1),
+          (0xDB, execute_0xDB),
+          (0xF8, execute_0xF8),
+          (0xEE, execute_0xEE),
+          (0xD6, execute_0xD6),
+          (0xF2, execute_0xF2),
+          (0xFA, execute_0xFA),
+          (0xDA, execute_0xDA),
+          (0xCE, execute_0xCE)
+    ]
+
+lt40_delta_dict: Dict Int (IXIYHL -> Z80 -> Z80Delta)
+lt40_delta_dict = Dict.fromList
+    [
+          (0x09, execute_0x09),
+          (0x19, execute_0x19),
+          (0x21, execute_0x21),
+          (0x23, execute_0x23),
+          (0x24, execute_0x24),
+          (0x25, execute_0x25),
+          (0x26, execute_0x26),
+          (0x29, execute_0x29),
+          (0x2A, execute_0x2A),
+          (0x2B, execute_0x2B),
+          (0x2C, execute_0x2C),
+          (0x2D, execute_0x2D),
+          (0x2E, execute_0x2E),
+          (0x34, execute_0x34),
+          (0x35, execute_0x35),
+          (0x36, execute_0x36),
+          (0x39, execute_0x39),
+          (0x44, execute_0x44),
+          (0x45, execute_0x45),
+          (0x46, execute_0x46),
+          (0x4C, execute_0x4C),
+          (0x4D, execute_0x4D),
+          (0x4E, execute_0x4E),
+          (0x54, execute_0x54),
+          (0x55, execute_0x55),
+          (0x56, execute_0x56),
+          (0x5C, execute_0x5C),
+          (0x5D, execute_0x5D),
+          (0x5E, execute_0x5E),
+          (0x60, execute_0x60),
+          (0x61, execute_0x61),
+          (0x62, execute_0x62),
+          (0x63, execute_0x63),
+          (0x65, execute_0x65),
+          (0x66, execute_0x66),
+          (0x67, execute_0x67),
+          (0x68, execute_0x68),
+          (0x69, execute_0x69),
+          (0x6A, execute_0x6A),
+          (0x6B, execute_0x6B),
+          (0x6C, execute_0x6C),
+          (0x6E, execute_0x6E),
+          (0x6F, execute_0x6F),
+          (0x70, execute_0x70),
+          (0x71, execute_0x71),
+          (0x72, execute_0x72),
+          (0x73, execute_0x73),
+          (0x74, execute_0x74),
+          (0x75, execute_0x75),
+          (0x77, execute_0x77),
+          (0x7C, execute_0x7C),
+          (0x7D, execute_0x7D),
+          (0x7E, execute_0x7E),
+          (0x84, execute_0x84),
+          (0x85, execute_0x85),
+          (0x86, execute_0x86),
+          (0x8C, execute_0x8C),
+          (0x8D, execute_0x8D),
+          (0x8E, execute_0x8E),
+          (0x94, execute_0x94),
+          (0x95, execute_0x95),
+          (0x96, execute_0x96),
+          (0x9C, execute_0x9C),
+          (0x9D, execute_0x9D),
+          (0x9E, execute_0x9E),
+          (0xE9, execute_0xE9)
+    ]
+
+lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
+lt40_dict = Dict.fromList
+    [
+          (0xA4, execute_0xA4),
+          (0xA5, execute_0xA5),
+          (0xA6, execute_0xA6),
+          (0xAC, execute_0xAC),
+          (0xAD, execute_0xAD),
+          (0xAE, execute_0xAE),
+          (0xB4, execute_0xB4),
+          (0xB5, execute_0xB5),
+          (0xB6, execute_0xB6),
+          (0xBC, execute_0xBC),
+          (0xBD, execute_0xBD),
+          (0xBE, execute_0xBE)
+    ]
+--
+--	private int getd(int xy)
+--	{
+--		int d = env.mem(PC);
+--		PC = (char)(PC+1);
+--		time += 8;
+--		return MP = (char)(xy + (byte)d);
+--	}
+--getd_value: Int -> Z80 -> CpuTimePcAndValue
+--getd_value xy z80 =
+--   let
+--      d = z80.env |> mem z80.pc
+--   in
+--      CpuTimePcAndValue (d.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (xy + byte d.value))
+env_mem_hl: IXIYHL -> Z80 -> CpuTimePcAndValue
+env_mem_hl ixiyhl z80 =
+  case ixiyhl of
+    HL -> CpuTimePcAndValue z80.env.time z80.pc z80.main.hl
+    IX ->
+      let
+        dval = z80.env |> mem z80.pc
+      in
+        CpuTimePcAndValue (dval.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (z80.main.ix + byte dval.value))
+    IY ->
+      let
+        dval = z80.env |> mem z80.pc
+      in
+        CpuTimePcAndValue (dval.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (z80.main.iy + byte dval.value))
+
 
 set_a: Int -> Z80 -> Z80
 set_a value z80 =
