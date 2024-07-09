@@ -30,6 +30,7 @@ type Z80Delta
     | NoChange
     | OnlyPc Int
     | FlagsWithPcAndTime FlagRegisters Int CpuTimeCTime
+    | InterruptsWithCpuTime InterruptRegisters CpuTimeCTime
 
 
 type alias DeltaWithChanges =
@@ -164,3 +165,8 @@ apply_delta z80 z80delta =
           in
             { z80 | pc = pc, env = { env | time = time, sp = sp }, interrupts = z80delta.interrupts }
 
+        InterruptsWithCpuTime interruptRegisters cpuTimeCTime ->
+          let
+            env = z80.env
+          in
+            { z80 | pc = z80delta.pc, env = { env | time = cpuTimeCTime }, interrupts = interruptRegisters }
