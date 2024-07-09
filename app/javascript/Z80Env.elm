@@ -1,100 +1,177 @@
 --
 -- $Id$
 --
+
+
 module Z80Env exposing (..)
 
 import Array exposing (Array)
-import Bitwise exposing (and, or, shiftLeftBy, shiftRightBy)
+import Bitwise exposing (and, or, shiftRightBy)
+import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, add_cpu_time_time, c_NOCONT, cont, cont1, cont_port)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
-import Utils exposing (listToDict, shiftLeftBy8, shiftRightBy8)
-import Z80Ram exposing (Z80Ram, getRamValue)
-import Z80Rom exposing (Z80ROM, getROMValue)
+import Utils exposing (shiftLeftBy8, shiftRightBy8, toHexString2)
+import Z80Debug exposing (debug_log)
+import Z80Ram exposing (Z80Ram, c_FRSTART, getRamValue)
+import Z80Rom exposing (Z80ROM, getROMValue, set_spectrum_rom)
+
+
 
 -- changing this to an array results in a recursion error in the browser :-(
+
+
 type alias Z80Env =
-    {
-            rom48k: Z80ROM,
-            ram: Z80Ram,
-            keyboard: Keyboard,
-            ctime: Int,
-            cpu_time: Int
+    { rom48k : Z80ROM
+    , ram : Z80Ram
+    , keyboard : Keyboard
+    , time : CpuTimeCTime
+    , sp : Int
     }
+
 
 type alias Z80EnvWithValue =
-    {
-        env: Z80Env,
-        value: Int
+    { env : Z80Env
+    , value : Int
     }
+
 
 type alias ValueWithTime =
-    {
-        value: Int,
-        cpu_time: Int
+    { value : Int
+    , cpu_time : Int
     }
 
-c_NOCONT = 99999
-c_SCRENDT = 191*224+126
-
-c_FRSTART = -14335
-c_FRTIME = 69888
---c_FRTIME = 14350
 
 z80env_constructor =
-    Z80Env Z80Rom.constructor Z80Ram.constructor Keyboard.constructor 0 c_FRSTART
+    Z80Env Z80Rom.constructor Z80Ram.constructor Keyboard.constructor (CpuTimeCTime c_FRSTART 0) 0
 
-set_rom: Array Int -> Z80Env -> Z80Env
+
+set_rom : Array Int -> Z80Env -> Z80Env
 set_rom romdata z80env =
-   let
-      romDict = listToDict (Array.toList romdata)
-   in
-      { z80env | rom48k = romDict }
-
-m1: Int -> Int -> Z80Env -> Z80EnvWithValue
-m1 tmp_addr ir z80env_ =
     let
-       n = z80env_.cpu_time - z80env_.ctime
-       z80env = if n > 0 then
-                  z80env_ |> cont n
-                else
-                  z80env_
-       addr = tmp_addr - 0x4000
-       z80env_1 = if ((and addr 0xC000) == 0) then
-                       z80env |> cont1 0
-                     else
-                       z80env
-       ctime = if and ir 0xC000 == 0x4000 then
-                  z80env_1.cpu_time + 4
-               else
-                  c_NOCONT
-       value = if addr >= 0 then
-                  z80env_1.ram |> getRamValue addr
-               else
-                  -- not implementing IF1 switching for now
-                  z80env_1.rom48k |> getROMValue tmp_addr
+        rommy =
+            z80env.rom48k |> set_spectrum_rom romdata
     in
-        Z80EnvWithValue { z80env_1 | ctime = ctime } value
+    { z80env | rom48k = rommy }
 
-mem: Int -> Z80Env -> Z80EnvWithValue
-mem base_addr z80env_ctime =
+
+
+--public final int m1(int addr, int ir) {
+--	int n = cpu.time - ctime;
+--	if(n>0) cont(n);
+--
+--	addr -= 0x4000;
+--	if((addr&0xC000) == 0)
+--		cont1(0);
+--	ctime = NOCONT;
+--	if((ir&0xC000) == 0x4000)
+--		ctime = cpu.time + 4;
+--	if(addr >= 0)
+--		return ram[addr];
+--	n = rom[addr+=0x4000];
+--	if(if1rom!=null && (addr&0xE8F7)==0) {
+--		if(addr==0x0008 || addr==0x1708) {
+--			if(rom==rom48k) rom = if1rom;
+--		} else if(addr==0x0700) {
+--			if(rom==if1rom) rom = rom48k;
+--		}
+--	}
+--	return n;
+--}
+
+
+m1 : Int -> Int -> Z80Env -> CpuTimeAndValue
+m1 tmp_addr ir z80env =
     let
-       n = z80env_ctime.cpu_time - z80env_ctime.ctime
-       z80env = if n > 0 then
-                  z80env_ctime |> cont n
-                else
-                  z80env_ctime
-       addr = base_addr - 0x4000
-       (new_env, ctime, value) = if addr >= 0 then
-                                   if addr < 0x4000 then
-                                     let
-                                        new_z80 = z80env |> cont1 0
-                                     in
-                                        (new_z80, new_z80.cpu_time + 3, z80env.ram |> getRamValue addr)
-                                   else
-                                     (z80env_ctime, c_NOCONT, z80env.ram |> getRamValue addr)
-                                 else
-                                   (z80env_ctime, c_NOCONT, z80env.rom48k |> getROMValue base_addr)
+        n =
+            z80env.time.cpu_time - z80env.time.ctime
+
+        z80env_time =
+            if n > 0 then
+                z80env.time |> cont n
+
+            else
+                z80env.time
+
+        addr =
+            tmp_addr - 0x4000
+
+        z80env_1_time =
+            if and addr 0xC000 == 0 then
+                z80env_time |> cont1 0
+
+            else
+                z80env_time
+
+        ctime =
+            if and ir 0xC000 == 0x4000 then
+                z80env_1_time.cpu_time + 4
+
+            else
+                c_NOCONT
+
+        value =
+            if addr >= 0 then
+                z80env.ram |> getRamValue addr
+
+            else
+                -- not implementing IF1 switching for now
+                z80env.rom48k |> getROMValue tmp_addr
     in
-        Z80EnvWithValue { new_env | ctime = ctime } value
+    CpuTimeAndValue (CpuTimeCTime z80env_1_time.cpu_time ctime) value
+
+
+
+--public final int mem(int addr) {
+--	int n = cpu.time - ctime;
+--	if(n>0) cont(n);
+--	ctime = NOCONT;
+--
+--	addr -= 0x4000;
+--	if(addr>=0) {
+--		if(addr<0x4000) {
+--			cont1(0);
+--			ctime = cpu.time + 3;
+--		}
+--		return ram[addr];
+--	}
+--	return rom[addr+0x4000];
+--}
+
+
+mem : Int -> Z80Env -> CpuTimeAndValue
+mem base_addr z80env =
+    let
+        n =
+            z80env.time.cpu_time - z80env.time.ctime
+
+        z80env_time =
+            if n > 0 then
+                z80env.time |> cont n
+
+            else
+                z80env.time
+
+        addr =
+            base_addr - 0x4000
+
+        ( new_env, ctime, value ) =
+            if addr >= 0 then
+                if addr < 0x4000 then
+                    let
+                        new_z80 =
+                            z80env_time |> cont1 0
+                    in
+                    ( new_z80, new_z80.cpu_time + 3, z80env.ram |> getRamValue addr )
+
+                else
+                    ( z80env_time, c_NOCONT, z80env.ram |> getRamValue addr )
+
+            else
+                ( z80env_time, c_NOCONT, z80env.rom48k |> getROMValue base_addr )
+    in
+    CpuTimeAndValue (CpuTimeCTime new_env.cpu_time ctime) value
+
+
+
 --	public final int mem16(int addr) {
 --		int n = cpu.time - ctime;
 --		if(n>0) cont(n);
@@ -123,66 +200,105 @@ mem base_addr z80env_ctime =
 --			return ram[0xBFFF] | rom[0]<<8;
 --		}
 --	}
-mem16: Int -> Z80Env -> Z80EnvWithValue
-mem16 addr z80env_ctime =
+
+
+mem16 : Int -> Z80Env -> Z80EnvWithValue
+mem16 addr z80env =
     let
-       n = z80env_ctime.cpu_time - z80env_ctime.ctime
-       z80env = if n > 0 then
-                  z80env_ctime |> cont n
-                else
-                  z80env_ctime
-       addr1 = addr - 0x3FFF
+        n =
+            z80env.time.cpu_time - z80env.time.ctime
+
+        z80env_time =
+            if n > 0 then
+                z80env.time |> cont n
+
+            else
+                z80env.time
+
+        addr1 =
+            addr - 0x3FFF
     in
-      if and addr1 0x3FFF /= 0 then
-         if addr1 < 0 then
-           let
-              low = getROMValue addr z80env.rom48k
-              high = getROMValue (addr1 + 0x4000) z80env.rom48k
-           in
-              Z80EnvWithValue { z80env | ctime = c_NOCONT } (Bitwise.or low (shiftLeftBy8 high))
-         else
-           let
-              low = getRamValue (addr - 0x4000) z80env.ram
-              high = getRamValue addr1 z80env.ram
-              z80env_1 = if addr1 < 0x4000 then
-                          let
-                             x = z80env |> cont1 0 |> cont1 3
-                          in
-                             { x | cpu_time = x.cpu_time + 6 }
-                       else
-                          { z80env | ctime = c_NOCONT }
+    if and addr1 0x3FFF /= 0 then
+        if addr1 < 0 then
+            let
+                low =
+                    getROMValue addr z80env.rom48k
+
+                high =
+                    getROMValue (addr1 + 0x4000) z80env.rom48k
+            in
+            Z80EnvWithValue { z80env | time = CpuTimeCTime z80env_time.cpu_time c_NOCONT } (Bitwise.or low (shiftLeftBy8 high))
+
+        else
+            let
+                low =
+                    getRamValue (addr - 0x4000) z80env.ram
+
+                high =
+                    getRamValue addr1 z80env.ram
+
+                z80env_1_time =
+                    if addr1 < 0x4000 then
+                        z80env_time |> cont1 0 |> cont1 3 |> add_cpu_time_time 6
+
+                    else
+                        CpuTimeCTime z80env_time.cpu_time c_NOCONT
+            in
+            Z80EnvWithValue { z80env | time = z80env_1_time } (Bitwise.or low (shiftLeftBy8 high))
+
+    else
+        let
+            addr1shift14 =
+                shiftRightBy 14 addr1
         in
-            Z80EnvWithValue z80env_1 (Bitwise.or low (shiftLeftBy8 high))
-      else
-       let
-         addr1shift14 = shiftRightBy 14 addr1
-       in
-         if addr1shift14 == 0 then
+        if addr1shift14 == 0 then
             let
-                new_z80 = cont1 3 z80env
-                low = new_z80.rom48k |> getROMValue addr
-                high = getRamValue 0 new_z80.ram
+                new_z80_time =
+                    cont1 3 z80env_time
+
+                low =
+                    z80env.rom48k |> getROMValue addr
+
+                high =
+                    getRamValue 0 z80env.ram
             in
-                Z80EnvWithValue new_z80 (or low (shiftLeftBy8 high))
-         else if addr1shift14 == 1 then
+            Z80EnvWithValue { z80env | time = new_z80_time } (or low (shiftLeftBy8 high))
+
+        else if addr1shift14 == 1 then
             let
-                new_env = z80env |> cont1 0
-                low = getRamValue (addr - 0x4000) new_env.ram
-                high = getRamValue addr1 new_env.ram
+                new_env_time =
+                    z80env_time |> cont1 0
+
+                low =
+                    getRamValue (addr - 0x4000) z80env.ram
+
+                high =
+                    getRamValue addr1 z80env.ram
             in
-                Z80EnvWithValue new_env (or low (shiftLeftBy8 high))
-         else if addr1shift14 == 2 then
+            Z80EnvWithValue { z80env | time = new_env_time } (or low (shiftLeftBy8 high))
+
+        else if addr1shift14 == 2 then
             let
-                low = getRamValue (addr - 0x4000) z80env.ram
-                high = getRamValue addr1 z80env.ram
+                low =
+                    getRamValue (addr - 0x4000) z80env.ram
+
+                high =
+                    getRamValue addr1 z80env.ram
             in
-                Z80EnvWithValue { z80env | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
-         else
+            Z80EnvWithValue { z80env | time = CpuTimeCTime z80env_time.cpu_time c_NOCONT } (or low (shiftLeftBy8 high))
+
+        else
             let
-                low = getRamValue 0xBFFF z80env.ram
-                high = getRamValue 0 z80env.ram
+                low =
+                    getRamValue 0xBFFF z80env.ram
+
+                high =
+                    getRamValue 0 z80env.ram
             in
-                Z80EnvWithValue { z80env | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
+            Z80EnvWithValue { z80env | time = CpuTimeCTime z80env_time.cpu_time c_NOCONT } (or low (shiftLeftBy8 high))
+
+
+
 --
 --public final void mem(int addr, int v) {
 --	int n = cpu.time - ctime;
@@ -201,46 +317,65 @@ mem16 addr z80env_ctime =
 --	}
 --	ram[addr] = v;
 --}
-set_ram: Int -> Int -> Z80Env -> Z80Env
-set_ram addr value z80env =
-   --let
-      --ram_value = getValue addr z80env.ram
-      --n = if addr == 0x1CB6 || addr == 0x1CB7 then
-      --       debug_log "Alert!" ("setting " ++ (addr |> toHexString) ++ " from " ++ (ram_value |> toHexString2) ++ " to " ++ (value |> toHexString2)) Nothing
-      --    else
-      --       Nothing
-   --in
-   { z80env | ram = z80env.ram |> Z80Ram.setRamValue addr value }
 
-set_mem: Int -> Int -> Z80Env -> Z80Env
-set_mem z80_addr value old_z80env =
-   let
-      n = old_z80env.cpu_time - old_z80env.ctime
-      z80env = if n > 0 then
-                old_z80env |> cont n
-             else
-                { old_z80env | ctime = c_NOCONT }
-      addr = z80_addr - 0x4000
-      (new_env, ctime) = if addr < 0x4000 then
-                            if addr < 0 then
-                               (z80env, c_NOCONT)
-                            else
-                               let
-                                   z80env_1 = z80env |> cont1 0
-                                   new_time = z80env.cpu_time + 3
-                                   ram_value = getRamValue addr z80env.ram
-                               in
-                                  if ram_value == value then
-                                     (z80env_1 , new_time)
-                                  else
-                                     if addr < 6912 then
-                                        (z80env_1 |> refresh_screen |> set_ram addr value, new_time)
-                                     else
-                                        (z80env_1 |> set_ram addr value, new_time)
-                         else
-                            (z80env |> set_ram addr value, c_NOCONT)
-   in
-      { new_env | ctime = ctime }
+
+set_ram : Int -> Int -> Z80Env -> Z80Env
+set_ram addr value z80env =
+    --let
+    --ram_value = getValue addr z80env.ram
+    --n = if addr == 0x1CB6 || addr == 0x1CB7 then
+    --       debug_log "Alert!" ("setting " ++ (addr |> toHexString) ++ " from " ++ (ram_value |> toHexString2) ++ " to " ++ (value |> toHexString2)) Nothing
+    --    else
+    --       Nothing
+    --in
+    { z80env | ram = z80env.ram |> Z80Ram.setRamValue addr value }
+
+
+set_mem : Int -> Int -> Z80Env -> Z80Env
+set_mem z80_addr value z80env =
+    let
+        n =
+            z80env.time.cpu_time - z80env.time.ctime
+
+        z80env_time =
+            if n > 0 then
+                z80env.time |> cont n
+
+            else
+                CpuTimeCTime z80env.time.cpu_time c_NOCONT
+
+        addr =
+            z80_addr - 0x4000
+
+        ( new_env, ctime ) =
+            if addr < 0x4000 then
+                if addr < 0 then
+                    ( z80env, c_NOCONT )
+
+                else
+                    let
+                        z80env_1_time =
+                            z80env_time |> cont1 0
+
+                        new_time =
+                            z80env_1_time.cpu_time + 3
+
+                        ram_value =
+                            getRamValue addr z80env.ram
+                    in
+                    if ram_value == value then
+                        ( z80env, new_time )
+
+                    else
+                        ( z80env |> set_ram addr value, new_time )
+
+            else
+                ( z80env |> set_ram addr value, c_NOCONT )
+    in
+    { new_env | time = CpuTimeCTime z80env_time.cpu_time ctime }
+
+
+
 --public final void mem16(int addr, int v) {
 --
 --	int addr1 = addr-0x3FFF;
@@ -261,226 +396,53 @@ set_mem z80_addr value old_z80env =
 --	mem((char)(addr+1), v>>>8);
 --	cpu.time -= 3;
 --}
-set_mem16: Int -> Int -> Z80Env -> Z80Env
+
+
+set_mem16 : Int -> Int -> Z80Env -> Z80Env
 set_mem16 addr value z80env =
-   let
-      addr1 = addr - 0x3FFF
-      new_env = if (Bitwise.and addr1 0x3FFF) /= 0 then
-                    let
-                       n = z80env.cpu_time - z80env.ctime
-                       env = if (n > 0) then
-                                cont n z80env
-                             else
-                                z80env
-                       env_1 = { env | ctime = c_NOCONT }
-                       nenv = if addr1 < 0 then
-                                 env_1
-                              else
-                                 if addr1 >= 0x4000 then
-                                    env_1
-                                    |> set_ram (addr - 1) (Bitwise.and value 0xFF)
-                                    |> set_ram addr (shiftRightBy8 value)
-                                 else
-                                    env_1
-                                    |> set_mem addr (Bitwise.and value 0xFF)
-                                    |> set_mem (addr + 1) (shiftRightBy8 value)
-                    in
-                       nenv
-                else
-                    let
-                       nenv = z80env
-                              |> set_mem addr (Bitwise.and value 0xFF)
-                              |> set_mem (addr + 1) (shiftRightBy8 value)
-                    in
-                      nenv
-    in
-       new_env
-
---	private final void cont1(int t) {
---		t += cpu.time;
---		if(t<0 || t>=SCRENDT) return;
---		if((t&7) >= 6) return;
---		if(t%224 < 126)
---			cpu.time += 6 - (t&7);
---	}
-cont1: Int -> Z80Env -> Z80Env
-cont1 tmp_t z80  =
     let
-        t = tmp_t + z80.cpu_time
+        addr1 =
+            addr - 0x3FFF
     in
-        if (t<0) || (t>=c_SCRENDT) then
-           z80
-        else
-           if (Bitwise.and t 7) >= 6 then
-               z80
-           else
-               if (modBy 224 t) < 126 then
-                  { z80 | cpu_time = z80.cpu_time + 6 - Bitwise.and t 7 }
-               else
-                   z80
---
---	private final void cont(int n) {
---		int s, k;
---		int t = ctime;
---		if(t+n <= 0) return;
---		s = SCRENDT - t;
---		if(s < 0) return;
---		s %= 224;
---		if(s > 126) {
---			n -= s-126;
---			if(n <= 0) return;
---			t = 6; k = 15;
---		} else {
---			k = s>>>3;
---			s &= 7;
---			if(s == 7) {
---				s--;
---				if(--n == 0) return;
---			}
---			t = s;
---		}
---		n = n-1 >> 1;
---		if(k<n) n = k;
---		cpu.time += t + 6*n;
---	}
+    if Bitwise.and addr1 0x3FFF /= 0 then
+        let
+            n =
+                z80env.time.cpu_time - z80env.time.ctime
 
--- Helper implementation function for cont
-contimpl: Z80Env -> Int -> Int -> Z80Env
-contimpl z80env tmp_n tmp_s =
-    let
-        s = modBy 224 tmp_s
-        (ntk) = if s > 126 then
-                   { n = s - 126, t = 6, k = 15, o = False }
+            z80env_time =
+                if n > 0 then
+                    cont n z80env.time
+
                 else
-                    let
-                        k2 = shiftRightBy 3 s
-                        s2 = Bitwise.and s 7
-                        (s3, n2, override) = if s2 == 7 then
-                        -- in (only) this branch we need to bale if n == 1
-                                                 (s2 - 1, tmp_n - 1, tmp_n == 1)
-                                              else
-                                                 (s2, tmp_n, False)
-                     in
-                        { n = n2, t = s3, k = k2, o = override }
-        n3 = shiftRightBy 1 (ntk.n - 1)
-        n4 = if ntk.k<n3 then
-                ntk.k
-             else
-                n3
-    in
-        if ntk.o then
-            z80env
+                    z80env.time
+
+            env_1 =
+                { z80env | time = CpuTimeCTime z80env_time.cpu_time c_NOCONT }
+        in
+        if addr1 < 0 then
+            env_1
+
+        else if addr1 >= 0x4000 then
+            env_1
+                |> set_ram (addr - 1) (Bitwise.and value 0xFF)
+                |> set_ram addr (shiftRightBy8 value)
+
         else
-            { z80env | cpu_time = z80env.cpu_time + ntk.t + 6*n4 }
+            env_1
+                |> set_mem addr (Bitwise.and value 0xFF)
+                |> set_mem (addr + 1) (shiftRightBy8 value)
 
-cont: Int -> Z80Env-> Z80Env
-cont tmp_n z80env =
-    let
-        tmp_t = z80env.ctime
-    in
-        if tmp_t + tmp_n <= 0 then
-            z80env
-        else
-            let
-                tmp_s = c_SCRENDT - tmp_t
-            in
-                if tmp_s < 0 then
-                    z80env
-                else
-                    contimpl z80env tmp_n tmp_s
+    else
+        z80env
+            |> set_mem addr (Bitwise.and value 0xFF)
+            |> set_mem (addr + 1) (shiftRightBy8 value)
 
---private void cont_port(int port)
---{
---	int n = cpu.time - ctime;
---	if(n>0) cont(n);
---
---	if((port&0xC000) != 0x4000) {
---		if((port&0x0001)==0)
---			cont1(1);
---		ctime = NOCONT;
---	} else {
---		ctime = cpu.time;
---		cont(2 + ((port&1)<<1));
---		ctime = cpu.time+4;
---	}
---}
-cont_port: Int -> Z80Env -> Z80Env
-cont_port portn z80env =
-   let
-      n = z80env.cpu_time - z80env.ctime
-      env1 = if n > 0 then
-                z80env |> cont n
-             else
-                z80env
-      env2 = if and portn 0xC000 /= 0x4000 then
-               let
-                  env3 = if and portn 0x0001 == 0 then
-                            env1 |> cont1 1
-                         else
-                            env1
-               in
-                  { env3 | ctime = c_NOCONT }
-             else
-               let
-                   env3 = { env1 | ctime = env1.cpu_time }
-                   contval = and portn 1 |> shiftLeftBy 1
-                   env4 = env3 |> cont (2 + contval)
-               in
-                  { env4 | ctime = env4.cpu_time + 4 }
-   in
-      env2
 
---private final void refresh_screen() {
---	int ft = cpu.time;
---	if(ft < refrs_t)
---		return;
---	final int flash = this.flash;
---	int a = refrs_a, b = refrs_b;
---	int t = refrs_t, s = refrs_s;
---	do {
---		int sch = 0;
---
---		int v = ram[a]<<8 | ram[b++];
---		if(v>=0x8000) v ^= flash;
---		v = canonic[v];
---		if(v!=screen[s]) {
---			screen[s] = v;
---			sch = 1;
---		}
---
---		v = ram[a+1]<<8 | ram[b++];
---		if(v>=0x8000) v ^= flash;
---		v = canonic[v];
---		if(v!=screen[++s]) {
---			screen[s] = v;
---			sch += 2;
---		}
---
---		if(sch!=0)
---			scrchg[a-0x1800>>5] |= sch<<(a&31);
---
---		a+=2; t+=8; s++;
---		if((a&31)!=0) continue;
---		// next line
---		t+=96; s+=2*Mh;
---		a-=32; b+=256-32;
---		if((b&0x700)!=0) continue;
---		// next row
---		a+=32; b+=32-0x800;
---		if((b&0xE0)!=0) continue;
---		// next segment
---		b+=0x800-256;
---		if(b>=6144) {
---			t = REFRESH_END;
---			break;
---		}
---	} while(ft >= t);
---	refrs_a = a; refrs_b = b;
---	refrs_t = t; refrs_s = s;
---}
-refresh_screen: Z80Env -> Z80Env
-refresh_screen z80env =
-   z80env
+cont_port_env : Int -> Z80Env -> Z80Env
+cont_port_env portn z80env =
+    { z80env | time = z80env.time |> cont_port portn }
+
+
 
 --	public void out(int port, int v)
 --	{
@@ -508,17 +470,86 @@ refresh_screen z80env =
 --			}
 --		}
 --	}
-out: Int -> Int -> Z80Env -> Z80Env
-out portnum value env_in =
-   let
-      env = env_in |> cont_port portnum
-   in
-      env
 
-z80_in: Int -> Z80Env -> Z80EnvWithValue
+
+out : Int -> Int -> Z80Env -> Z80Env
+out portnum _ env_in =
+    let
+        env =
+            env_in |> cont_port_env portnum
+    in
+    env
+
+
+z80_in : Int -> Z80Env -> Z80EnvWithValue
 z80_in portnum env_in =
-   let
-      env = env_in |> cont_port portnum
-      value = env.keyboard |> z80_keyboard_input portnum
-   in
-      Z80EnvWithValue env value
+    let
+        env =
+            env_in |> cont_port_env portnum
+
+        --x = debug_log "z80_in" (portnum |> toHexString) Nothing
+        value =
+            env.keyboard |> z80_keyboard_input portnum
+
+        x =
+            if value /= 0xFF then
+                debug_log "keyboard value" (toHexString2 value) value
+
+            else
+                value
+    in
+    Z80EnvWithValue env x
+
+
+add_cpu_time_env : Int -> Z80Env -> Z80Env
+add_cpu_time_env value z80env =
+    { z80env | time = z80env.time |> add_cpu_time_time value }
+
+
+reset_cpu_time : Z80Env -> Z80Env
+reset_cpu_time z80env =
+    { z80env | time = CpuTimeCTime c_FRSTART z80env.time.ctime }
+
+
+
+--public void push(int v) {
+--	int sp;
+--	time++;
+--	env.mem((char)((sp=SP)-1), v>>>8);
+--	time += 3;
+--	env.mem(SP = (char)(sp-2), v&0xFF);
+--	time += 3;
+--}
+
+
+z80_push : Int -> Z80Env -> Z80Env
+z80_push v z80 =
+    let
+        --a = debug_log "push" ((v |> toHexString) ++ " onto " ++ (z80.sp |> toHexString)) Nothing
+        sp_minus_1 =
+            Bitwise.and (z80.sp - 1) 0xFFFF
+
+        new_sp =
+            Bitwise.and (z80.sp - 2) 0xFFFF
+
+        env_2 =
+            z80
+                |> add_cpu_time_env 1
+                |> set_mem sp_minus_1 (shiftRightBy8 v)
+                |> add_cpu_time_env 3
+                |> set_mem new_sp (Bitwise.and v 0xFF)
+                |> add_cpu_time_env 3
+    in
+    { env_2 | sp = new_sp }
+
+
+pop : Z80Env -> Z80EnvWithValue
+pop z80 =
+    let
+        v =
+            z80 |> mem16 z80.sp
+
+        env =
+            v.env |> add_cpu_time_env 6
+    in
+    Z80EnvWithValue { env | sp = z80.sp + 2 } v.value

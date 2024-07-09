@@ -237,20 +237,20 @@ rot a flags =
       { flags | ff = ff, fb = fb, fa = fa, a = (Bitwise.and a 0xFF) }
 
 shifter: Int -> Int -> FlagRegisters -> IntWithFlags
-shifter o v flags =
+shifter o v_in flags =
    let
-      ff = case (Bitwise.and o 7) of
-               0 -> shiftRightBy 7 (v * 0x101)
-               1 -> shiftRightBy 24 (v * 0x80800000)
-               2 -> Bitwise.or (shiftLeftBy1 v) (Bitwise.and (shiftRightBy8 flags.ff) 1)
-               3 -> shiftRightBy1 (Bitwise.or (v * 0x201) (Bitwise.and flags.ff 0x100))
-               4 -> shiftLeftBy1 v
-               5 -> Bitwise.or (Bitwise.or (shiftRightBy1 v) (Bitwise.and v 0x80)) (shiftLeftBy8 v)
-               6 -> Bitwise.or (shiftLeftBy1 v) 1
-               _ -> shiftRightBy1 (v * 0x201)
-      fr = Bitwise.and 0xFF ff
+      v = case (Bitwise.and o 7) of
+               0 -> shiftRightBy 7 (v_in * 0x101)
+               1 -> shiftRightBy 24 (v_in * 0x80800000)
+               2 -> Bitwise.or (shiftLeftBy1 v_in) (Bitwise.and (shiftRightBy8 flags.ff) 1)
+               3 -> shiftRightBy1 (Bitwise.or (v_in * 0x201) (Bitwise.and flags.ff 0x100))
+               4 -> shiftLeftBy1 v_in
+               5 -> Bitwise.or (Bitwise.or (shiftRightBy1 v_in) (Bitwise.and v_in 0x80)) (shiftLeftBy8 v_in)
+               6 -> Bitwise.or (shiftLeftBy1 v_in) 1
+               _ -> shiftRightBy1 (v_in * 0x201)
+      fr = Bitwise.and 0xFF v
    in
-      IntWithFlags fr { flags | fr = fr, fb = 0, fa = (Bitwise.or 0x100 fr) }
+      IntWithFlags fr { flags | ff = v, fr = fr, fb = 0, fa = (Bitwise.or 0x100 fr) }
 
 add16: Int -> Int -> FlagRegisters -> IntWithFlagsAndTime
 add16 a b main_flags =

@@ -5,6 +5,7 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 gem 'rails', '~> 6.1'
 # Use sqlite3 as the database for Active Record
 gem 'sqlite3', '~> 1.4'
+
 # mysql in production
 gem 'mysql2'
 # Use Passenger as the app server
@@ -22,7 +23,7 @@ gem 'jbuilder', '~> 2.7'
 
 # Use Active Storage variant
 # gem 'image_processing', '~> 1.2'
-gem 'nokogiri', '< 1.16'
+gem 'nokogiri', '< 1.17'
 
 # Reduces boot times through caching; required in config/boot.rb
 # gem 'bootsnap', '>= 1.4.2', require: false
@@ -33,14 +34,23 @@ gem 'matrix', require: false
 gem 'net-smtp', require: false
 gem 'rexml', require: false
 
+# This is needed for deploy
+gem 'rubyzip', '< 3'
+
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
   gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
 
   gem "capybara"
-  # 4.9.1 has some incompatibility with capybara
-  gem "selenium-webdriver", "<= 4.17"
-  gem 'webdrivers'
+
+  gem "faraday", ">= 2"
+  # gem "faraday-follow-redirects"
+  gem "faraday-follow_redirects"
+  # gem "faraday_middleware"
+
+  # 4.11 insists that /usr/bin/firefox is a binary, when it isn't
+  # on Ubuntu 22.04 due to it being a snap which is very annoying
+  gem "selenium-webdriver", "< 4.11"
 
   gem "guard-bundler"
   gem "guard-rspec"
@@ -59,10 +69,12 @@ group :development do
   # gem 'spring-watcher-listen', '~> 2.0.0'
 
   # Use Capistrano for deployment
-  gem "capistrano", "~> 2.15.8"
+  # gem "capistrano", "~> 2.15.8"
+  gem "capistrano"
   gem "capistrano-ext"
   gem "capistrano-rails"
   gem "rvm-capistrano", require: false
+
   gem 'ed25519'
   gem 'bcrypt_pbkdf'
 end

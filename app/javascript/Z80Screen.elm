@@ -11,22 +11,31 @@ type alias Z80Screen =
     {
         screen: Z80Memory,
         border: Int
+        --flash: Int,
+        --refrs_a: Int,
+        --refrs_b: Int,
+        --refrs_t: Int,
+        --refrs_s: Int
     }
 
 constructor: Z80Screen
 constructor =
    let
       --for(int i=6144;i<6912;i++) ram[i] = 070; // white
-      startrange = List.repeat 6144 0
-      whiterange = List.repeat (6912 - 6144) 0x38 -- white
+      screen_data = List.repeat 6144 0
+      attributes = List.repeat 768 0x38 -- white
 
-      screen = List.concat [startrange, whiterange] |> Z80Memory.constructor
+      screen = List.concat [screen_data, attributes] |> Z80Memory.constructor
    in
+      --Z80Screen screen 7 0 0 0 0 0
       Z80Screen screen 7
 
 set_value: Int -> Int -> Z80Screen -> Z80Screen
-set_value addr value z80screen =
-    { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
+set_value addr value z80s =
+    let
+        z80screen = z80s |> refresh_screen
+    in
+       { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
 
 -- colour data is bit 7 flash, bit 6 bright, bits 5-3 paper, bits 2-0 ink
 type alias RawScreenData =
@@ -147,13 +156,13 @@ foldUp raw list =
        _ ->
          [ScreenData raw.colour [raw.data]]
 
-lines: List RawScreenData -> List ScreenData
-lines screen =
+fold_lines: List RawScreenData -> List ScreenData
+fold_lines screen =
    screen |> List.foldr foldUp []
 
 rawToLines: List RawScreenData -> List ScreenLine
 rawToLines screen =
-   lines screen |> List.foldr toDrawn []
+   fold_lines screen |> List.foldr toDrawn []
 
 -- Convert row index into start row data location and (colour-ish) attribute memory location
 calcOffsets: Int -> (Int, Int)
@@ -170,29 +179,81 @@ calcOffsets start =
    in
       (row_offset, attr_offset)
 
-mapScreen: Int -> Z80Screen -> Int -> RawScreenData
-mapScreen line_num z80env_ram index  =
+range0192 = List.range 0 191
+
+screenOffsets = range0192 |> List.map (\line_num -> calcOffsets line_num)
+
+mapScreen: (Int, Int) -> Z80Memory -> Int -> RawScreenData
+mapScreen (row_offset, attr_offset) z80env_ram index  =
    let
-      (row_offset, attr_offset) = calcOffsets line_num
-      data = getValue (row_offset + index) z80env_ram.screen
-      colour = getValue (attr_offset + index) z80env_ram.screen
+      data = getValue (row_offset + index) z80env_ram
+      colour = getValue (attr_offset + index) z80env_ram
    in
       { colour=colour,data=data }
 
 range031 = List.range 0 31
 
-singleScreenLine: Int -> Z80Screen -> List RawScreenData
+singleScreenLine: (Int, Int) -> Z80Memory -> List RawScreenData
 singleScreenLine line_num z80env =
-    let
-       single_line = List.map (mapScreen line_num z80env) range031
-    in
-       single_line
+    List.map (mapScreen line_num z80env) range031
 
-range0192 = List.range 0 191
-
-screenLines: Z80Screen -> List (List ScreenLine)
+screenLines: Z80Screen -> Dict Int (List ScreenLine)
 screenLines z80env =
     let
-        rawlines = List.map (\line_num -> singleScreenLine line_num z80env) range0192
+        rawlines = screenOffsets |> List.map (\line_num -> singleScreenLine line_num z80env.screen)
+        lines2 = List.map rawToLines rawlines
     in
-        List.map rawToLines rawlines
+        lines2 |> List.indexedMap (\index linelist -> (index, linelist)) |> Dict.fromList
+
+--private final void refresh_screen() {
+--	int ft = cpu.time;
+--	if(ft < refrs_t)
+--		return;
+--	final int flash = this.flash;
+--	int a = refrs_a, b = refrs_b;
+--	int t = refrs_t, s = refrs_s;
+--	do {
+--		int sch = 0;
+--
+--		int v = ram[a]<<8 | ram[b++];
+--		if(v>=0x8000) v ^= flash;
+--		v = canonic[v];
+--		if(v!=screen[s]) {
+--			screen[s] = v;
+--			sch = 1;
+--		}
+--
+--		v = ram[a+1]<<8 | ram[b++];
+--		if(v>=0x8000) v ^= flash;
+--		v = canonic[v];
+--		if(v!=screen[++s]) {
+--			screen[s] = v;
+--			sch += 2;
+--		}
+--
+--		if(sch!=0)
+--			scrchg[a-0x1800>>5] |= sch<<(a&31);
+--
+--		a+=2; t+=8; s++;
+--		if((a&31)!=0) continue;
+--		// next line
+--		t+=96; s+=2*Mh;
+--		a-=32; b+=256-32;
+--		if((b&0x700)!=0) continue;
+--		// next row
+--		a+=32; b+=32-0x800;
+--		if((b&0xE0)!=0) continue;
+--		// next segment
+--		b+=0x800-256;
+--		if(b>=6144) {
+--			t = REFRESH_END;
+--			break;
+--		}
+--	} while(ft >= t);
+--	refrs_a = a; refrs_b = b;
+--	refrs_t = t; refrs_s = s;
+--}
+refresh_screen: Z80Screen -> Z80Screen
+refresh_screen z80env =
+   z80env
+
