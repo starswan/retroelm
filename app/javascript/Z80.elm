@@ -1836,8 +1836,9 @@ execute_0x75 ixiyhl z80 =
 --			R+=n; time+=4*n;
 --		}
 --	}
-halt: Z80 -> Z80
-halt z80 =
+
+z80_halt: Z80 -> Z80
+z80_halt z80 =
    let
       interrupts = z80.interrupts
       n = shiftRightBy 2 (z80.time_limit - z80.env.time.cpu_time + 3)
@@ -1848,6 +1849,22 @@ halt z80 =
                  z80
     in
       { z80_1 | interrupts = { interrupts | halted = True } }
+
+halt: Z80 -> Z80Delta
+halt z80 =
+   let
+      interrupts = z80.interrupts
+      n = shiftRightBy 2 (z80.time_limit - z80.env.time.cpu_time + 3)
+      (new_interrupts, time) = if n > 0 then
+                                  -- turns out env.halt(n, r) just returns n...?
+                                  --{ z80 | interrupts = { interrupts | r = interrupts.r + n } } |> add_cpu_time (4 * n)
+                                 ({ interrupts | r = interrupts.r + n }, z80.env.time |> add_cpu_time_time (4 * n))
+                               else
+                                 (interrupts, z80.env.time)
+                 --z80
+    in
+      --{ z80_1 | interrupts = { interrupts | halted = True } }
+      InterruptsWithCpuTime { new_interrupts | halted = True } time
 
 execute_0x77: IXIYHL -> Z80 -> Z80Delta
 execute_0x77 ixiyhl z80 =
@@ -2469,6 +2486,8 @@ lt40_delta_dict_lite = Dict.fromList
           (0x64, delta_noop),
           -- case 0x6D: break;
           (0x6D, delta_noop),
+          -- case 0x76: halt(); break;
+          (0x76, halt),
           (0x78, execute_0x78),
           (0x79, execute_0x79),
           (0x7A, execute_0x7A),
@@ -2503,8 +2522,6 @@ lt40_delta_dict_lite = Dict.fromList
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
-          -- case 0x76: halt(); break;
-          (0x76, halt),
           (0xA0, execute_0xA0),
           (0xA1, execute_0xA1),
           (0xA2, execute_0xA2),
@@ -3259,9 +3276,10 @@ execute_instruction z80 =
 execute: Z80 -> Z80
 execute z80 =
     if z80.interrupts.halted then
-        halt z80
+        z80_halt z80
     else
-        Loop.while (\x -> x.time_limit - x.env.time.cpu_time > 0) execute_instruction z80
+        --Loop.while (\x -> x.time_limit - x.env.time.cpu_time > 0) execute_instruction z80
+        Loop.while (\x -> x.time_limit > x.env.time.cpu_time) execute_instruction z80
 --	void execute()
 --	{
 --		if(halted) {
