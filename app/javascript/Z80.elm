@@ -1342,8 +1342,8 @@ execute_0x3F z80 =
 delta_noop: Z80 -> Z80Delta
 delta_noop z80 = NoChange
 
-noop: Z80 -> Z80
-noop z80 = z80
+--noop: Z80 -> Z80
+--noop z80 = z80
 
 execute_0x41: Z80 -> Z80Delta
 execute_0x41 z80 =
@@ -2411,14 +2411,6 @@ mergeFuncList afunc bfunc =
                         Just b -> Just b
                         Nothing -> Nothing
 
-mergeIxiyFuncList:  Maybe (IXIYHL -> Z80 -> Z80Delta) -> Maybe (IXIYHL -> Z80 -> Z80Delta) -> Maybe (IXIYHL -> Z80 -> Z80Delta)
-mergeIxiyFuncList afunc bfunc =
-    case afunc of
-        Just a -> Just a
-        Nothing -> case bfunc of
-                        Just b -> Just b
-                        Nothing -> Nothing
-
 makeLiteArray: Array (Maybe (Z80 -> Z80Delta))
 makeLiteArray =
     let
@@ -2429,6 +2421,20 @@ makeLiteArray =
 
 lt40_array: Array (Maybe ((IXIYHL -> Z80 -> Z80Delta)))
 lt40_array = makeLt40Array
+
+mergeIxiyFuncList:  Maybe (IXIYHL -> Z80 -> Z80Delta) -> Maybe (IXIYHL -> Z80 -> Z80Delta) -> Maybe (IXIYHL -> Z80 -> Z80Delta)
+mergeIxiyFuncList afunc bfunc =
+    case afunc of
+        Just a -> Just a
+        Nothing -> case bfunc of
+                        Just b -> Just b
+                        Nothing -> Nothing
+
+lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
+lt40_dict = Dict.fromList
+    [
+          (0xBE, execute_0xBE)
+    ]
 
 makeLt40Array: Array (Maybe ((IXIYHL -> Z80 -> Z80Delta)))
 makeLt40Array =
@@ -2744,11 +2750,6 @@ lt40_delta_dict = Dict.fromList
           (0xE9, execute_0xE9)
     ]
 
-lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
-lt40_dict = Dict.fromList
-    [
-          (0xBE, execute_0xBE)
-    ]
 --
 --	private int getd(int xy)
 --	{
