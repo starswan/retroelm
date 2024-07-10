@@ -2332,37 +2332,43 @@ execute_0xB7 z80 =
     --z80 |> set_flag_regs (z80_or z80.flags.a z80.flags)
    z80.flags |> z80_or z80.flags.a |> FlagRegs
 
-execute_0xB8: Z80 -> Z80
+execute_0xB8: Z80 -> Z80Delta
 execute_0xB8 z80 =
    -- case 0xB8: cp(B); break;
-   z80 |> set_flag_regs (cp z80.main.b z80.flags)
+   --z80 |> set_flag_regs (cp z80.main.b z80.flags)
+   z80.flags |> cp z80.main.b |> FlagRegs
 
-execute_0xB9: Z80 -> Z80
+execute_0xB9: Z80 -> Z80Delta
 execute_0xB9 z80 =
    -- case 0xB9: cp(C); break;
-   z80 |> set_flag_regs (cp z80.main.c z80.flags)
+   --z80 |> set_flag_regs (cp z80.main.c z80.flags)
+   z80.flags |> cp z80.main.c |> FlagRegs
 
-execute_0xBA: Z80 -> Z80
+execute_0xBA: Z80 -> Z80Delta
 execute_0xBA z80 =
    -- case 0xBA: cp(D); break;
-   z80 |> set_flag_regs (cp z80.main.d z80.flags)
+   --z80 |> set_flag_regs (cp z80.main.d z80.flags)
+   z80.flags |> cp z80.main.d |> FlagRegs
 
-execute_0xBB: Z80 -> Z80
+execute_0xBB: Z80 -> Z80Delta
 execute_0xBB z80 =
    -- case 0xBB: cp(E); break;
-   z80 |> set_flag_regs (cp z80.main.e z80.flags)
+   --z80 |> set_flag_regs (cp z80.main.e z80.flags)
+   z80.flags |> cp z80.main.e |> FlagRegs
 
-execute_0xBC: IXIYHL -> Z80 -> Z80
+execute_0xBC: IXIYHL -> Z80 -> Z80Delta
 execute_0xBC ixiyhl z80 =
     -- case 0xBC: cp(HL>>>8); break;
     -- case 0xBC: cp(xy>>>8); break;
-    z80 |> set_flag_regs (cp (get_h ixiyhl z80.main) z80.flags)
+    --z80 |> set_flag_regs (cp (get_h ixiyhl z80.main) z80.flags)
+   z80.flags |> cp (get_h ixiyhl z80.main) |> FlagRegs
 
-execute_0xBD: IXIYHL -> Z80 -> Z80
+execute_0xBD: IXIYHL -> Z80 -> Z80Delta
 execute_0xBD ixiyhl z80 =
     -- case 0xBD: cp(HL&0xFF); break;
     -- case 0xBD: cp(xy&0xFF); break;
-    z80 |> set_flag_regs (cp (get_l ixiyhl z80.main) z80.flags)
+    --z80 |> set_flag_regs (cp (get_l ixiyhl z80.main) z80.flags)
+   z80.flags |> cp (get_l ixiyhl z80.main) |> FlagRegs
 
 execute_0xBE: IXIYHL -> Z80 -> Z80
 execute_0xBE ixiyhl z80 =
@@ -2374,10 +2380,11 @@ execute_0xBE ixiyhl z80 =
     in
        { z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (cp value.value z80.flags)
 
-execute_0xBF: Z80 -> Z80
+execute_0xBF: Z80 -> Z80Delta
 execute_0xBF z80 =
     -- case 0xBF: cp(A); break;
-    z80 |> set_flag_regs (cp z80.flags.a z80.flags)
+    --z80 |> set_flag_regs (cp z80.flags.a z80.flags)
+   z80.flags |> cp z80.flags.a |> FlagRegs
 
 lt40_array_lite: Array (Maybe (Z80 -> Z80Delta))
 lt40_array_lite = makeLiteArray
@@ -2551,6 +2558,11 @@ lt40_delta_dict_lite = Dict.fromList
           (0xB2, execute_0xB2),
           (0xB3, execute_0xB3),
           (0xB7, execute_0xB7),
+          (0xB8, execute_0xB8),
+          (0xB9, execute_0xB9),
+          (0xBA, execute_0xBA),
+          (0xBB, execute_0xBB),
+          (0xBF, execute_0xBF),
           (0xCD, execute_0xCD),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
@@ -2559,11 +2571,6 @@ lt40_delta_dict_lite = Dict.fromList
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
-          (0xB8, execute_0xB8),
-          (0xB9, execute_0xB9),
-          (0xBA, execute_0xBA),
-          (0xBB, execute_0xBB),
-          (0xBF, execute_0xBF),
           (0xC0, execute_0xC0),
           (0xC2, execute_0xC2),
           (0xC4, execute_0xC4),
@@ -2732,14 +2739,14 @@ lt40_delta_dict = Dict.fromList
           (0xB4, execute_0xB4),
           (0xB5, execute_0xB5),
           (0xB6, execute_0xB6),
+          (0xBC, execute_0xBC),
+          (0xBD, execute_0xBD),
           (0xE9, execute_0xE9)
     ]
 
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
-          (0xBC, execute_0xBC),
-          (0xBD, execute_0xBD),
           (0xBE, execute_0xBE)
     ]
 --
