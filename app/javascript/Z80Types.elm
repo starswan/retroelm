@@ -1,7 +1,7 @@
 module Z80Types exposing (..)
 
 import Bitwise
-import CpuTimeCTime exposing (CpuTimePcAndValue, add_cpu_time_time)
+import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimePcAndValue, add_cpu_time_time)
 import Z80Env exposing (Z80Env, mem, mem16)
 import Z80Flags exposing (FlagRegisters)
 type alias MainRegisters =
@@ -101,3 +101,29 @@ imm16 z80 =
     in
         CpuTimePcAndValue env pc v.value
 
+--	private void jp(boolean y)
+--	{
+--		int a = MP = imm16();
+--		if(y) PC = a;
+--	}
+jp_z80: Bool -> Z80 -> Z80
+jp_z80 y z80 =
+   let
+      a = imm16 z80
+      env = z80.env
+      z80_1 = { z80 | pc = a.pc, env = { env | time = a.time } }
+   in
+      if y then
+         { z80_1 | pc = a.value }
+      else
+         z80_1
+
+jp: Bool -> Z80 -> CpuTimeAndPc
+jp y z80 =
+  let
+     a = imm16 z80
+  in
+    if y then
+      CpuTimeAndPc a.time a.value
+    else
+      CpuTimeAndPc a.time a.pc
