@@ -169,3 +169,11 @@ rst_z80 c z80 =
         pushed  = z80.env |> z80_push z80.pc
     in
         { z80 | env = pushed, pc = (c - 199) }
+
+rst: Int -> Z80 -> Z80EnvWithPC
+rst c z80 =
+   --z80 |> push z80.pc |> set_pc (c - 199)
+   let
+     pushed  = z80.env |> z80_push z80.pc
+   in
+     Z80EnvWithPC pushed (c - 199)
