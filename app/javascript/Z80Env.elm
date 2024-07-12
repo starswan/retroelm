@@ -33,6 +33,11 @@ type alias Z80EnvWithValue =
     , value : Int
     }
 
+type alias Z80EnvWithPC =
+    { env : Z80Env
+    , pc : Int
+    }
+
 
 type alias ValueWithTime =
     { value : Int
@@ -553,3 +558,4 @@ pop z80 =
             v.time |> add_cpu_time_time 6
     in
     CpuTimeSpAndValue env (Bitwise.and (z80.sp + 2) 0xFFFF) v.value
+

@@ -2,7 +2,7 @@ module Z80Types exposing (..)
 
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimePcAndValue, add_cpu_time_time)
-import Z80Env exposing (Z80Env, mem, mem16)
+import Z80Env exposing (Z80Env, Z80EnvWithPC, mem, mem16, z80_push)
 import Z80Flags exposing (FlagRegisters)
 type alias MainRegisters =
    {
@@ -49,13 +49,6 @@ type alias Z80 =
       interrupts: InterruptRegisters,
       time_limit: Int
    }
-
-type alias IntWithPcAndEnv =
-    {
-        value: Int,
-        pc: Int,
-        env: Z80Env
-    }
 
 type alias EnvWithPCAndValue =
    {
@@ -127,3 +120,44 @@ jp y z80 =
       CpuTimeAndPc a.time a.value
     else
       CpuTimeAndPc a.time a.pc
+
+--	private void call(boolean y)
+--	{
+--		int a = MP = imm16();
+--		if(y) {push(PC); PC = a;}
+--	}
+call_z80: Bool -> Z80 -> Z80
+call_z80 y z80 =
+   let
+      a = imm16 z80
+      env = z80.env
+      z80_2 = { z80 | pc = a.pc, env = { env | time = a.time } }
+   in
+     if y then
+      let
+         --b = debug_log "call" (a.value |> subName) Nothing
+         --z80_1 = z80_2 |> push z80_2.pc |> set_pc a.value
+         pushed = z80_2.env |> z80_push z80_2.pc
+         z80_1 = { z80_2 | env = pushed, pc = a.value }
+      in
+         z80_1
+     else
+       z80_2
+
+call: Bool -> Z80 -> Z80EnvWithPC
+call y z80 =
+   let
+      a = imm16 z80
+      env = z80.env
+      z80_2 = { z80 | pc = a.pc, env = { env | time = a.time } }
+   in
+     if y then
+      let
+         --b = debug_log "call" (a.value |> subName) Nothing
+         --z80_1 = z80_2 |> push z80_2.pc |> set_pc a.value
+         pushed = z80_2.env |> z80_push z80_2.pc
+         --z80_1 = { z80_2 | env = pushed, pc = a.value }
+      in
+         Z80EnvWithPC pushed a.value
+     else
+       Z80EnvWithPC z80_2.env a.pc
