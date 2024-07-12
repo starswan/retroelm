@@ -9,7 +9,7 @@ import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegist
 type Z80Delta
     = Whole Z80
     | MainRegsWithPcAndCpuTime MainWithIndexRegisters Int CpuTimeCTime
-    | JustEnv Z80Env
+    | OnlyEnv Z80Env
     | MainRegsAndCpuTime MainWithIndexRegisters Int
     | FlagsWithMain FlagRegisters MainWithIndexRegisters
     | FlagsWithPCMainAndTime FlagRegisters Int MainWithIndexRegisters Int
@@ -54,7 +54,7 @@ apply_delta z80 z80delta =
           in
             { z80 | pc = pc, env = { env | time = cpu_time}, main = mainRegisters, interrupts = z80delta.interrupts }
 
-        JustEnv z80Env ->
+        OnlyEnv z80Env ->
             { z80 | pc = z80delta.pc, env = z80Env, interrupts = z80delta.interrupts }
 
         MainRegsAndCpuTime mainRegisters cpu_time ->

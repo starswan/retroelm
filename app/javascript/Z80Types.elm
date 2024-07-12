@@ -161,3 +161,11 @@ call y z80 =
          Z80EnvWithPC pushed a.value
      else
        Z80EnvWithPC z80_2.env a.pc
+
+rst_z80: Int -> Z80 -> Z80
+rst_z80 c z80 =
+    --z80 |> push z80.pc |> set_pc (c - 199)
+    let
+        pushed  = z80.env |> z80_push z80.pc
+    in
+        { z80 | env = pushed, pc = (c - 199) }
