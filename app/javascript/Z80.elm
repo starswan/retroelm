@@ -551,7 +551,7 @@ execute_0x02 z80 =
      addr = (shiftLeftBy8 z80.main.b) + z80.main.c
   in
      --{ z80 | env = z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3 }
-     JustEnv (z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3)
+     OnlyEnv (z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3)
 
 execute_0x03: Z80 -> Z80Delta
 execute_0x03 z80 =
@@ -722,7 +722,7 @@ execute_0x12 z80 =
   let
     addr = (shiftLeftBy8 z80.main.d) + z80.main.e
   in
-    z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3 |> JustEnv
+    z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3 |> OnlyEnv
 
 execute_0x13: Z80 -> Z80Delta
 execute_0x13 z80 =
@@ -2905,7 +2905,7 @@ execute_0xC5 z80 =
      pushed = z80.env |> z80_push bc
    in
      --{ z80 | env = pushed }
-     JustEnv pushed
+     OnlyEnv pushed
 
 execute_0xC6: Z80 -> Z80Delta
 execute_0xC6 z80 =
