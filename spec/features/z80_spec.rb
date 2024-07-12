@@ -50,6 +50,22 @@ RSpec.describe "Spectrum Emulator" do
     it "loads the emulator", :js do
       # check that Elm is running
       expect(page).to have_content 'Refresh Interval'
+      sleep 14
+      # can't work out how to talk to spectrum via capybara
+      # Selenium::WebDriver::Error::ElementNotInteractableError:
+      # Element <div id="spectrum"> is not reachable by keyboard
+      # x = find("#spectrum")
+      # This doesn't error but nothing happens
+      # find("#spectrum").click
+      # x = page.driver.browser.switch_to.active_element
+      # x.send_keys "1"
+      # sleep 1
+      # x.send_keys "0"
+      # sleep 1
+      # x.send_keys "e"
+      # sleep 1
+      # x.send_keys :enter
+      # sleep 10
       speed = measure_speed_in_hz
       expect(speed).to be > expected_hz
       puts "Speed #{speed} Hz"
@@ -57,7 +73,6 @@ RSpec.describe "Spectrum Emulator" do
   end
 
   def measure_speed_in_hz
-    sleep 10
     # Test emulation speed in Hz
     low = 0
     high = page.find("#hz").text.to_f

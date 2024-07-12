@@ -2541,6 +2541,9 @@ lt40_delta_dict_lite = Dict.fromList
           (0xD1, execute_0xD1),
           (0xD2, execute_0xD2),
           (0xD3, execute_0xD3),
+          (0xD5, execute_0xD5),
+          (0xD6, execute_0xD6),
+          (0xD7, execute_0xD7),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ]
@@ -2563,16 +2566,13 @@ lt40_dict_lite = Dict.fromList
           (0xE3, execute_0xE3),
           (0xF1, execute_0xF1),
           (0xD8, execute_0xD8),
-          (0xD5, execute_0xD5),
           (0xDB, execute_0xDB),
           (0xF8, execute_0xF8),
           (0xEE, execute_0xEE),
-          (0xD6, execute_0xD6),
           (0xF2, execute_0xF2),
           (0xFA, execute_0xFA),
           (0xDA, execute_0xDA),
           (0xFE, execute_0xFE),
-          (0xD7, execute_0xD7),
           (0xDF, execute_0xDF),
           (0xE7, execute_0xE7),
           (0xEF, execute_0xEF),
@@ -3072,29 +3072,31 @@ execute_0xD3 z80 =
     --{ z80_1 | env = env } |> add_cpu_time 4
     EnvWithPc env value.pc
 
-execute_0xD5: Z80 -> Z80
+execute_0xD5: Z80 -> Z80Delta
 execute_0xD5 z80 =
-   -- case 0xD5: push(D<<8|E); break;
-   --z80 |> push (z80 |> get_de)
-   let
-      de = z80 |> get_de
-      pushed = z80.env |> z80_push de
-   in
-      { z80 | env = pushed }
+  -- case 0xD5: push(D<<8|E); break;
+  --z80 |> push (z80 |> get_de)
+  let
+    de = z80 |> get_de
+    pushed = z80.env |> z80_push de
+  in
+    --{ z80 | env = pushed }
+    OnlyEnv pushed
 
-execute_0xD6: Z80 -> Z80
+execute_0xD6: Z80 -> Z80Delta
 execute_0xD6 z80 =
    -- case 0xD6: sub(imm8()); break;
-   let
-      v = z80 |> imm8
-      flags = z80.flags |> z80_sub v.value
-      env_1 = z80.env
-   in
-      { z80 | flags = flags, env = { env_1 | time = v.time }, pc = v.pc }
+  let
+    v = z80 |> imm8
+    flags = z80.flags |> z80_sub v.value
+    --env_1 = z80.env
+  in
+      --{ z80 | flags = flags, env = { env_1 | time = v.time }, pc = v.pc }
+    FlagsWithPcAndTime flags v.pc v.time
 
-execute_0xD7: Z80 -> Z80
+execute_0xD7: Z80 -> Z80Delta
 execute_0xD7 z80 =
-    z80 |> rst_z80 0xD7
+    z80 |> rst_delta 0xD7
 
 execute_0xD8: Z80 -> Z80
 execute_0xD8 z80 =

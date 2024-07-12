@@ -9,7 +9,7 @@ import Browser
 import Browser.Events exposing (onKeyDown, onKeyUp)
 import Dict exposing (values)
 import Html exposing (Html, button, div, h2, span, text)
-import Html.Attributes exposing (disabled, id, style)
+import Html.Attributes exposing (disabled, id, style, tabindex)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import Keyboard exposing (ctrlKeyDownEvent, ctrlKeyUpEvent, keyDownEvent, keyUpEvent)
@@ -145,11 +145,13 @@ view model =
                 ]
             , button [ onClick LoadTape, disabled load_disabled ] [ text "Load Tape" ]
             ]
-        , svg
-            [ height (272 * c_SCALEFACTOR |> String.fromInt), width (352 * c_SCALEFACTOR |> String.fromInt), viewBox "0 0 352 272" ]
-            --<rect width="100%" height="100%" fill="green" />
-            screen_data_list
-
+        , div [tabindex 0, id "spectrum"]
+        [
+            svg
+                [ height (272 * c_SCALEFACTOR |> String.fromInt), width (352 * c_SCALEFACTOR |> String.fromInt), viewBox "0 0 352 272" ]
+                --<rect width="100%" height="100%" fill="green" />
+                screen_data_list
+        ]
         --,svg [style "height" "192px", style "width" "256px"] (List.indexedMap lineListToSvg lines |> List.concat)
         ]
 
