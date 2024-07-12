@@ -220,15 +220,6 @@ set_iff value z80 =
       { z80 | interrupts = { interrupts | iff = value } }
 --	void ei(boolean v) {IFF = v ? 3 : 0;}
 --
-exx: Z80 -> Z80
-exx z80 =
-    let
-        main = z80.main
-        alt = z80.alt_main
-   in
-      { z80 | main = { main | b = alt.b, c = alt.c, d = alt.d, e = alt.e, hl = alt.hl },
-              alt_main = { alt | b = main.b, c = main.c, d = main.d, e = main.e, hl = main.hl } }
-
 f_szh0n0p: Int -> Z80 -> Z80
 f_szh0n0p r z80 =
    let
@@ -2540,6 +2531,8 @@ lt40_delta_dict_lite = Dict.fromList
           (0xC6, execute_0xC6),
           (0xC7, execute_0xC7),
           (0xC8, execute_0xC8),
+          (0xC9, execute_0xC9),
+          (0xCA, execute_0xCA),
           (0xCD, execute_0xCD),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
@@ -2548,11 +2541,10 @@ lt40_delta_dict_lite = Dict.fromList
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
-          (0xCA, execute_0xCA),
           (0xCC, execute_0xCC),
           (0xD0, execute_0xD0),
-          (0xF3, execute_0xF3),
           (0xD3, execute_0xD3),
+          (0xF3, execute_0xF3),
           -- case 0xD9: exx(); break;
           (0xD9, exx),
           (0xEB, execute_0xEB),
@@ -2560,7 +2552,6 @@ lt40_dict_lite = Dict.fromList
           (0xFB, execute_0xFB),
           (0xE6, execute_0xE6),
           (0xF6, execute_0xF6),
-          (0xC9, execute_0xC9),
           (0xF5, execute_0xF5),
           (0xED, group_ed),
           (0xE1, execute_0xE1),
@@ -2944,20 +2935,25 @@ execute_0xC8 z80 =
            --z80_1
          OnlyTime z80_1_time
 
-execute_0xC9: Z80 -> Z80
+execute_0xC9: Z80 -> Z80Delta
 execute_0xC9 z80 =
     -- case 0xC9: MP=PC=pop(); break;
    let
       a = z80.env |> pop
       --b = debug_log "ret" (a.value |> subName) Nothing
-      env = z80.env
+      --env = z80.env
    in
-      { z80 | env = { env | time = a.time, sp = a.sp }, pc = a.value }
+      --{ z80 | env = { env | time = a.time, sp = a.sp }, pc = a.value }
+      CpuTimeWithSpAndPc a.time a.sp a.value
 
-execute_0xCA: Z80 -> Z80
+execute_0xCA: Z80 -> Z80Delta
 execute_0xCA z80 =
     -- case 0xCA: jp(Fr==0); break;
-    jp_z80 (z80.flags.fr == 0) z80
+    --jp_z80 (z80.flags.fr == 0) z80
+  let
+    result = z80 |> jp (z80.flags.fr == 0)
+  in
+    CpuTimeWithPc result.time result.pc
 
 execute_0xCB: IXIYHL -> Z80 -> Z80
 execute_0xCB ixiyhl z80 =
@@ -3080,6 +3076,21 @@ execute_0xD8 z80 =
                  z80_1
    in
       z80_2
+
+exx: Z80 -> Z80
+exx z80 =
+    let
+        main = z80.main
+        alt = z80.alt_main
+   in
+      { z80 | main = { main | b = alt.b, c = alt.c, d = alt.d, e = alt.e, hl = alt.hl },
+              alt_main = { alt | b = main.b, c = main.c, d = main.d, e = main.e, hl = main.hl } }
+
+
+execute_0xDA: Z80 -> Z80
+execute_0xDA z80 =
+    -- case 0xDA: jp((Ff&0x100)!=0); break;
+    z80 |> jp_z80 ((Bitwise.and z80.flags.ff 0x100) /= 0)
 
 execute_0xEB: Z80 -> Z80
 execute_0xEB z80 =
@@ -3252,11 +3263,6 @@ execute_0xFA: Z80 -> Z80
 execute_0xFA z80 =
    -- case 0xFA: jp((Ff&FS)!=0); break;
    z80 |> jp_z80 (Bitwise.and z80.flags.ff c_FS /= 0)
-
-execute_0xDA: Z80 -> Z80
-execute_0xDA z80 =
-    -- case 0xDA: jp((Ff&0x100)!=0); break;
-    z80 |> jp_z80 ((Bitwise.and z80.flags.ff 0x100) /= 0)
 
 --execute_gtc0: Int -> IXIYHL -> Z80 -> Z80Delta
 --execute_gtc0 c ixiyhl z80 =
