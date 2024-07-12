@@ -15,7 +15,7 @@ import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, pop, set_
 import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (subName)
-import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, ProgramCounter, Z80, call, call_z80, imm16, imm8, jp, jp_z80, rst_z80)
+import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, ProgramCounter, Z80, call, call_z80, imm16, imm8, jp, jp_z80, rst, rst_z80)
 
 --type alias RegisterSet =
 --   {
@@ -2538,6 +2538,8 @@ lt40_delta_dict_lite = Dict.fromList
           (0xC4, execute_0xC4),
           (0xC5, execute_0xC5),
           (0xC6, execute_0xC6),
+          (0xC7, execute_0xC7),
+          (0xC8, execute_0xC8),
           (0xCD, execute_0xCD),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
@@ -2546,7 +2548,6 @@ lt40_delta_dict_lite = Dict.fromList
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
-          (0xC8, execute_0xC8),
           (0xCA, execute_0xCA),
           (0xCC, execute_0xCC),
           (0xD0, execute_0xD0),
@@ -2579,7 +2580,6 @@ lt40_dict_lite = Dict.fromList
           (0xDA, execute_0xDA),
           (0xCE, execute_0xCE),
           (0xFE, execute_0xFE),
-          (0xC7, execute_0xC7),
           (0xCF, execute_0xCF),
           (0xD7, execute_0xD7),
           (0xDF, execute_0xDF),
@@ -2919,24 +2919,30 @@ execute_0xC6 z80 =
       --{ z80_1 | flags = flags }
       FlagsWithPcAndTime flags v.pc v.time
 
-execute_0xC7: Z80 -> Z80
+execute_0xC7: Z80 -> Z80Delta
 execute_0xC7 z80 =
-    z80 |> rst_z80 0xC7
+    --z80 |> rst_z80 0xC7
+   let
+      result = z80 |> rst 0xC7
+   in
+     EnvWithPc result.env result.pc
 
-execute_0xC8: Z80 -> Z80
+execute_0xC8: Z80 -> Z80Delta
 execute_0xC8 z80 =
     -- case 0xC8: time++; if(Fr==0) MP=PC=pop(); break;
    let
-      z80_1 = z80 |> add_cpu_time 1
+      z80_1_time = z80.env.time |> add_cpu_time_time 1
+      env = z80.env
    in
-      if z80_1.flags.fr == 0 then
+      if z80.flags.fr == 0 then
            let
-              popped = z80_1.env |> pop
-              env = z80_1.env
+              popped = { env | time = z80_1_time } |> pop
            in
-              { z80_1 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
+              --{ z80_1 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
+              CpuTimeWithSpAndPc popped.time popped.sp popped.value
       else
-           z80_1
+           --z80_1
+         OnlyTime z80_1_time
 
 execute_0xC9: Z80 -> Z80
 execute_0xC9 z80 =
