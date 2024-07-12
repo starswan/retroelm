@@ -2537,6 +2537,8 @@ lt40_delta_dict_lite = Dict.fromList
           (0xCD, execute_0xCD),
           (0xCE, execute_0xCE),
           (0xCF, execute_0xCF),
+          (0xD0, execute_0xD0),
+          (0xD1, execute_0xD1),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ]
@@ -2544,7 +2546,6 @@ lt40_delta_dict_lite = Dict.fromList
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
-          (0xD0, execute_0xD0),
           (0xD3, execute_0xD3),
           (0xF3, execute_0xF3),
           -- case 0xD9: exx(); break;
@@ -2563,7 +2564,6 @@ lt40_dict_lite = Dict.fromList
           (0xD8, execute_0xD8),
           (0xD5, execute_0xD5),
           (0xD2, execute_0xD2),
-          (0xD1, execute_0xD1),
           (0xDB, execute_0xDB),
           (0xF8, execute_0xF8),
           (0xEE, execute_0xEE),
@@ -3001,31 +3001,34 @@ execute_0xCF z80 =
   in
      EnvWithPc result.env result.pc
 
-execute_0xD0: Z80 -> Z80
+execute_0xD0: Z80 -> Z80Delta
 execute_0xD0 z80 =
-    -- case 0xD0: time++; if((Ff&0x100)==0) MP=PC=pop(); break;
-    let
-       z80_1 = z80 |> add_cpu_time 1
-    in
-       if (and z80.flags.ff 0x100) == 0 then
-          let
-             popped = z80_1.env |> pop
+  -- case 0xD0: time++; if((Ff&0x100)==0) MP=PC=pop(); break;
+  let
+    z80_1_time = z80.env.time |> add_cpu_time_time 1
+    env = z80.env
+  in
+    if (and z80.flags.ff 0x100) == 0 then
+      let
+        popped = z80.env |> pop
              --x = debug_log "ret nc" (popped.value |> subName) Nothing
-             env = z80_1.env
-          in
-             { z80_1 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
-       else
-          z80_1
+      in
+        --{ z80_1 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
+        CpuTimeWithSpAndPc popped.time popped.sp popped.value
+    else
+      --z80_1
+      OnlyTime z80_1_time
 
-execute_0xD1: Z80 -> Z80
+execute_0xD1: Z80 -> Z80Delta
 execute_0xD1 z80 =
    -- case 0xD1: v=pop(); D=v>>>8; E=v&0xFF; break;
    let
       v = z80.env |> pop
-      env = z80.env
-      z80_1 = { z80 | env = { env | time = v.time, sp = v.sp } }
+      --env = z80.env
+      --z80_1 = { z80 | env = { env | time = v.time, sp = v.sp } }
    in
-      z80_1 |> set_de v.value
+      --z80_1 |> set_de v.value
+      MainRegsWithSpAndTime (z80.main |> set_de_main v.value) v.sp v.time
 
 execute_0xD2: Z80 -> Z80
 execute_0xD2 z80 =
