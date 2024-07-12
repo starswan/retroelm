@@ -2533,7 +2533,10 @@ lt40_delta_dict_lite = Dict.fromList
           (0xC8, execute_0xC8),
           (0xC9, execute_0xC9),
           (0xCA, execute_0xCA),
+          (0xCC, execute_0xCC),
           (0xCD, execute_0xCD),
+          (0xCE, execute_0xCE),
+          (0xCF, execute_0xCF),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ]
@@ -2541,7 +2544,6 @@ lt40_delta_dict_lite = Dict.fromList
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
-          (0xCC, execute_0xCC),
           (0xD0, execute_0xD0),
           (0xD3, execute_0xD3),
           (0xF3, execute_0xF3),
@@ -2569,9 +2571,7 @@ lt40_dict_lite = Dict.fromList
           (0xF2, execute_0xF2),
           (0xFA, execute_0xFA),
           (0xDA, execute_0xDA),
-          (0xCE, execute_0xCE),
           (0xFE, execute_0xFE),
-          (0xCF, execute_0xCF),
           (0xD7, execute_0xD7),
           (0xDF, execute_0xDF),
           (0xE7, execute_0xE7),
@@ -2962,10 +2962,14 @@ execute_0xCB ixiyhl z80 =
         IY -> z80 |> group_xy_cb IXIY_IY
         HL -> z80 |> group_cb
 
-execute_0xCC: Z80 -> Z80
+execute_0xCC: Z80 -> Z80Delta
 execute_0xCC z80 =
     -- case 0xCC: call(Fr==0); break;
-   call_z80 (z80.flags.fr == 0) z80
+   --call_z80 (z80.flags.fr == 0) z80
+  let
+    result = z80 |> call (z80.flags.fr == 0)
+  in
+    EnvWithPc result.env result.pc
 
 execute_0xCD: Z80 -> Z80Delta
 execute_0xCD z80 =
@@ -2979,19 +2983,23 @@ execute_0xCD z80 =
       --{ z80_1 | env = pushed, pc = v.value }
       EnvWithPc pushed v.value
 
-execute_0xCE: Z80 -> Z80
+execute_0xCE: Z80 -> Z80Delta
 execute_0xCE z80 =
    -- case 0xCE: adc(imm8()); break;
    let
       v = z80 |> imm8
       flags = z80.flags |> adc v.value
-      env_1 = z80.env
+      --env_1 = z80.env
    in
-      {z80 | pc = v.pc, env = { env_1 | time = v.time }, flags = flags }
+      --{z80 | pc = v.pc, env = { env_1 | time = v.time }, flags = flags }
+      FlagsWithPcAndTime flags v.pc v.time
 
-execute_0xCF: Z80 -> Z80
+execute_0xCF: Z80 -> Z80Delta
 execute_0xCF z80 =
-    z80 |> rst_z80 0xCF
+  let
+     result = z80 |> rst 0xCF
+  in
+     EnvWithPc result.env result.pc
 
 execute_0xD0: Z80 -> Z80
 execute_0xD0 z80 =
