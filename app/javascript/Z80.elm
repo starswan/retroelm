@@ -2539,6 +2539,7 @@ lt40_delta_dict_lite = Dict.fromList
           (0xCF, execute_0xCF),
           (0xD0, execute_0xD0),
           (0xD1, execute_0xD1),
+          (0xD2, execute_0xD2),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ]
@@ -2563,7 +2564,6 @@ lt40_dict_lite = Dict.fromList
           (0xF1, execute_0xF1),
           (0xD8, execute_0xD8),
           (0xD5, execute_0xD5),
-          (0xD2, execute_0xD2),
           (0xDB, execute_0xDB),
           (0xF8, execute_0xF8),
           (0xEE, execute_0xEE),
@@ -3030,10 +3030,14 @@ execute_0xD1 z80 =
       --z80_1 |> set_de v.value
       MainRegsWithSpAndTime (z80.main |> set_de_main v.value) v.sp v.time
 
-execute_0xD2: Z80 -> Z80
+execute_0xD2: Z80 -> Z80Delta
 execute_0xD2 z80 =
    -- case 0xD2: jp((Ff&0x100)==0); break;
-   z80 |> jp_z80 ((Bitwise.and z80.flags.ff 0x100) == 0)
+   --z80 |> jp_z80 ((Bitwise.and z80.flags.ff 0x100) == 0)
+  let
+    result = z80 |> jp ((Bitwise.and z80.flags.ff 0x100) == 0)
+  in
+    CpuTimeWithPc result.time result.pc
 
 execute_0xD3: Z80 -> Z80
 execute_0xD3 z80 =
