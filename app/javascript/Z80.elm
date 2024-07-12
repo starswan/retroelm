@@ -2540,6 +2540,7 @@ lt40_delta_dict_lite = Dict.fromList
           (0xD0, execute_0xD0),
           (0xD1, execute_0xD1),
           (0xD2, execute_0xD2),
+          (0xD3, execute_0xD3),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ]
@@ -2547,7 +2548,6 @@ lt40_delta_dict_lite = Dict.fromList
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
-          (0xD3, execute_0xD3),
           (0xF3, execute_0xF3),
           -- case 0xD9: exx(); break;
           (0xD9, exx),
@@ -3058,17 +3058,19 @@ execute_0xD2 z80 =
   --  CpuTimeWithPc result.time result.pc
   z80 |> jp_delta ((Bitwise.and z80.flags.ff 0x100) == 0)
 
-execute_0xD3: Z80 -> Z80
+execute_0xD3: Z80 -> Z80Delta
 execute_0xD3 z80 =
-    -- case 0xD3: env.out(v=imm8()|A<<8,A); MP=v+1&0xFF|v&0xFF00; time+=4; break;
-    let
-       value = imm8 z80
-       env_1 = z80.env
-       z80_1 = { z80 | env = { env_1 | time = value.time }, pc = value.pc }
-       v = or value.value (shiftLeftBy8 z80.flags.a)
-       env = out v z80.flags.a z80_1.env
-    in
-       { z80_1 | env = env } |> add_cpu_time 4
+  -- case 0xD3: env.out(v=imm8()|A<<8,A); MP=v+1&0xFF|v&0xFF00; time+=4; break;
+  let
+    value = imm8 z80
+    env_1 = z80.env
+    env_2 = { env_1 | time = value.time }
+    --z80_1 = { z80 | env = env_2, pc = value.pc }
+    v = Bitwise.or value.value (shiftLeftBy8 z80.flags.a)
+    env = out v z80.flags.a env_2 |> add_cpu_time_env 4
+  in
+    --{ z80_1 | env = env } |> add_cpu_time 4
+    EnvWithPc env value.pc
 
 execute_0xD5: Z80 -> Z80
 execute_0xD5 z80 =
