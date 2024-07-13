@@ -2386,8 +2386,7 @@ mergeIxiyFuncList afunc bfunc =
 lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
-          (0xBE, execute_0xBE),
-          (0xCB, execute_0xCB)
+          (0xBE, execute_0xBE)
     ]
 
 makeLt40Array: Array (Maybe ((IXIYHL -> Z80 -> Z80Delta)))
@@ -2682,6 +2681,7 @@ lt40_delta_dict = Dict.fromList
           (0xB6, execute_0xB6),
           (0xBC, execute_0xBC),
           (0xBD, execute_0xBD),
+          (0xCB, execute_0xCB),
           (0xE1, execute_0xE1),
           (0xE3, execute_0xE3),
           (0xE5, execute_0xE5),
@@ -2962,7 +2962,7 @@ execute_0xCA z80 =
   --  CpuTimeWithPc result.time result.pc
   z80 |> jp_delta (z80.flags.fr == 0)
 
-execute_0xCB: IXIYHL -> Z80 -> Z80
+execute_0xCB: IXIYHL -> Z80 -> Z80Delta
 execute_0xCB ixiyhl z80 =
     case ixiyhl of
         IX -> z80 |> group_xy_cb IXIY_IX
@@ -3843,7 +3843,7 @@ group_ed z80_0 =
 --		}
 --	}
 --
-group_cb: Z80 -> Z80
+group_cb: Z80 -> Z80Delta
 group_cb tmp_z80 =
 --	private void group_cb()
 --	{
@@ -3878,8 +3878,9 @@ group_cb tmp_z80 =
            value = shifter o raw.value z80.flags
            --w = debug_log "group_cb value" (value.value |> toHexString2) Nothing
            env_1 = z80.env
+           x = { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set_flag_regs value.flags |> set408bit caseval value.value HL
          in
-           { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set_flag_regs value.flags |> set408bit caseval value.value HL
+           Whole x
       else if caseval >= 0x40 && caseval <= 0x47 then
          -- case 0x40: bit(o,B); break;
          -- case 0x41: bit(o,C); break;
@@ -3893,8 +3894,9 @@ group_cb tmp_z80 =
            raw = z80 |> load408bit caseval HL
            flags = bit o raw.value z80.flags
            env_1 = z80.env
+           x = { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set_flag_regs flags
          in
-           { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set_flag_regs flags
+           Whole x
       else if caseval >= 0x80 && caseval <= 0x87 then
          -- case 0x80: B=B&~(1<<o); break;
          -- case 0x81: C=C&~(1<<o); break;
@@ -3908,8 +3910,9 @@ group_cb tmp_z80 =
              raw = z80 |> load408bit caseval HL
              result = and raw.value (1 |> (shiftLeftBy o) |> complement)
              env_1 = z80.env
+             x = { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set408bit caseval result HL
          in
-             { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set408bit caseval result HL
+            Whole x
       else if caseval >= 0xC0 && caseval <= 0xC7 then
          -- case 0xC0: B=B|1<<o; break;
          -- case 0xC1: C=C|1<<o; break;
@@ -3923,10 +3926,11 @@ group_cb tmp_z80 =
              raw = z80 |> load408bit caseval HL
              result = or raw.value (1 |> (shiftLeftBy o))
              env_1 = z80.env
+             x = { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set408bit caseval result HL
          in
-             { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set408bit caseval result HL
+            Whole x
       else
-         debug_todo "group_cb" (caseval |> toHexString) z80
+         debug_todo "group_cb" (caseval |> toHexString) z80 |> Whole
 --		}
 --	}
 --
@@ -3941,7 +3945,7 @@ group_cb tmp_z80 =
 --		int v = env.mem(a);
 --		time += 4;
 --		int o = c>>>3 & 7;
-group_xy_cb: IXIY -> Z80 -> Z80
+group_xy_cb: IXIY -> Z80 -> Z80Delta
 group_xy_cb ixiyhl z80 =
    let
       xy = get_ixiy_xy ixiyhl z80.main
@@ -3991,9 +3995,9 @@ group_xy_cb ixiyhl z80 =
       caseval = (and c.value 0x07)
    in
       if caseval /= 6 then
-         set408bit caseval v2.value HL z80_4
+         set408bit caseval v2.value HL z80_4 |> Whole
       else
-         z80_4
+         z80_4 |> Whole
 
 im0: Int -> Z80 -> Z80
 im0 bus z80 =
