@@ -2552,6 +2552,7 @@ lt40_delta_dict_lite = Dict.fromList
           (0xDB, execute_0xDB),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xDF, execute_0xDF),
+          (0xE6, execute_0xE6),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ]
 
@@ -2562,11 +2563,9 @@ lt40_dict_lite = Dict.fromList
           (0xEB, execute_0xEB),
           (0xF9, execute_0xF9),
           (0xFB, execute_0xFB),
-          (0xE6, execute_0xE6),
           (0xF6, execute_0xF6),
           (0xF5, execute_0xF5),
           (0xED, group_ed),
-          (0xE5, execute_0xE5),
           (0xF1, execute_0xF1),
           (0xF8, execute_0xF8),
           (0xEE, execute_0xEE),
@@ -2685,6 +2684,7 @@ lt40_delta_dict = Dict.fromList
           (0xBD, execute_0xBD),
           (0xE1, execute_0xE1),
           (0xE3, execute_0xE3),
+          (0xE5, execute_0xE5),
           (0xE9, execute_0xE9)
     ]
 
@@ -3185,16 +3185,17 @@ execute_0xE3 ixiyhl z80 =
        IY -> MainRegsWithEnvAndPc { main | iy = hl.value } pushed z80.pc
        HL -> MainRegsWithEnv { main | hl = hl.value } pushed
 
-
-execute_0xE5: Z80 -> Z80
-execute_0xE5 z80 =
+execute_0xE5: IXIYHL -> Z80 -> Z80Delta
+execute_0xE5 ixiyhl z80 =
    -- case 0xE5: push(HL); break;
+   -- case 0xE5: push(xy); break;
    let
-       pushed = z80.env |> z80_push z80.main.hl
+       pushed = z80.env |> z80_push (z80.main |> get_xy ixiyhl)
    in
-      { z80 | env = pushed }
+      --{ z80 | env = pushed }
+      EnvWithPc pushed z80.pc
 
-execute_0xE6: Z80 -> Z80
+execute_0xE6: Z80 -> Z80Delta
 execute_0xE6 z80 =
    -- case 0xE6: and(imm8()); break;
    let
@@ -3203,7 +3204,8 @@ execute_0xE6 z80 =
       z80_1 = { z80 | env = { env_1 | time = a.time }, pc = a.pc  }
       flags = z80_1.flags |> z80_and a.value
    in
-      { z80_1 | flags = flags }
+      --{ z80_1 | flags = flags }
+      FlagsWithPcAndTime flags a.pc a.time
 
 execute_0xEB: Z80 -> Z80
 execute_0xEB z80 =
@@ -3494,7 +3496,6 @@ group_xy ixiy old_z80 =
 -- case 0xC5: push(bc()); break;
 -- case 0xD1: de(pop()); break;
 -- case 0xD5: push(de()); break;
--- case 0xE5: push(xy); break;
 -- case 0xF1: af(pop()); break;
 -- case 0xF5: push(A<<8|flags()); break;
 -- case 0xC3: MP=PC=imm16(); break;
