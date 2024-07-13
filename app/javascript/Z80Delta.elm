@@ -33,6 +33,7 @@ type Z80Delta
     | InterruptsWithCpuTime InterruptRegisters CpuTimeCTime
     | MainRegsWithSpAndTime MainWithIndexRegisters Int CpuTimeCTime
     | OnlyTime CpuTimeCTime
+    | MainRegsWithAltRegs MainWithIndexRegisters MainRegisters
 
 
 type alias DeltaWithChanges =
@@ -183,3 +184,10 @@ apply_delta z80 z80delta =
             env = z80.env
           in
             { z80 | pc = z80delta.pc, env = { env | time = cpuTimeCTime }, interrupts = z80delta.interrupts }
+
+        MainRegsWithAltRegs main alt_main ->
+          let
+            env = z80.env
+          in
+            { z80 | main = main, alt_main = alt_main, pc = z80delta.pc, env = { env | time = z80delta.time }, interrupts = z80delta.interrupts }
+
