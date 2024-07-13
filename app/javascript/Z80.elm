@@ -126,6 +126,7 @@ set_de v z80 =
 set_de_main: Int -> MainWithIndexRegisters -> MainWithIndexRegisters
 set_de_main v z80_main =
     { z80_main | d = shiftRightBy8 v, e = and v 0xFF }
+
 --	void hl(int v) {HL = v;}
 set_hl: Int -> Z80 -> Z80
 set_hl hl z80 =
@@ -2550,6 +2551,7 @@ lt40_delta_dict_lite = Dict.fromList
           (0xDA, execute_0xDA),
           (0xDB, execute_0xDB),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
+          (0xDF, execute_0xDF),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ]
 
@@ -2564,7 +2566,6 @@ lt40_dict_lite = Dict.fromList
           (0xF6, execute_0xF6),
           (0xF5, execute_0xF5),
           (0xED, group_ed),
-          (0xE1, execute_0xE1),
           (0xE5, execute_0xE5),
           (0xE3, execute_0xE3),
           (0xF1, execute_0xF1),
@@ -2573,7 +2574,6 @@ lt40_dict_lite = Dict.fromList
           (0xF2, execute_0xF2),
           (0xFA, execute_0xFA),
           (0xFE, execute_0xFE),
-          (0xDF, execute_0xDF),
           (0xE7, execute_0xE7),
           (0xEF, execute_0xEF),
           (0xF7, execute_0xF7),
@@ -2684,6 +2684,7 @@ lt40_delta_dict = Dict.fromList
           (0xB6, execute_0xB6),
           (0xBC, execute_0xBC),
           (0xBD, execute_0xBD),
+          (0xE1, execute_0xE1),
           (0xE9, execute_0xE9)
     ]
 
@@ -3145,19 +3146,24 @@ execute_0xDB z80 =
       --{ z80_1 | env = a.env, flags = { flags | a = a.value } }
       CpuTimeWithFlagsAndPc imm8val.time new_flags imm8val.pc
 
-execute_0xDF: Z80 -> Z80
+execute_0xDF: Z80 -> Z80Delta
 execute_0xDF z80 =
-    z80 |> rst_z80 0xDF
+    z80 |> rst_delta 0xDF
 
-execute_0xE1: Z80 -> Z80
-execute_0xE1 z80 =
+execute_0xE1: IXIYHL -> Z80 -> Z80Delta
+execute_0xE1 ixiyhl z80 =
    -- case 0xE1: HL=pop(); break;
+   -- case 0xE1: xy=pop(); break;
    let
       hl = z80.env |> pop
-      env = z80.env
-      z80_1 = { z80 | env = { env | time = hl.time, sp = hl.sp } }
+      --env = z80.env
+      --z80_1 = { z80 | env = { env | time = hl.time, sp = hl.sp } }
+      main = z80.main
    in
-      z80_1 |> set_hl hl.value
+   case ixiyhl of
+       IX -> MainRegsWithSpPcAndTime { main | ix = hl.value } hl.sp z80.pc hl.time
+       IY -> MainRegsWithSpPcAndTime { main | iy = hl.value } hl.sp z80.pc hl.time
+       HL -> MainRegsWithSpAndTime { main | hl = hl.value } hl.sp hl.time
 
 execute_0xE3: Z80 -> Z80
 execute_0xE3 z80 =
@@ -3478,7 +3484,6 @@ group_xy ixiy old_z80 =
 -- case 0xC5: push(bc()); break;
 -- case 0xD1: de(pop()); break;
 -- case 0xD5: push(de()); break;
--- case 0xE1: xy=pop(); break;
 -- case 0xE5: push(xy); break;
 -- case 0xF1: af(pop()); break;
 -- case 0xF5: push(A<<8|flags()); break;
