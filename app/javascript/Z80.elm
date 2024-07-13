@@ -12,7 +12,7 @@ import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8, toHexString, toH
 import Z80Debug exposing (debug_log, debug_todo)
 import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta)
 import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, pop, set_mem, set_mem16, z80_in, z80_push, z80env_constructor)
-import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
+import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, shifter0, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (subName)
 import Z80Types exposing (IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, ProgramCounter, Z80, call, call_z80, imm16, imm8, jp, jp_z80, rst, rst_z80)
@@ -3875,14 +3875,14 @@ group_cb_dict = Dict.fromList
 --       in
 --         Whole x
 
-execute_CB0007: Int -> CpuTimePcAndValue -> Z80 -> IntWithFlagsTimeAndPC
-execute_CB0007 c_value raw z80 =
+execute_CB0007: CpuTimePcAndValue -> Z80 -> IntWithFlagsTimeAndPC
+execute_CB0007 raw z80 =
   let
-    o = Bitwise.and (c_value |> shiftRightBy 3) 7
+    --o = Bitwise.and (c_value |> shiftRightBy 3) 7
     --caseval = Bitwise.and c_value 0xC7
 
     --z = debug_log "group_cb raw" (raw.value |> toHexString2) Nothing
-    value = shifter o raw.value z80.flags
+    value = shifter0 raw.value z80.flags
     --w = debug_log "group_cb value" (value.value |> toHexString2) Nothing
     --env_1 = z80.env
     --x = { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set_flag_regs value.flags |> set408bit caseval value.value HL
@@ -3892,16 +3892,16 @@ execute_CB0007 c_value raw z80 =
 
 execute_CB00: Z80 -> Z80Delta
 execute_CB00 z80 =
-    let
-        x = z80 |> execute_CB0007 0x00 (z80 |> b_with_z80)
-        main = z80.main
-    in
-        FlagsWithPCMainAndCpuTime x.flags x.pc { main | b = x.value } x.time
+  let
+    x = z80 |> execute_CB0007 (z80 |> b_with_z80)
+    main = z80.main
+  in
+    FlagsWithPCMainAndCpuTime x.flags x.pc { main | b = x.value } x.time
 
 execute_CB01: Z80 -> Z80Delta
 execute_CB01 z80 =
   let
-    x = z80 |> execute_CB0007 0x01 (z80 |> c_with_z80)
+    x = z80 |> execute_CB0007 (z80 |> c_with_z80)
     main = z80.main
   in
     FlagsWithPCMainAndCpuTime x.flags x.pc { main | c = x.value } x.time
@@ -3909,7 +3909,7 @@ execute_CB01 z80 =
 execute_CB02: Z80 -> Z80Delta
 execute_CB02 z80 =
   let
-    x =  z80 |> execute_CB0007 0x02 (z80 |> d_with_z80)
+    x =  z80 |> execute_CB0007 (z80 |> d_with_z80)
     main = z80.main
   in
     FlagsWithPCMainAndCpuTime x.flags x.pc { main | d = x.value } x.time
@@ -3917,7 +3917,7 @@ execute_CB02 z80 =
 execute_CB03: Z80 -> Z80Delta
 execute_CB03 z80 =
   let
-    x = z80 |> execute_CB0007 0x03 (z80 |> e_with_z80)
+    x = z80 |> execute_CB0007 (z80 |> e_with_z80)
     main = z80.main
   in
     FlagsWithPCMainAndCpuTime x.flags x.pc { main | e = x.value } x.time
@@ -3925,21 +3925,21 @@ execute_CB03 z80 =
 execute_CB04: Z80 -> Z80Delta
 execute_CB04 z80 =
   let
-    x = z80 |> execute_CB0007 0x04 (z80 |> h_with_z80 HL)
+    x = z80 |> execute_CB0007 (z80 |> h_with_z80 HL)
   in
     FlagsWithPCMainAndCpuTime x.flags x.pc (z80.main |> set_h x.value HL) x.time
 
 execute_CB05: Z80 -> Z80Delta
 execute_CB05 z80 =
   let
-    x = z80 |> execute_CB0007 0x05 (z80 |> l_with_z80 HL)
+    x = z80 |> execute_CB0007 (z80 |> l_with_z80 HL)
   in
     FlagsWithPCMainAndCpuTime x.flags x.pc (z80.main |> set_l x.value HL) x.time
 
 execute_CB06: Z80 -> Z80Delta
 execute_CB06 z80 =
   let
-    x = z80 |> execute_CB0007 0x06 (z80 |> hl_deref_with_z80 HL)
+    x = z80 |> execute_CB0007 (z80 |> hl_deref_with_z80 HL)
     env = z80.env
     env_1 = { env | time = x.time } |> set_mem z80.main.hl x.value
   in
@@ -3948,7 +3948,7 @@ execute_CB06 z80 =
 execute_CB07: Z80 -> Z80Delta
 execute_CB07 z80 =
   let
-    x = z80 |> execute_CB0007 0x07 (z80 |> a_with_z80)
+    x = z80 |> execute_CB0007 (z80 |> a_with_z80)
     flags = x.flags
   in
     FlagsWithPcAndTime { flags | a = x.value } x.pc x.time
