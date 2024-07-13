@@ -1,10 +1,10 @@
 module Z80Types exposing (..)
 
-import Bitwise
+import Bitwise exposing (complement, shiftLeftBy)
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, add_cpu_time_time)
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8)
 import Z80Env exposing (Z80Env, Z80EnvWithPC, add_cpu_time_env, mem, mem16, set_mem, z80_push)
-import Z80Flags exposing (FlagRegisters)
+import Z80Flags exposing (FlagRegisters, c_F3, c_F5, c_F53)
 
 
 type alias MainRegisters =
@@ -537,3 +537,33 @@ set_a value z80 =
             z80.flags
     in
     { z80 | flags = { z80_flags | a = value } }
+
+get_bc : Z80 -> Int
+get_bc z80 =
+    z80.main.b |> shiftLeftBy8 |> Bitwise.or z80.main.c
+
+get_de : Z80 -> Int
+get_de z80 =
+    z80.main.d |> shiftLeftBy8 |> Bitwise.or z80.main.e
+
+dec_pc2: Z80 -> Z80
+dec_pc2 z80 =
+   { z80 | pc = Bitwise.and (z80.pc - 2) 0xFFFF }
+
+--	void bc(int v) {C=v&0xFF; B=v>>>8;}
+set_bc: Int -> Z80 -> Z80
+set_bc v z80 =
+    let
+        z80_main = z80.main
+    in
+        { z80 | main = { z80_main | b = shiftRightBy8 v, c = Bitwise.and v 0xFF }}
+
+
+--	void de(int v) {E=v&0xFF; D=v>>>8;}
+set_de: Int -> Z80 -> Z80
+set_de v z80 =
+    let
+        z80_main = z80.main
+    in
+        { z80 | main = { z80_main | d = shiftRightBy8 v, e = Bitwise.and v 0xFF } }
+
