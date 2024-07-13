@@ -554,8 +554,8 @@ pop z80 =
         v =
             z80 |> mem16 z80.sp
 
-        env =
+        time =
             v.time |> add_cpu_time_time 6
     in
-    CpuTimeSpAndValue env (Bitwise.and (z80.sp + 2) 0xFFFF) v.value
+    CpuTimeSpAndValue time (Bitwise.and (z80.sp + 2) 0xFFFF) v.value
 
