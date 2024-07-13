@@ -115,5 +115,38 @@ suite =
                   Expect.equal
                   {pc=new_z80.pc, sp=new_z80.env.sp, ix=new_z80.main.ix, top=(new_z80.env |> mem16 sp).value}
                   {pc = (addr + 2), sp = sp, ix = 0x3445, top=0xA000}
+            ,test "0xEB (EX DE, HL)" <|
+            \_ ->
+               let
+                  new_env = z80env
+                               |> set_mem addr 0xEB
+                  new_z80 = execute_instruction { z80 | env = { new_env | sp = 0xFF77 },
+                                                        main = { z80main | hl = 0x5051, d = 0x60, e = 0x00, b = 0x00, c = 0x05 }, flags = { flags | a = 0x60 } }
+               in
+                  Expect.equal {pc=(addr + 1), hl=0x6000, d=0x50, e=0x51}
+                  {pc=new_z80.pc, hl=new_z80.main.hl, d=new_z80.main.d, e =new_z80.main.e}
+            ,test "0xE5 PUSH HL" <|
+            \_ ->
+               let
+                  new_env = z80env
+                               |> set_mem addr 0xE5
+                  new_z80 = execute_instruction { z80 | env = new_env,
+                                                        main = { z80main | hl = 0xA000 } }
+               in
+                  Expect.equal
+                  {pc=new_z80.pc, sp=new_z80.env.sp, top=(new_z80.env |> mem16 (sp - 2)).value}
+                  {pc = (addr + 1), sp = (sp - 2), top=0xA000}
+            ,test "0xFD 0xE5 PUSH IY" <|
+            \_ ->
+               let
+                  new_env = z80env
+                               |> set_mem addr 0xFD
+                               |> set_mem (addr + 1) 0xE5
+                  new_z80 = execute_instruction { z80 | env = new_env,
+                                                        main = { z80main | iy = 0xA000 } }
+               in
+                  Expect.equal
+                  {pc=new_z80.pc, sp=new_z80.env.sp, top=(new_z80.env |> mem16 (sp - 2)).value}
+                  {pc = (addr + 2), sp = (sp - 2), top=0xA000}
          ]
       ]

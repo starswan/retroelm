@@ -2387,7 +2387,8 @@ lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
           (0xBE, execute_0xBE),
-          (0xCB, execute_0xCB)
+          (0xCB, execute_0xCB),
+          (0xE5, execute_0xE5)
     ]
 
 makeLt40Array: Array (Maybe ((IXIYHL -> Z80 -> Z80Delta)))
@@ -2566,7 +2567,6 @@ lt40_dict_lite = Dict.fromList
           (0xF6, execute_0xF6),
           (0xF5, execute_0xF5),
           (0xED, group_ed),
-          (0xE5, execute_0xE5),
           (0xF1, execute_0xF1),
           (0xF8, execute_0xF8),
           (0xEE, execute_0xEE),
@@ -3185,12 +3185,12 @@ execute_0xE3 ixiyhl z80 =
        IY -> MainRegsWithEnvAndPc { main | iy = hl.value } pushed z80.pc
        HL -> MainRegsWithEnv { main | hl = hl.value } pushed
 
-
-execute_0xE5: Z80 -> Z80
-execute_0xE5 z80 =
+execute_0xE5: IXIYHL -> Z80 -> Z80
+execute_0xE5 ixiyhl z80 =
    -- case 0xE5: push(HL); break;
+   -- case 0xE5: push(xy); break;
    let
-       pushed = z80.env |> z80_push z80.main.hl
+       pushed = z80.env |> z80_push (z80.main |> get_xy ixiyhl)
    in
       { z80 | env = pushed }
 
@@ -3494,7 +3494,6 @@ group_xy ixiy old_z80 =
 -- case 0xC5: push(bc()); break;
 -- case 0xD1: de(pop()); break;
 -- case 0xD5: push(de()); break;
--- case 0xE5: push(xy); break;
 -- case 0xF1: af(pop()); break;
 -- case 0xF5: push(A<<8|flags()); break;
 -- case 0xC3: MP=PC=imm16(); break;
