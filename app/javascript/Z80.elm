@@ -2387,7 +2387,8 @@ lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
           (0xBE, execute_0xBE),
-          (0xCB, execute_0xCB)
+          (0xCB, execute_0xCB),
+          (0xE3, execute_0xE3)
     ]
 
 makeLt40Array: Array (Maybe ((IXIYHL -> Z80 -> Z80Delta)))
@@ -2567,7 +2568,6 @@ lt40_dict_lite = Dict.fromList
           (0xF5, execute_0xF5),
           (0xED, group_ed),
           (0xE5, execute_0xE5),
-          (0xE3, execute_0xE3),
           (0xF1, execute_0xF1),
           (0xF8, execute_0xF8),
           (0xEE, execute_0xEE),
@@ -3165,16 +3165,23 @@ execute_0xE1 ixiyhl z80 =
        IY -> MainRegsWithSpPcAndTime { main | iy = hl.value } hl.sp z80.pc hl.time
        HL -> MainRegsWithSpAndTime { main | hl = hl.value } hl.sp hl.time
 
-execute_0xE3: Z80 -> Z80
-execute_0xE3 z80 =
-   -- case 0xE3: v=pop(); push(HL); MP=HL=v; time+=2; break;
-   let
-      v = z80.env |> pop
-      env = z80.env
-      z80_1 = { z80 | env = { env | time = v.time, sp = v.sp } }
-      pushed = z80_1.env |> z80_push z80_1.main.hl
-   in
-      { z80_1 | env = pushed } |> set_hl v.value |> add_cpu_time 2
+execute_0xE3: IXIYHL -> Z80 -> Z80
+execute_0xE3 ixiyhl z80 =
+  -- case 0xE3: v=pop(); push(HL); MP=HL=v; time+=2; break;
+  -- case 0xE3: v=pop(); push(xy); MP=xy=v; time+=2; break;
+  let
+    v = z80.env |> pop
+    env = z80.env
+    z80_1 = { z80 | env = { env | time = v.time, sp = v.sp } }
+    pushed = z80_1.env |> z80_push (z80_1.main |> get_xy ixiyhl) |> add_cpu_time_env 2
+    z80_2 = { z80_1 | env = pushed }
+    main = z80_2.main
+  in
+    case ixiyhl of
+      IX -> { z80_2 | main = { main | ix = v.value } }
+      IY -> { z80_2 | main = { main | iy = v.value } }
+      HL -> { z80_2 | main = { main | hl = v.value } }
+
 
 execute_0xE5: Z80 -> Z80
 execute_0xE5 z80 =
@@ -3500,7 +3507,6 @@ group_xy ixiy old_z80 =
 -- case 0xCD: call(true); break;
 -- case 0xD3: env.out(v=imm8()|A<<8,A); MP=v+1&0xFF|v&0xFF00; time+=4; break;
 -- case 0xDB: MP=(v=imm8()|A<<8)+1; A=env.in(v); time+=4; break;
--- case 0xE3: v=pop(); push(xy); MP=xy=v; time+=2; break;
 -- case 0xEB: v=HL; HL=de(); de(v); break;
 -- case 0xF3: IFF=0; break;
 -- case 0xFB: IFF=3; break;
