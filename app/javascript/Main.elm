@@ -9,7 +9,7 @@ import Browser
 import Browser.Events exposing (onKeyDown, onKeyUp)
 import Dict exposing (values)
 import Html exposing (Html, button, div, h2, span, text)
-import Html.Attributes exposing (disabled, id, style)
+import Html.Attributes exposing (disabled, id, style, tabindex)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import Keyboard exposing (ctrlKeyDownEvent, ctrlKeyUpEvent, keyDownEvent, keyUpEvent)
@@ -29,11 +29,11 @@ import Z80Screen exposing (ScreenLine, screenLines, spectrumColour)
 
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
+-- 12th Jul 2024 Firefox  debug        (12.4 Hz)         live        (17.9 Hz)
+--
 -- 23rd Jun 2024 Chromium debug 70.5ms (14.2 Hz) 106 sec live 36.3ms (27.6 Hz) 163 sec
 -- 23rd Jun 2024 Firefox                                 live 61.5ms (16.2 Hz) 160 sec
 --
--- 14th Feb 2024 Chromium debug 70.3ms (14.2 Hz) 184     live 42.1ms (23.7 Hz)  73 sec
--- 14th Feb 2024 Firefox  debug 96.3ms (10.4 Hz) 217     live 72.0ms (13.9 Hz) 355 sec
 -- 29th Jan 2024 Chromium debug 69.9ms (14.3 Hz) 365 sec live 37.8ms (26.6 Hz)
 -- 29th Jan 2024 Firefox  debug 95.1ms (10.5 Hz)         live 59.3ms (16.8 Hz) 900 sec
 -- Run at 25 (40Hz) - i7 laptop can do 20Hz in firefox dev mode
@@ -145,11 +145,13 @@ view model =
                 ]
             , button [ onClick LoadTape, disabled load_disabled ] [ text "Load Tape" ]
             ]
-        , svg
-            [ height (272 * c_SCALEFACTOR |> String.fromInt), width (352 * c_SCALEFACTOR |> String.fromInt), viewBox "0 0 352 272" ]
-            --<rect width="100%" height="100%" fill="green" />
-            screen_data_list
-
+        , div [tabindex 0, id "spectrum"]
+        [
+            svg
+                [ height (272 * c_SCALEFACTOR |> String.fromInt), width (352 * c_SCALEFACTOR |> String.fromInt), viewBox "0 0 352 272" ]
+                --<rect width="100%" height="100%" fill="green" />
+                screen_data_list
+        ]
         --,svg [style "height" "192px", style "width" "256px"] (List.indexedMap lineListToSvg lines |> List.concat)
         ]
 
