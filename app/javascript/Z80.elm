@@ -3156,17 +3156,14 @@ execute_0xE1 ixiyhl z80 =
    -- case 0xE1: xy=pop(); break;
    let
       hl = z80.env |> pop
-      env = z80.env
-      z80_1 = { z80 | env = { env | time = hl.time, sp = hl.sp } }
+      --env = z80.env
+      --z80_1 = { z80 | env = { env | time = hl.time, sp = hl.sp } }
       main = z80.main
    in
    case ixiyhl of
-       IX -> { z80_1 | main = { main | ix = hl.value } } |> Whole
-       IY -> { z80_1 | main = { main | iy = hl.value } } |> Whole
-       HL -> { z80_1 | main = { main | hl = hl.value } } |> Whole
-       --IX -> MainRegsWithSpAndTime { main | ix = hl.value } hl.sp hl.time
-       --IY -> MainRegsWithSpAndTime { main | iy = hl.value } hl.sp hl.time
-       --HL -> MainRegsWithSpAndTime { main | hl = hl.value } hl.sp hl.time
+       IX -> MainRegsWithSpPcAndTime { main | ix = hl.value } hl.sp z80.pc hl.time
+       IY -> MainRegsWithSpPcAndTime { main | iy = hl.value } hl.sp z80.pc hl.time
+       HL -> MainRegsWithSpAndTime { main | hl = hl.value } hl.sp hl.time
 
 execute_0xE3: Z80 -> Z80
 execute_0xE3 z80 =
