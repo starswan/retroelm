@@ -2387,8 +2387,7 @@ lt40_dict: Dict Int (IXIYHL -> Z80 -> Z80)
 lt40_dict = Dict.fromList
     [
           (0xBE, execute_0xBE),
-          (0xCB, execute_0xCB),
-          (0xE3, execute_0xE3)
+          (0xCB, execute_0xCB)
     ]
 
 makeLt40Array: Array (Maybe ((IXIYHL -> Z80 -> Z80Delta)))
@@ -2685,6 +2684,7 @@ lt40_delta_dict = Dict.fromList
           (0xBC, execute_0xBC),
           (0xBD, execute_0xBD),
           (0xE1, execute_0xE1),
+          (0xE3, execute_0xE3),
           (0xE9, execute_0xE9)
     ]
 
@@ -3165,22 +3165,25 @@ execute_0xE1 ixiyhl z80 =
        IY -> MainRegsWithSpPcAndTime { main | iy = hl.value } hl.sp z80.pc hl.time
        HL -> MainRegsWithSpAndTime { main | hl = hl.value } hl.sp hl.time
 
-execute_0xE3: IXIYHL -> Z80 -> Z80
+execute_0xE3: IXIYHL -> Z80 -> Z80Delta
 execute_0xE3 ixiyhl z80 =
   -- case 0xE3: v=pop(); push(HL); MP=HL=v; time+=2; break;
   -- case 0xE3: v=pop(); push(xy); MP=xy=v; time+=2; break;
   let
-    v = z80.env |> pop
+    hl = z80.env |> pop
     env = z80.env
-    z80_1 = { z80 | env = { env | time = v.time, sp = v.sp } }
+    z80_1 = { z80 | env = { env | time = hl.time, sp = hl.sp } }
     pushed = z80_1.env |> z80_push (z80_1.main |> get_xy ixiyhl) |> add_cpu_time_env 2
-    z80_2 = { z80_1 | env = pushed }
-    main = z80_2.main
+    --z80_2 = { z80_1 | env = pushed }
+    main = z80_1.main
   in
     case ixiyhl of
-      IX -> { z80_2 | main = { main | ix = v.value } }
-      IY -> { z80_2 | main = { main | iy = v.value } }
-      HL -> { z80_2 | main = { main | hl = v.value } }
+      --IX -> { z80_2 | main = { main | ix = v.value } }
+      --IY -> { z80_2 | main = { main | iy = v.value } }
+      --HL -> { z80_2 | main = { main | hl = v.value } }
+       IX -> MainRegsWithEnvAndPc { main | ix = hl.value } pushed z80.pc
+       IY -> MainRegsWithEnvAndPc { main | iy = hl.value } pushed z80.pc
+       HL -> MainRegsWithEnv { main | hl = hl.value } pushed
 
 
 execute_0xE5: Z80 -> Z80
