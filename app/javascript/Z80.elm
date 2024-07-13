@@ -12,7 +12,7 @@ import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8, toHexString, toH
 import Z80Debug exposing (debug_log, debug_todo)
 import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta)
 import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, pop, set_mem, set_mem16, z80_in, z80_push, z80env_constructor)
-import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, z80_add, z80_and, z80_or, z80_sub, z80_xor)
+import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, bit, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, shifter, shifter0, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (subName)
 import Z80Types exposing (IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, ProgramCounter, Z80, call, call_z80, imm16, imm8, jp, jp_z80, rst, rst_z80)
@@ -3882,7 +3882,7 @@ execute_CB0007 raw z80 =
     --caseval = Bitwise.and c_value 0xC7
 
     --z = debug_log "group_cb raw" (raw.value |> toHexString2) Nothing
-    value = shifter 0x00 raw.value z80.flags
+    value = shifter0 raw.value z80.flags
     --w = debug_log "group_cb value" (value.value |> toHexString2) Nothing
     --env_1 = z80.env
     --x = { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set_flag_regs value.flags |> set408bit caseval value.value HL

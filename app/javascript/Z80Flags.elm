@@ -252,6 +252,45 @@ shifter o v_in flags =
    in
       IntWithFlags fr { flags | ff = v, fr = fr, fb = 0, fa = (Bitwise.or 0x100 fr) }
 
+shifter_v: Int -> FlagRegisters -> IntWithFlags
+shifter_v v flags =
+   let
+      fr = Bitwise.and 0xFF v
+   in
+      IntWithFlags fr { flags | ff = v, fr = fr, fb = 0, fa = (Bitwise.or 0x100 fr) }
+
+shifter0: Int -> FlagRegisters -> IntWithFlags
+shifter0 v_in flags =
+    flags |> shifter_v (shiftRightBy 7 (v_in * 0x101))
+
+shifter1: Int -> FlagRegisters -> IntWithFlags
+shifter1 v_in flags =
+    flags |> shifter_v (shiftRightBy 24 (v_in * 0x80800000))
+
+shifter2: Int -> FlagRegisters -> IntWithFlags
+shifter2 v_in flags =
+    flags |> shifter_v (Bitwise.or (shiftLeftBy1 v_in) (Bitwise.and (shiftRightBy8 flags.ff) 1))
+
+shifter3: Int -> FlagRegisters -> IntWithFlags
+shifter3 v_in flags =
+    flags |> shifter_v (shiftRightBy1 (Bitwise.or (v_in * 0x201) (Bitwise.and flags.ff 0x100)))
+
+shifter4: Int -> FlagRegisters -> IntWithFlags
+shifter4 v_in flags =
+    flags |> shifter_v (shiftLeftBy1 v_in)
+
+shifter5: Int -> FlagRegisters -> IntWithFlags
+shifter5 v_in flags =
+    flags |> shifter_v (Bitwise.or (Bitwise.or (shiftRightBy1 v_in) (Bitwise.and v_in 0x80)) (shiftLeftBy8 v_in))
+
+shifter6: Int -> FlagRegisters -> IntWithFlags
+shifter6 v_in flags =
+    flags |> shifter_v (Bitwise.or (shiftLeftBy1 v_in) 1)
+
+shifter7: Int -> FlagRegisters -> IntWithFlags
+shifter7 v_in flags =
+    flags |> shifter_v (shiftRightBy1 (v_in * 0x201))
+
 add16: Int -> Int -> FlagRegisters -> IntWithFlagsAndTime
 add16 a b main_flags =
     let
