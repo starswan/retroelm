@@ -10,6 +10,7 @@ import Bitwise exposing (complement, shiftLeftBy, shiftRightBy)
 import Dict exposing (Dict)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString2)
 import Z80Debug exposing (debug_log, debug_todo)
+import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (m1, mem, mem16, set_mem, set_mem16, z80_in)
 import Z80Flags exposing (c_F3, c_F5, c_F53, c_FC)
 import Z80Types exposing (IXIYHL(..), Z80, add_cpu_time, dec_pc2, get_bc, get_de, imm16, inc_pc, set408bit, set_bc, set_de)
@@ -242,7 +243,7 @@ execute_ED70: Z80 -> Z80
 execute_ED70 z80 =
     z80 |> execute_ED40485058606870 0x70
 
-group_ed: Z80 -> Z80
+group_ed: Z80 -> Z80Delta
 group_ed z80_0 =
    let
       ints = z80_0.interrupts
@@ -255,7 +256,7 @@ group_ed z80_0 =
       ed_func = group_ed_dict |> Dict.get c.value
    in
       case ed_func of
-        Just f -> z80 |> f
+        Just f -> z80 |> f |> Whole
         Nothing ->
           --// -------------- >8 ed
           ---- case 0x6A: adc_hl(HL); break;
@@ -278,7 +279,7 @@ group_ed z80_0 =
          --      flags_1 = { flags | a = 0 } |> z80_sub flags.a
          --   in
          --      z80 |> set_flag_regs flags_1
-            debug_todo "group_ed" (c.value |> toHexString2) z80
+            debug_todo "group_ed" (c.value |> toHexString2) z80 |> Whole
 -- case 0x78: MP=(v=B<<8|C)+1; f_szh0n0p(A=env.in(v)); time+=4; break;
 -- case 0x41: env.out(B<<8|C,B); time+=4; break;
 -- case 0x49: env.out(B<<8|C,C); time+=4; break;
