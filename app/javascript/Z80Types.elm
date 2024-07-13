@@ -2,7 +2,8 @@ module Z80Types exposing (..)
 
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, add_cpu_time_time)
-import Z80Env exposing (Z80Env, Z80EnvWithPC, mem, mem16, z80_push)
+import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8)
+import Z80Env exposing (Z80Env, Z80EnvWithPC, add_cpu_time_env, mem, mem16, set_mem, z80_push)
 import Z80Flags exposing (FlagRegisters)
 type alias MainRegisters =
    {
@@ -65,6 +66,10 @@ type alias IntWithFlagsTimeAndPC =
      pc: Int
   }
 
+-- Think this could be a useful parameter to execute_lt40 to avoid the duplication
+-- problem currently being experienced in function group_xy
+type IXIYHL = IX | IY | HL
+type IXIY = IXIY_IX | IXIY_IY
 
 --
 --	private int imm8()
@@ -186,3 +191,200 @@ rst c z80 =
      pushed  = z80.env |> z80_push z80.pc
    in
      Z80EnvWithPC pushed (c - 199)
+
+a_with_z80: Z80 -> CpuTimePcAndValue
+a_with_z80 z80 =
+    CpuTimePcAndValue z80.env.time z80.pc z80.flags.a
+
+add_cpu_time: Int -> Z80 -> Z80
+add_cpu_time value z80 =
+   let
+      env = z80.env |> add_cpu_time_env value
+   in
+      { z80 | env = env }
+
+b_with_z80: Z80 -> CpuTimePcAndValue
+b_with_z80 z80 =
+    CpuTimePcAndValue z80.env.time z80.pc z80.main.b
+
+c_with_z80: Z80 -> CpuTimePcAndValue
+c_with_z80 z80 =
+    CpuTimePcAndValue z80.env.time z80.pc z80.main.c
+
+d_with_z80: Z80 -> CpuTimePcAndValue
+d_with_z80 z80 =
+    CpuTimePcAndValue z80.env.time z80.pc z80.main.d
+
+e_with_z80: Z80 -> CpuTimePcAndValue
+e_with_z80 z80 =
+    CpuTimePcAndValue z80.env.time z80.pc z80.main.e
+
+get_ixiy_xy: IXIY -> MainWithIndexRegisters -> Int
+get_ixiy_xy ixiy z80_main =
+   case ixiy of
+      IXIY_IX -> z80_main.ix
+      IXIY_IY -> z80_main.iy
+
+h_with_z80: IXIYHL -> Z80 -> CpuTimePcAndValue
+h_with_z80 ixiyhl z80 =
+    CpuTimePcAndValue z80.env.time z80.pc (shiftRightBy8 (get_xy ixiyhl z80.main))
+
+hl_deref_with_z80: IXIYHL -> Z80 -> CpuTimePcAndValue
+hl_deref_with_z80 ixiyhl z80 =
+    let
+        a = env_mem_hl ixiyhl z80
+        new_b = mem a.value z80.env
+    in
+        CpuTimePcAndValue new_b.time a.pc new_b.value
+
+inc_pc: Z80 -> Int
+inc_pc z80 =
+   Bitwise.and (z80.pc + 1) 0xFFFF
+
+inc_pc2: Z80 -> Int
+inc_pc2 z80 =
+   Bitwise.and (z80.pc + 2) 0xFFFF
+
+l_with_z80: IXIYHL -> Z80 -> CpuTimePcAndValue
+l_with_z80 ixiyhl z80 =
+    CpuTimePcAndValue z80.env.time z80.pc (Bitwise.and (get_xy ixiyhl z80.main) 0xFF)
+
+-- There appear to be many situations where we already know that we don't need all
+-- this complexity as we're just doing LD A,B or something similar - so stop using it in those cases
+load408bit: Int -> IXIYHL -> Z80 -> CpuTimePcAndValue
+load408bit c_value ixiyhl z80 =
+   case (Bitwise.and c_value 0x07) of
+      0 -> b_with_z80 z80
+      1 -> c_with_z80 z80
+      2 -> d_with_z80 z80
+      3 -> e_with_z80 z80
+      4 -> h_with_z80 ixiyhl z80
+      5 -> l_with_z80 ixiyhl z80
+      6 -> hl_deref_with_z80 ixiyhl z80
+      _ -> a_with_z80 z80
+
+set408bit: Int -> Int -> IXIYHL -> Z80 -> Z80
+set408bit c value ixiyhl z80 =
+    case (Bitwise.and c 0x07) of
+       0 -> z80 |> set_b value
+       1 -> z80 |> set_c value
+       2 -> z80 |> set_d value
+       3 -> z80 |> set_e value
+       4 -> set_h_z80 value ixiyhl z80
+       5 -> set_l_z80 value ixiyhl z80
+       6 -> { z80 | env = set_mem z80.main.hl value z80.env }
+       _ -> z80 |> set_a value
+
+set_b: Int -> Z80 -> Z80
+set_b value z80 =
+   let
+      z80_main = z80.main
+   in
+    { z80 | main = { z80_main | b = value } }
+
+set_c: Int -> Z80 -> Z80
+set_c value z80 =
+   let
+      z80_main = z80.main
+   in
+    { z80 | main = { z80_main | c = value } }
+
+set_d: Int -> Z80 -> Z80
+set_d value z80 =
+   let
+      z80_main = z80.main
+   in
+    { z80 | main = { z80_main | d = value } }
+
+set_e: Int -> Z80 -> Z80
+set_e value z80 =
+   let
+      z80_main = z80.main
+   in
+    { z80 | main = { z80_main | e = value } }
+
+set_flag_regs: FlagRegisters -> Z80 -> Z80
+set_flag_regs flags z80 =
+   { z80 | flags = flags }
+
+set_h: Int -> IXIYHL -> MainWithIndexRegisters -> MainWithIndexRegisters
+set_h value ixiyhl z80 =
+   let
+      xy = get_xy ixiyhl z80
+   in
+      set_xy (Bitwise.or (Bitwise.and xy 0xFF) (shiftLeftBy8 value)) ixiyhl z80
+
+set_l: Int -> IXIYHL -> MainWithIndexRegisters -> MainWithIndexRegisters
+set_l value ixiyhl z80 =
+   let
+     xy = get_xy ixiyhl z80
+   in
+     set_xy (Bitwise.or (Bitwise.and xy 0xFF00) value) ixiyhl z80
+
+set_h_z80: Int -> IXIYHL -> Z80 -> Z80
+set_h_z80 value ixiyhl z80 =
+    let
+        main = z80.main |> set_h value ixiyhl
+    in
+        { z80 | main = main }
+
+set_l_z80: Int -> IXIYHL -> Z80 -> Z80
+set_l_z80 value ixiyhl z80 =
+    let
+        main = z80.main |> set_l value ixiyhl
+    in
+        { z80 | main = main }
+
+get_xy: IXIYHL -> MainWithIndexRegisters -> Int
+get_xy ixiyhl z80_main =
+   case ixiyhl of
+      IX -> z80_main.ix
+      IY -> z80_main.iy
+      HL -> z80_main.hl
+
+set_xy: Int -> IXIYHL -> MainWithIndexRegisters -> MainWithIndexRegisters
+set_xy value ixiyhl z80 =
+   case ixiyhl of
+      IX -> { z80 | ix = value }
+      IY -> { z80 | iy = value }
+      HL -> { z80 | hl = value }
+
+--
+--	private int getd(int xy)
+--	{
+--		int d = env.mem(PC);
+--		PC = (char)(PC+1);
+--		time += 8;
+--		return MP = (char)(xy + (byte)d);
+--	}
+--getd_value: Int -> Z80 -> CpuTimePcAndValue
+--getd_value xy z80 =
+--   let
+--      d = z80.env |> mem z80.pc
+--   in
+--      CpuTimePcAndValue (d.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (xy + byte d.value))
+env_mem_hl: IXIYHL -> Z80 -> CpuTimePcAndValue
+env_mem_hl ixiyhl z80 =
+  case ixiyhl of
+    HL -> CpuTimePcAndValue z80.env.time z80.pc z80.main.hl
+    IX ->
+      let
+        dval = z80.env |> mem z80.pc
+      in
+        CpuTimePcAndValue (dval.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (z80.main.ix + byte dval.value))
+    IY ->
+      let
+        dval = z80.env |> mem z80.pc
+      in
+        CpuTimePcAndValue (dval.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (z80.main.iy + byte dval.value))
+
+set_a: Int -> Z80 -> Z80
+set_a value z80 =
+    let
+        z80_flags = z80.flags
+    in
+       { z80 | flags = { z80_flags | a = value } }
+
+
+
+
