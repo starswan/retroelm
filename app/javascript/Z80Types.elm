@@ -1,10 +1,10 @@
 module Z80Types exposing (..)
 
-import Bitwise exposing (complement, shiftLeftBy)
+import Bitwise
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, add_cpu_time_time)
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8)
 import Z80Env exposing (Z80Env, Z80EnvWithPC, add_cpu_time_env, mem, mem16, set_mem, z80_push)
-import Z80Flags exposing (FlagRegisters, c_F3, c_F5, c_F53)
+import Z80Flags exposing (FlagRegisters)
 
 
 type alias MainRegisters =
