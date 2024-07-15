@@ -14,14 +14,14 @@ import Z80Types exposing (IXIY, IXIYHL(..), IntWithFlagsTimeAndPC, Z80, a_with_z
 group_cb_dict : Dict Int (Z80 -> Z80Delta)
 group_cb_dict =
     Dict.fromList
-        [ ( 0x00, execute_CB00 )
-        , ( 0x01, execute_CB01 )
-        , ( 0x02, execute_CB02 )
-        , ( 0x03, execute_CB03 )
-        , ( 0x04, execute_CB04 )
-        , ( 0x05, execute_CB05 )
-        , ( 0x06, execute_CB06 )
-        , ( 0x07, execute_CB07 )
+        [--( 0x00, execute_CB00 )
+         --, ( 0x01, execute_CB01 )
+         --, ( 0x02, execute_CB02 )
+         --, ( 0x03, execute_CB03 )
+         --, ( 0x04, execute_CB04 )
+         --, ( 0x05, execute_CB05 )
+         --, ( 0x06, execute_CB06 )
+         --, ( 0x07, execute_CB07 )
         ]
 
 
@@ -192,6 +192,9 @@ group_cb tmp_z80 =
             Bitwise.and c.value 0xC7
 
         --y = debug_log "group_cb caseval" (caseval |> toHexString2) Nothing
+        -- The original plan with this is not clever enough - there are
+        -- 3 middle bits (0-7) that are captured by the 'o' value.
+        -- Tests required for CB xx for all values of xx
         cb_func =
             group_cb_dict |> Dict.get c.value
     in
@@ -200,7 +203,33 @@ group_cb tmp_z80 =
             z80 |> f
 
         Nothing ->
-            if caseval >= 0x40 && caseval <= 0x47 then
+            -- case 0x00: B=shifter(o,B); break;
+            -- case 0x01: C=shifter(o,C); break;
+            -- case 0x02: D=shifter(o,D); break;
+            -- case 0x03: E=shifter(o,E); break;
+            -- case 0x04: HL=HL&0xFF|shifter(o,HL>>>8)<<8; break;
+            -- case 0x05: HL=HL&0xFF00|shifter(o,HL&0xFF); break;
+            -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
+            -- case 0x07: A=shifter(o,A); break;
+            if caseval < 0x08 then
+                let
+                    raw =
+                        z80 |> load408bit caseval HL
+
+                    --z = debug_log "group_cb raw" (raw.value |> toHexString2) Nothing
+                    value =
+                        shifter o raw.value z80.flags
+
+                    --w = debug_log "group_cb value" (value.value |> toHexString2) Nothing
+                    env_1 =
+                        z80.env
+
+                    x =
+                        { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set_flag_regs value.flags |> set408bit caseval value.value HL
+                in
+                Whole x
+
+            else if caseval >= 0x40 && caseval <= 0x47 then
                 -- case 0x40: bit(o,B); break;
                 -- case 0x41: bit(o,C); break;
                 -- case 0x42: bit(o,D); break;
