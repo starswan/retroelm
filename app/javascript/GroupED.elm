@@ -7,13 +7,14 @@ module GroupED exposing (..)
 --		switch(c) {
 
 import Bitwise exposing (complement, shiftLeftBy, shiftRightBy)
+import CpuTimeCTime exposing (add_cpu_time_time)
 import Dict exposing (Dict)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString2)
 import Z80Debug exposing (debug_log, debug_todo)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (m1, mem, mem16, set_mem, set_mem16, z80_in)
 import Z80Flags exposing (c_F3, c_F5, c_F53, c_FC)
-import Z80Types exposing (IXIYHL(..), Z80, add_cpu_time, dec_pc2, get_bc, get_de, imm16, inc_pc, set408bit, set_bc, set_de)
+import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, dec_pc2, get_bc, get_de, imm16, inc_pc, set408bit, set_bc, set_de)
 
 execute_ED42: Z80 -> Z80Delta
 execute_ED42 z80 =
@@ -31,12 +32,14 @@ execute_ED43 z80 =
      z80_2 = { z80 | pc = v.pc }
      env = z80_2.env |> set_mem16 v.value (Bitwise.or (shiftLeftBy8 z80.main.b) z80.main.c)
    in
-     { z80_2 | env = env } |> add_cpu_time 6 |> Whole
+     --{ z80_2 | env = env } |> add_cpu_time 6 |> Whole
+     EnvWithPc env v.pc
 
 execute_ED47: Z80 -> Z80Delta
 execute_ED47 z80 =
    -- case 0x47: i(A); time++; break;
-   z80 |> set_i z80.flags.a |> add_cpu_time 1 |> Whole
+   --z80 |> set_i z80.flags.a |> add_cpu_time 1 |> Whole
+   InterruptsWithCpuTime (z80 |> set_i z80.flags.a) (z80.env.time |> add_cpu_time_time 1)
 
 execute_ED4B: Z80 -> Z80Delta
 execute_ED4B z80 =
@@ -378,12 +381,13 @@ sbc_hl b z80 =
       ff = shiftRightBy8 r1
       fa = shiftRightBy8 a
       fb = complement (shiftRightBy8 b)
-      r = Bitwise.and r1 0xFFFF
+      r = char r1
       fr = Bitwise.or (shiftRightBy8 r) (shiftLeftBy8 r)
       main = z80.main
       flags = z80.flags
    in
-      { z80 | main = { main | hl = r }, flags = { flags | ff = ff, fa = fa, fb = fb, fr = fr} } |> add_cpu_time 7 |> Whole
+      --{ z80 | main = { main | hl = r }, flags = { flags | ff = ff, fa = fa, fb = fb, fr = fr} } |> add_cpu_time 7 |> Whole
+      FlagsWithPCMainAndCpuTime { flags | ff = ff, fa = fa, fb = fb, fr = fr} z80.pc { main | hl = r } (z80.env.time |> add_cpu_time_time 7)
 
 set_im_direct: Int -> Z80 -> Z80Delta
 set_im_direct value z80 =
@@ -443,11 +447,12 @@ ldir i r z80 =
       { z80_4 | flags = { flags | fr = fr, ff = ff, fa = v, fb = v } } |> Whole
 
 --	void i(int v) {IR = IR&0xFF | v<<8;}
-set_i: Int -> Z80 -> Z80
+set_i: Int -> Z80 -> InterruptRegisters
 set_i v z80 =
     let
         ir = Bitwise.or (Bitwise.and z80.interrupts.ir 0xFF) (shiftLeftBy8 v)
         interrupts = z80.interrupts
     in
-        { z80 | interrupts = { interrupts | ir = ir } }
+        --{ z80 | interrupts = { interrupts | ir = ir } }
+        { interrupts | ir = ir }
 
