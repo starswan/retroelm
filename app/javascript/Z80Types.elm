@@ -329,101 +329,6 @@ l_with_z80 ixiyhl z80 =
 
 
 
--- There appear to be many situations where we already know that we don't need all
--- this complexity as we're just doing LD A,B or something similar - so stop using it in those cases
-
-
-load408bit : Int -> IXIYHL -> Z80 -> CpuTimePcAndValue
-load408bit c_value ixiyhl z80 =
-    case Bitwise.and c_value 0x07 of
-        0 ->
-            b_with_z80 z80
-
-        1 ->
-            c_with_z80 z80
-
-        2 ->
-            d_with_z80 z80
-
-        3 ->
-            e_with_z80 z80
-
-        4 ->
-            h_with_z80 ixiyhl z80
-
-        5 ->
-            l_with_z80 ixiyhl z80
-
-        6 ->
-            hl_deref_with_z80 ixiyhl z80
-
-        _ ->
-            a_with_z80 z80
-
-
-set408bit : Int -> Int -> IXIYHL -> Z80 -> Z80
-set408bit c value ixiyhl z80 =
-    case Bitwise.and c 0x07 of
-        0 ->
-            z80 |> set_b value
-
-        1 ->
-            z80 |> set_c value
-
-        2 ->
-            z80 |> set_d value
-
-        3 ->
-            z80 |> set_e value
-
-        4 ->
-            set_h_z80 value ixiyhl z80
-
-        5 ->
-            set_l_z80 value ixiyhl z80
-
-        6 ->
-            { z80 | env = set_mem z80.main.hl value z80.env }
-
-        _ ->
-            z80 |> set_a value
-
-
-set_b : Int -> Z80 -> Z80
-set_b value z80 =
-    let
-        z80_main =
-            z80.main
-    in
-    { z80 | main = { z80_main | b = value } }
-
-
-set_c : Int -> Z80 -> Z80
-set_c value z80 =
-    let
-        z80_main =
-            z80.main
-    in
-    { z80 | main = { z80_main | c = value } }
-
-
-set_d : Int -> Z80 -> Z80
-set_d value z80 =
-    let
-        z80_main =
-            z80.main
-    in
-    { z80 | main = { z80_main | d = value } }
-
-
-set_e : Int -> Z80 -> Z80
-set_e value z80 =
-    let
-        z80_main =
-            z80.main
-    in
-    { z80 | main = { z80_main | e = value } }
-
 
 set_flag_regs : FlagRegisters -> Z80 -> Z80
 set_flag_regs flags z80 =
@@ -446,24 +351,6 @@ set_l value ixiyhl z80 =
             get_xy ixiyhl z80
     in
     set_xy (Bitwise.or (Bitwise.and xy 0xFF00) value) ixiyhl z80
-
-
-set_h_z80 : Int -> IXIYHL -> Z80 -> Z80
-set_h_z80 value ixiyhl z80 =
-    let
-        main =
-            z80.main |> set_h value ixiyhl
-    in
-    { z80 | main = main }
-
-
-set_l_z80 : Int -> IXIYHL -> Z80 -> Z80
-set_l_z80 value ixiyhl z80 =
-    let
-        main =
-            z80.main |> set_l value ixiyhl
-    in
-    { z80 | main = main }
 
 
 get_xy : IXIYHL -> MainWithIndexRegisters -> Int
@@ -529,14 +416,6 @@ env_mem_hl ixiyhl z80 =
             in
             CpuTimePcAndValue (dval.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (z80.main.iy + byte dval.value))
 
-
-set_a : Int -> Z80 -> Z80
-set_a value z80 =
-    let
-        z80_flags =
-            z80.flags
-    in
-    { z80 | flags = { z80_flags | a = value } }
 
 get_bc : Z80 -> Int
 get_bc z80 =

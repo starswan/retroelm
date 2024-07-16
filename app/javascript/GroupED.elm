@@ -9,12 +9,17 @@ module GroupED exposing (..)
 import Bitwise exposing (complement, shiftLeftBy, shiftRightBy)
 import CpuTimeCTime exposing (add_cpu_time_time)
 import Dict exposing (Dict)
+import GroupCB exposing (set408bit)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString2)
 import Z80Debug exposing (debug_log, debug_todo)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (add_cpu_time_env, m1, mem, mem16, set_mem, set_mem16, z80_in)
 import Z80Flags exposing (FlagRegisters, c_F3, c_F5, c_F53, c_FC)
-import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, dec_pc2, get_bc, get_de, imm16, inc_pc, set408bit, set_bc, set_bc_main, set_de, set_de_main)
+import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, dec_pc2, get_bc, get_de, imm16, inc_pc, set_bc, set_bc_main, set_de, set_de_main)
+
+execute_ED40: Z80 -> Z80Delta
+execute_ED40 z80 =
+    z80 |> execute_ED40485058606870 0x40
 
 execute_ED42: Z80 -> Z80Delta
 execute_ED42 z80 =
@@ -35,6 +40,10 @@ execute_ED43 z80 =
      --{ z80_2 | env = env } |> add_cpu_time 6 |> Whole
      EnvWithPc env v.pc
 
+execute_ED46: Z80 -> Z80Delta
+execute_ED46 z80 =
+    z80 |> execute_ED464E565E666E767E 0x46
+
 execute_ED47: Z80 -> Z80Delta
 execute_ED47 z80 =
    -- case 0x47: i(A); time++; break;
@@ -53,6 +62,10 @@ execute_ED4B z80 =
   in
     --{ z80_1 | env = { env | time = v2.time } } |> set_bc v2.value |> add_cpu_time 6 |> Whole
     MainRegsWithPcAndCpuTime (z80.main |> set_bc_main v2.value) v1.pc (v2.time |> add_cpu_time_time 6)
+
+execute_ED4E: Z80 -> Z80Delta
+execute_ED4E z80 =
+    z80 |> execute_ED464E565E666E767E 0x4E
 
 execute_ED52: Z80 -> Z80Delta
 execute_ED52 z80 =
@@ -134,7 +147,15 @@ execute_EDB8 z80 =
 group_ed_dict: Dict Int (Z80 -> Z80Delta)
 group_ed_dict = Dict.fromList
     [
+          (0x40, execute_ED40),
+          (0x42, execute_ED42),
+          (0x43, execute_ED43),
+          (0x46, execute_ED46),
           (0x47, execute_ED47),
+          (0x48, execute_ED48),
+          (0x4B, execute_ED4B),
+          (0x4E, execute_ED4E),
+          (0x50, execute_ED50),
             -- case 0x4F: r(A); time++; break;
             -- case 0x57: ld_a_ir(IR>>>8); break;
             -- case 0x5F: ld_a_ir(r()); break;
@@ -143,27 +164,19 @@ group_ed_dict = Dict.fromList
           (0x6F, rld),
           (0x78, execute_ED78),
           (0x52, execute_ED52),
-          (0x43, execute_ED43),
           (0x53, execute_ED53),
           (0xB8, execute_EDB8),
           (0xB0, execute_EDB0),
           (0x7B, execute_ED7B),
-          (0x4B, execute_ED4B),
           (0x73, execute_ED73),
           (0x5B, execute_ED5B),
-          (0x42, execute_ED42),
           (0x72, execute_ED72),
-          (0x46, execute_ED46),
-          (0x4E, execute_ED4E),
           (0x56, execute_ED56),
           (0x5E, execute_ED5E),
           (0x66, execute_ED66),
           (0x6E, execute_ED6E),
           (0x76, execute_ED76),
           (0x7E, execute_ED7E),
-          (0x40, execute_ED40),
-          (0x48, execute_ED48),
-          (0x50, execute_ED50),
           (0x58, execute_ED58),
           (0x60, execute_ED60),
           (0x68, execute_ED68),
@@ -182,14 +195,6 @@ group_ed_dict = Dict.fromList
 execute_ED464E565E666E767E: Int -> Z80 -> Z80Delta
 execute_ED464E565E666E767E value z80  =
     z80 |> set_im_direct (Bitwise.and (shiftRightBy 3 value) 3)
-
-execute_ED46: Z80 -> Z80Delta
-execute_ED46 z80 =
-    z80 |> execute_ED464E565E666E767E 0x46
-
-execute_ED4E: Z80 -> Z80Delta
-execute_ED4E z80 =
-    z80 |> execute_ED464E565E666E767E 0x4E
 
 execute_ED56: Z80 -> Z80Delta
 execute_ED56 z80 =
@@ -223,10 +228,6 @@ execute_ED40485058606870 value z80  =
       z80_1 = z80 |> set408bit (shiftRightBy 3 (value - 0x40)) inval.value HL
     in
       { z80_1 | flags = z80_1.flags |> f_szh0n0p inval.value } |> add_cpu_time 4 |> Whole
-
-execute_ED40: Z80 -> Z80Delta
-execute_ED40 z80 =
-    z80 |> execute_ED40485058606870 0x40
 
 execute_ED48: Z80 -> Z80Delta
 execute_ED48 z80 =
