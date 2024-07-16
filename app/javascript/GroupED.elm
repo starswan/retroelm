@@ -14,7 +14,7 @@ import Z80Debug exposing (debug_log, debug_todo)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (m1, mem, mem16, set_mem, set_mem16, z80_in)
 import Z80Flags exposing (c_F3, c_F5, c_F53, c_FC)
-import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, dec_pc2, get_bc, get_de, imm16, inc_pc, set408bit, set_bc, set_de)
+import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, dec_pc2, get_bc, get_de, imm16, inc_pc, set408bit, set_bc, set_bc_main, set_de)
 
 execute_ED42: Z80 -> Z80Delta
 execute_ED42 z80 =
@@ -47,11 +47,12 @@ execute_ED4B z80 =
   let
     v1 = z80 |> imm16
     z80_1 = { z80 | pc = v1.pc }
-    v2 = z80_1.env |> mem16 v1.value
     env = z80_1.env
+    v2 = { env | time = v1.time } |> mem16 v1.value
     --x = debug_log "LD BC,(nnnn)" (v2.value |> toHexString) Nothing
   in
-    { z80_1 | env = { env | time = v2.time } } |> set_bc v2.value |> add_cpu_time 6 |> Whole
+    --{ z80_1 | env = { env | time = v2.time } } |> set_bc v2.value |> add_cpu_time 6 |> Whole
+    MainRegsWithPcAndCpuTime (z80.main |> set_bc_main v2.value) v1.pc (v2.time |> add_cpu_time_time 6)
 
 execute_ED52: Z80 -> Z80Delta
 execute_ED52 z80 =

@@ -567,3 +567,11 @@ set_de v z80 =
     in
         { z80 | main = { z80_main | d = shiftRightBy8 v, e = Bitwise.and v 0xFF } }
 
+set_bc_main: Int -> MainWithIndexRegisters -> MainWithIndexRegisters
+set_bc_main v z80_main =
+     { z80_main | b = shiftRightBy8 v, c = Bitwise.and v 0xFF }
+
+set_de_main: Int -> MainWithIndexRegisters -> MainWithIndexRegisters
+set_de_main v z80_main =
+    { z80_main | d = shiftRightBy8 v, e = Bitwise.and v 0xFF }
+
