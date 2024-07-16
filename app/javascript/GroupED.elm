@@ -13,7 +13,7 @@ import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString2)
 import Z80Debug exposing (debug_log, debug_todo)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (add_cpu_time_env, m1, mem, mem16, set_mem, set_mem16, z80_in)
-import Z80Flags exposing (c_F3, c_F5, c_F53, c_FC)
+import Z80Flags exposing (FlagRegisters, c_F3, c_F5, c_F53, c_FC)
 import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, dec_pc2, get_bc, get_de, imm16, inc_pc, set408bit, set_bc, set_bc_main, set_de, set_de_main)
 
 execute_ED42: Z80 -> Z80Delta
@@ -107,7 +107,7 @@ execute_ED78 z80 =
       new_a = z80.env |> z80_in v
       flags = z80.flags
    in
-      { z80 | env = new_a.env, flags = { flags | a = new_a.value } } |> f_szh0n0p new_a.value |> add_cpu_time 4 |> Whole
+      { z80 | env = new_a.env, flags = { flags | a = new_a.value } |> f_szh0n0p new_a.value } |> add_cpu_time 4 |> Whole
 
 execute_ED7B: Z80 -> Z80Delta
 execute_ED7B z80 =
@@ -222,7 +222,7 @@ execute_ED40485058606870 value z80  =
       inval = z80.env |> z80_in bc
       z80_1 = z80 |> set408bit (shiftRightBy 3 (value - 0x40)) inval.value HL
     in
-      z80_1 |> f_szh0n0p inval.value |> add_cpu_time 4 |> Whole
+      { z80_1 | flags = z80_1.flags |> f_szh0n0p inval.value } |> add_cpu_time 4 |> Whole
 
 execute_ED40: Z80 -> Z80Delta
 execute_ED40 z80 =
@@ -330,15 +330,14 @@ group_ed z80_0 =
 --	}
 --
 
-f_szh0n0p: Int -> Z80 -> Z80
-f_szh0n0p r z80 =
+f_szh0n0p: Int -> FlagRegisters -> FlagRegisters
+f_szh0n0p r flags =
    let
       fr = r
-      ff = Bitwise.or (Bitwise.and z80.flags.ff (complement 0xFF)) fr
+      ff = Bitwise.or (Bitwise.and flags.ff (complement 0xFF)) fr
       fa = Bitwise.or r 0x100
-      flags = z80.flags
    in
-      { z80 | flags = { flags | fr = fr, ff = ff, fa = fa, fb = 0 } }
+      { flags | fr = fr, ff = ff, fa = fa, fb = 0 }
 
 --	private void rld()
 --	{
@@ -359,12 +358,12 @@ rld z80 =
         a1 = Bitwise.and z80.flags.a 0xF0
         new_a = Bitwise.or a1 (shiftRightBy8 v)
         flags = z80.flags
-        new_flags = { flags | a = new_a }
-        z80_1 = z80 |> f_szh0n0p new_a
+        new_flags = { flags | a = new_a } |> f_szh0n0p new_a
+        z80_1 = { z80 | flags = new_flags }
         env_0 = z80.env
         env_1 = { env_0 | time = v_lhs_1.time } |> set_mem z80_1.main.hl (Bitwise.and v 0xFF)
     in
-        { z80_1 | flags = new_flags, env = env_1 } |> add_cpu_time 10 |> Whole
+        { z80_1 | env = env_1 } |> add_cpu_time 10 |> Whole
 
 --
 --	private void sbc_hl(int b)
