@@ -12,9 +12,9 @@ import Dict exposing (Dict)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString2)
 import Z80Debug exposing (debug_log, debug_todo)
 import Z80Delta exposing (Z80Delta(..))
-import Z80Env exposing (m1, mem, mem16, set_mem, set_mem16, z80_in)
+import Z80Env exposing (add_cpu_time_env, m1, mem, mem16, set_mem, set_mem16, z80_in)
 import Z80Flags exposing (c_F3, c_F5, c_F53, c_FC)
-import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, dec_pc2, get_bc, get_de, imm16, inc_pc, set408bit, set_bc, set_bc_main, set_de)
+import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, dec_pc2, get_bc, get_de, imm16, inc_pc, set408bit, set_bc, set_bc_main, set_de, set_de_main)
 
 execute_ED42: Z80 -> Z80Delta
 execute_ED42 z80 =
@@ -67,18 +67,20 @@ execute_ED53 z80 =
      z80_1 = { z80 | pc = v.pc }
      env = z80_1.env |> set_mem16 v.value (Bitwise.or (shiftLeftBy8 z80.main.d) z80.main.e)
    in
-     { z80_1 | env = env } |> add_cpu_time 6 |> Whole
+     --{ z80_1 | env = env } |> add_cpu_time 6 |> Whole
+     EnvWithPc (env |> add_cpu_time_env 6) v.pc
 
 execute_ED5B: Z80 -> Z80Delta
 execute_ED5B z80 =
   -- case 0x5B: MP=(v=imm16())+1; v=env.mem16(v); D=v>>>8; E=v&0xFF; time+=6; break;
   let
     v1 = z80 |> imm16
-    z80_1 = { z80 | pc = v1.pc }
-    v2 = z80_1.env |> mem16 v1.value
-    env = z80_1.env
+    --z80_1 = { z80 | pc = v1.pc }
+    env = z80.env
+    v2 = { env | time = v1.time } |> mem16 v1.value
   in
-    { z80_1 | env = { env | time = v2.time } } |> set_de v2.value |> add_cpu_time 6 |> Whole
+    --{ z80_1 | env = { env | time = v2.time } } |> set_de v2.value |> add_cpu_time 6 |> Whole
+    MainRegsWithPcAndCpuTime (z80.main |> set_de_main v2.value) v1.pc (v2.time |> add_cpu_time_time 6)
 
 execute_ED72: Z80 -> Z80Delta
 execute_ED72 z80 =
@@ -91,9 +93,11 @@ execute_ED73 z80 =
   let
     v = z80 |> imm16
     z80_1 = { z80 | pc = v.pc }
-    env = z80.env |> set_mem16 v.value z80_1.env.sp
+    env = z80.env
+    env2 = { env | time = v.time } |> set_mem16 v.value z80_1.env.sp
   in
-    { z80 | env = env } |> add_cpu_time 6 |> Whole
+    --{ z80 | env = env2 } |> add_cpu_time 6 |> Whole
+    EnvWithPc (env2 |> add_cpu_time_env 6) v.pc
 
 execute_ED78: Z80 -> Z80Delta
 execute_ED78 z80 =
