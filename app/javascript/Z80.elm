@@ -4,20 +4,19 @@
 module Z80 exposing (..)
 
 import Array exposing (Array)
-import Bitwise exposing (and, complement, or, shiftLeftBy, shiftRightBy)
+import Bitwise exposing (and, or, shiftRightBy)
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimePcAndValue, add_cpu_time_time)
 import Dict exposing (Dict)
 import GroupCB exposing (group_cb, group_xy_cb)
 import GroupED exposing (group_ed)
 import Loop
-import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8, toHexString, toHexString2)
-import Z80Debug exposing (debug_log, debug_todo)
+import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8, toHexString)
+import Z80Debug exposing (debug_todo)
 import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta)
 import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, pop, set_mem, set_mem16, z80_in, z80_push, z80env_constructor)
-import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, c_F3, c_F5, c_F53, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, z80_add, z80_and, z80_or, z80_sub, z80_xor)
+import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
-import Z80Rom exposing (subName)
-import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, ProgramCounter, Z80, add_cpu_time, call, env_mem_hl, get_bc, get_de, get_xy, hl_deref_with_z80, imm16, imm8, inc_pc, jp, jp_z80, rst, rst_z80, set408bit, set_de, set_flag_regs, set_h, set_l, set_xy)
+import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, ProgramCounter, Z80, add_cpu_time, call, env_mem_hl, get_bc, get_de, get_xy, hl_deref_with_z80, imm16, imm8, inc_pc, jp, jp_z80, rst, rst_z80, set_bc_main, set_de_main, set_flag_regs, set_h, set_l, set_xy)
 
 --type alias RegisterSet =
 --   {
@@ -91,21 +90,13 @@ get_af z80 =
 --set_f: Int -> Int -> FlagRegisters
 --set_f v a =
 --   set_flags v a
-set_bc_main: Int -> MainWithIndexRegisters -> MainWithIndexRegisters
-set_bc_main v z80_main =
-     { z80_main | b = shiftRightBy8 v, c = and v 0xFF }
-
-set_de_main: Int -> MainWithIndexRegisters -> MainWithIndexRegisters
-set_de_main v z80_main =
-    { z80_main | d = shiftRightBy8 v, e = and v 0xFF }
-
 --	void hl(int v) {HL = v;}
-set_hl: Int -> Z80 -> Z80
-set_hl hl z80 =
-    let
-        z80_main = z80.main
-    in
-        { z80 | main = { z80_main | hl = hl } }
+--set_hl: Int -> Z80 -> Z80
+--set_hl hl z80 =
+--    let
+--        z80_main = z80.main
+--    in
+--        { z80 | main = { z80_main | hl = hl } }
 --	void ix(int v) {IX = v;}
 --set_ix: Z80 -> Int -> Z80
 --set_ix z80 ix =
