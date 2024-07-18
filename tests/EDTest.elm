@@ -20,9 +20,9 @@ suite =
        flags = z80.flags
        z80env = z80.env
    in
-   describe "Z80.execute_instruction" -- Nest as many descriptions as you like.
+   describe "0xEn instructions" -- Nest as many descriptions as you like.
       [
-         describe "E instructions"
+         describe "ED instructions"
          [
             test "0xED 0x6F RLD" <|
             \_ ->
@@ -33,6 +33,20 @@ suite =
                                                         main = { z80main | hl = 0x6545 }, flags = { flags | a = 0x47 } }
                in
                   Expect.equal ((addr + 2), 0x40) (new_z80.pc, new_z80.flags.a)
+            , test "0xED 0x7B LD SP,(nn)" <|
+            \_ ->
+               let
+                  new_env = z80env |> set_mem addr 0xED
+                                   |> set_mem (addr + 1) 0x7B
+                                   |> set_mem (addr + 2) 0x98
+                                   |> set_mem (addr + 3) 0xA4
+                                   |> set_mem 0xA498 0x01
+                                   |> set_mem 0xA499 0x02
+                                   |> set_mem 0xA49A 0x03
+                  new_z80 = execute_instruction { z80 | env = new_env,
+                                                        main = { z80main | hl = 0x6545 }, flags = { flags | a = 0x47 } }
+               in
+                  Expect.equal ((addr + 4), 0x0201) (new_z80.pc, new_z80.env.sp)
             ,test "LDIR ED B0" <|
             \_ ->
                let
@@ -64,7 +78,7 @@ suite =
                   new_z80 = execute_instruction { z80 | env = new_env,
                                                         main = { z80main | hl = 0x6545, b = 0xA5, c = 0x5F }, flags = { flags | a = 0x39 } }
                in
-                  Expect.equal ((addr + 2), 0xFF, 0xFF) (new_z80.pc, new_z80.flags.fr, new_z80.flags.a)
+                  Expect.equal {pc=(addr + 2), fr=0xFF, a=0xFF} {pc=new_z80.pc, fr=new_z80.flags.fr, a=new_z80.flags.a}
             ,test "0xE1 POP HL" <|
             \_ ->
                let

@@ -486,15 +486,15 @@ out portnum _ env_in =
     env
 
 
-z80_in : Int -> Z80Env -> Z80EnvWithValue
+z80_in : Int -> Z80Env -> CpuTimeAndValue
 z80_in portnum env_in =
     let
         env =
-            env_in |> cont_port_env portnum
+            env_in.time |> cont_port portnum
 
         --x = debug_log "z80_in" (portnum |> toHexString) Nothing
         value =
-            env.keyboard |> z80_keyboard_input portnum
+            env_in.keyboard |> z80_keyboard_input portnum
 
         x =
             if value /= 0xFF then
@@ -503,7 +503,7 @@ z80_in portnum env_in =
             else
                 value
     in
-    Z80EnvWithValue env x
+    CpuTimeAndValue env x
 
 
 add_cpu_time_env : Int -> Z80Env -> Z80Env

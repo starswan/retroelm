@@ -119,8 +119,11 @@ execute_ED78 z80 =
       v = z80 |> get_bc
       new_a = z80.env |> z80_in v
       flags = z80.flags
+      new_flags = { flags | a = new_a.value } |> f_szh0n0p new_a.value
+      --env = z80.env
    in
-      { z80 | env = new_a.env, flags = { flags | a = new_a.value } |> f_szh0n0p new_a.value } |> add_cpu_time 4 |> Whole
+      --{ z80 | env = { env | time = new_a.time |> add_cpu_time_time 4 } , flags = new_flags } |> Whole
+      CpuTimeWithFlagsAndPc (new_a.time |> add_cpu_time_time 4) new_flags z80.pc
 
 execute_ED7B: Z80 -> Z80Delta
 execute_ED7B z80 =
@@ -129,9 +132,10 @@ execute_ED7B z80 =
     v = z80 |> imm16
     z80_1 = { z80 | pc = v.pc }
     sp = z80_1.env |> mem16 v.value
-    env = z80_1.env
+    --env = z80_1.env
   in
-    { z80_1 | env = { env | time = sp.time } } |> add_cpu_time 6 |> Whole
+    --{ z80_1 | env = { env | sp = sp.value, time = sp.time |> add_cpu_time_time 6 } } |> Whole
+    CpuTimeWithSpAndPc (sp.time |> add_cpu_time_time 6) sp.value v.pc
 
 execute_EDB0: Z80 -> Z80Delta
 execute_EDB0 z80 =
