@@ -12,6 +12,7 @@ import Group0x10 exposing (execute_0x10, execute_0x11, execute_0x12, execute_0x1
 import Group0x20 exposing (execute_0x20, execute_0x21, execute_0x22, execute_0x23, execute_0x24, execute_0x25, execute_0x26, execute_0x27, execute_0x28, execute_0x29, execute_0x2A, execute_0x2B, execute_0x2C, execute_0x2D, execute_0x2E, execute_0x2F)
 import Group0x30 exposing (execute_0x30, execute_0x31, execute_0x32, execute_0x33, execute_0x34, execute_0x35, execute_0x36, execute_0x37, execute_0x38, execute_0x39, execute_0x3A, execute_0x3B, execute_0x3C, execute_0x3D, execute_0x3E, execute_0x3F)
 import Group0x40 exposing (execute_0x41, execute_0x42, execute_0x43, execute_0x44, execute_0x45, execute_0x46, execute_0x47, execute_0x48, execute_0x4A, execute_0x4B, execute_0x4C, execute_0x4D, execute_0x4E, execute_0x4F)
+import Group0x50 exposing (execute_0x50, execute_0x51, execute_0x53, execute_0x54, execute_0x55, execute_0x56, execute_0x57, execute_0x58, execute_0x59, execute_0x5A, execute_0x5C, execute_0x5D, execute_0x5E, execute_0x5F)
 import GroupCB exposing (group_cb, group_xy_cb)
 import GroupED exposing (group_ed)
 import Loop
@@ -273,134 +274,6 @@ execute_ltC0 c ixiyhl z80 =
 delta_noop: Z80 -> Z80Delta
 delta_noop z80 = NoChange
 
-
-execute_0x50: Z80 -> Z80Delta
-execute_0x50 z80 =
-    -- case 0x50: D=B; break;
-    --z80 |> set_d z80.main.b
-   let
-       main = z80.main
-   in
-      { main | d = z80.main.b } |> MainRegs
-
-execute_0x51: Z80 -> Z80Delta
-execute_0x51 z80 =
-    -- case 0x51: D=C; break;
-    --z80 |> set_d z80.main.c
-   let
-       main = z80.main
-   in
-      { main | d = z80.main.c } |> MainRegs
-
-execute_0x53: Z80 -> Z80Delta
-execute_0x53 z80 =
-    -- case 0x53: D=E; break;
-    --z80 |> set_d z80.main.e
-   let
-       main = z80.main
-   in
-      { main | d = z80.main.e } |> MainRegs
-
-execute_0x54: IXIYHL -> Z80 -> Z80Delta
-execute_0x54 ixiyhl z80 =
-    -- case 0x54: D=HL>>>8; break;
-    --z80 |> set_d (get_h ixiyhl z80.main)
-   let
-       main = z80.main
-   in
-      { main | d = (get_h ixiyhl z80.main) } |> MainRegs
-
-execute_0x55: IXIYHL -> Z80 -> Z80Delta
-execute_0x55 ixiyhl z80 =
-    -- case 0x55: D=HL&0xFF; break;
-    --z80 |> set_d (get_l ixiyhl z80.main)
-   let
-       main = z80.main
-   in
-      { main | d = (get_l ixiyhl z80.main) } |> MainRegs
-
-execute_0x56: IXIYHL -> Z80 -> Z80Delta
-execute_0x56 ixiyhl z80 =
-    -- case 0x56: D=env.mem(HL); time+=3; break;
-    let
-       main = z80.main
-       value = hl_deref_with_z80 ixiyhl z80
-    in
-       --{ z80 | pc = value.pc, env = value.env } |> set_d value.value
-       MainRegsWithPcAndCpuTime { main | d = value.value } value.pc value.time
-
-execute_0x57: Z80 -> Z80Delta
-execute_0x57 z80 =
-   -- case 0x57: D=A; break;
-   --z80 |> set_d z80.flags.a
-   let
-       main = z80.main
-   in
-      { main | d = z80.flags.a } |> MainRegs
-
-execute_0x58: Z80 -> Z80Delta
-execute_0x58 z80 =
-  -- case 0x58: E=B; break;
-  --z80 |> set_e z80.main.b
-   let
-       main = z80.main
-   in
-      { main | e = z80.main.b } |> MainRegs
-
-execute_0x59: Z80 -> Z80Delta
-execute_0x59 z80 =
-  -- case 0x59: E=C; break;
-  --z80 |> set_e z80.main.c
-   let
-       main = z80.main
-   in
-      { main | e = z80.main.c } |> MainRegs
-
-execute_0x5A: Z80 -> Z80Delta
-execute_0x5A z80 =
-   -- case 0x5A: E=D; break;
-   --z80 |> set_e z80.main.d
-   let
-       main = z80.main
-   in
-      { main | e = z80.main.d } |> MainRegs
-
-execute_0x5C: IXIYHL -> Z80 -> Z80Delta
-execute_0x5C ixiyhl z80 =
-   -- case 0x5C: E=HL>>>8; break;
-   --z80 |> set_e (get_h ixiyhl z80.main)
-   let
-       main = z80.main
-   in
-      { main | e = (get_h ixiyhl z80.main) } |> MainRegs
-
-execute_0x5D: IXIYHL -> Z80 -> Z80Delta
-execute_0x5D ixiyhl z80 =
-   -- case 0x5D: E=HL&0xFF; break;
-   --z80 |> set_e (get_l ixiyhl z80.main)
-   let
-       main = z80.main
-   in
-      { main | e = (get_l ixiyhl z80.main) } |> MainRegs
-
-execute_0x5E: IXIYHL -> Z80 -> Z80Delta
-execute_0x5E ixiyhl z80 =
-   -- case 0x5E: E=env.mem(HL); time+=3; break;
-   let
-      value = hl_deref_with_z80 ixiyhl z80
-      main = z80.main
-   in
-      --{ z80 | pc = value.pc, env = value.env } |> set_e value.value
-      MainRegsWithPcAndCpuTime { main | e = value.value } value.pc value.time
-
-execute_0x5F: Z80 -> Z80Delta
-execute_0x5F z80 =
-   -- case 0x5F: E=A; break;
-   --z80 |> set_e z80.flags.a
-   let
-       main = z80.main
-   in
-      { main | e = z80.flags.a } |> MainRegs
 
 execute_0x60: IXIYHL -> Z80 -> Z80Delta
 execute_0x60 ixiyhl z80 =
@@ -1404,6 +1277,7 @@ lt40_delta_dict_lite = Dict.fromList
           (0xF1, execute_0xF1),
           (0xF2, execute_0xF2),
           (0xF3, execute_0xF3),
+          (0xF5, execute_0xF5),
           (0xFB, execute_0xFB),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ]
@@ -1413,7 +1287,6 @@ lt40_dict_lite = Dict.fromList
     [
           (0xF9, execute_0xF9),
           (0xF6, execute_0xF6),
-          (0xF5, execute_0xF5),
           (0xF8, execute_0xF8),
           (0xFA, execute_0xFA),
           (0xFE, execute_0xFE),
@@ -1596,10 +1469,11 @@ execute_0xC5 z80 =
    --z80 |> push (z80 |> get_bc)
    let
      bc =  (z80 |> get_bc)
-     pushed = z80.env |> z80_push bc
+     --pushed = z80.env |> z80_push bc
    in
      --{ z80 | env = pushed }
-     OnlyEnv pushed
+     --OnlyEnv pushed
+     OnlyPush bc
 
 execute_0xC6: Z80 -> Z80Delta
 execute_0xC6 z80 =
@@ -1781,10 +1655,11 @@ execute_0xD5 z80 =
   --z80 |> push (z80 |> get_de)
   let
     de = z80 |> get_de
-    pushed = z80.env |> z80_push de
+    --pushed = z80.env |> z80_push de
   in
     --{ z80 | env = pushed }
-    OnlyEnv pushed
+    --OnlyEnv pushed
+    OnlyPush de
 
 execute_0xD6: Z80 -> Z80Delta
 execute_0xD6 z80 =
@@ -1977,14 +1852,15 @@ execute_0xF3 z80 =
    -- case 0xF3: IFF=0; break;
    z80 |> set_iff 0 |> OnlyInterrupts
 
-execute_0xF5: Z80 -> Z80
+execute_0xF5: Z80 -> Z80Delta
 execute_0xF5 z80 =
    -- case 0xF5: push(A<<8|flags()); break;
    let
       a = z80 |> get_af
-      pushed = z80.env |> z80_push a
+      --pushed = z80.env |> z80_push a
    in
-      { z80 | env = pushed }
+      --{ z80 | env = pushed }
+      OnlyPush a
 
 execute_0xF6: Z80 -> Z80
 execute_0xF6 z80 =

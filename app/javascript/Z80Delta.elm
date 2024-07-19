@@ -1,7 +1,7 @@
 module Z80Delta exposing (..)
 
 import CpuTimeCTime exposing (CpuTimeCTime, add_cpu_time_time)
-import Z80Env exposing (Z80Env)
+import Z80Env exposing (Z80Env, z80_push)
 import Z80Flags exposing (FlagRegisters)
 import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80)
 
@@ -38,6 +38,7 @@ type Z80Delta
     | OnlyTime CpuTimeCTime
     | MainRegsWithAltRegs MainWithIndexRegisters MainRegisters
     | MainRegsWithEnvAndPc MainWithIndexRegisters Z80Env Int
+    | OnlyPush Int
 
 
 type alias DeltaWithChanges =
@@ -239,5 +240,13 @@ apply_delta z80 z80delta =
                     z80.env
             in
             { z80 | flags = flagRegisters, pc = pc, env = { env | time = time, sp = sp }, interrupts = z80delta.interrupts }
+
+        OnlyPush value ->
+            let
+                env =
+                    z80.env
+            in
+            { z80 | pc = z80delta.pc, env = { env | time = z80delta.time } |> z80_push value, interrupts = z80delta.interrupts }
+
 
 
