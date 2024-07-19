@@ -221,15 +221,18 @@ update_keyboard keys =
         m_initial =
             List.repeat 5 -1
 
+        -- more idiomatic to filter out the Nothings when mapping keys
         k_list =
-            keys |> List.map keyEventToValue |> List.filter (\( v, kemp ) -> v >= 0)
+            --keys |> List.map keyEventToValue |> List.filter (\( v, kemp ) -> v >= 0)
+            keys |> List.map keyEventToValue |> List.filterMap identity
 
         s1 =
             k_list |> List.map Tuple.first |> List.foldl (\k total -> Bitwise.or k total) 0
 
         ( keyboard, mlist ) =
             k_list
-                --|> List.filter (\( v, kemp ) -> v < 0x0200)
+                -- 01000 (octal) === 0x0200 (hex)
+                |> List.filter (\( v, kemp ) -> v < 0x0200)
                 |> List.foldl (\( k, kemp ) ( keyb, m_list ) -> pressed k { keyb | kempston = keyb.kempston ++ kemp } m_list) ( initial_keyboard, m_initial )
 
         s2 =
@@ -378,8 +381,11 @@ c_SPECCY_KEYBOARD_CHARS =
     "[AQ10P\n ZSW29OL]XDE38IKMCFR47UJNVGT56YHB" |> String.toList |> List.indexedMap (\index char -> ( char, index )) |> Dict.fromList
 
 
+
 --	i = "\t\0\0!_\"\0\0:\0\0@);=\0\0\0\0#(\0+.?\0<$'\0-,/\0>%&\0^*".indexOf(a);
 --       0 1 2 345 6 7 89 0 12345 6 7 8 901 2345 6789 0123 4567 89
+
+
 c_SYMBOL_SHIFT_CHARS =
     Dict.fromList
         [ ( '\t', 0 )
@@ -437,7 +443,7 @@ c_ARROW_3 =
 -- This is function key() in Java
 
 
-keyEventToValue : KeyEvent -> ( Int, List Kempston )
+keyEventToValue : KeyEvent -> Maybe ( Int, List Kempston )
 keyEventToValue event =
     case event of
         KeyDownEvent char ->
@@ -447,7 +453,7 @@ keyEventToValue event =
             in
             case simple_key of
                 Just thekey ->
-                    ( thekey, [] )
+                    Just ( thekey, [] )
 
                 Nothing ->
                     let
@@ -456,47 +462,47 @@ keyEventToValue event =
                     in
                     case sym_shift of
                         Just sym ->
-                            ( Bitwise.or 0x0200 sym, [] )
+                            Just ( Bitwise.or 0x0200 sym, [] )
 
                         Nothing ->
-                            ( -1, [] )
+                            Nothing
 
         ControlKeyDownEvent controlKey ->
             case controlKey of
                 Escape ->
-                    ( 0x43, [] )
+                    Just ( 0x43, [] )
 
                 ArrowLeft ->
                     --( c_ARROWS |> Array.get 0 |> Maybe.withDefault -1, [ JoystickLeft ] )
-                    ( c_ARROW_0, [ JoystickLeft ] )
+                    Just ( c_ARROW_0, [ JoystickLeft ] )
 
                 ArrowDown ->
                     --( c_ARROWS |> Array.get 3 |> Maybe.withDefault -1, [ JoystickDown ] )
-                    ( c_ARROW_3, [ JoystickDown ] )
+                    Just ( c_ARROW_3, [ JoystickDown ] )
 
                 ArrowUp ->
                     --( c_ARROWS |> Array.get 2 |> Maybe.withDefault -1, [ JoystickUp ] )
-                    ( c_ARROW_2, [ JoystickUp ] )
+                    Just ( c_ARROW_2, [ JoystickUp ] )
 
                 ArrowRight ->
                     --( c_ARROWS |> Array.get 1 |> Maybe.withDefault -1, [ JoystickRight ] )
-                    ( c_ARROW_1, [ JoystickRight ] )
+                    Just ( c_ARROW_1, [ JoystickRight ] )
 
                 Backspace ->
-                    ( 0x44, [] )
+                    Just ( 0x44, [] )
 
                 Shift ->
-                    ( 0x0200, [] )
+                    Just ( 0x0200, [] )
 
                 Control ->
-                    ( 0x0400, [ JoystickControl ] )
+                    Just ( 0x0400, [ JoystickControl ] )
 
                 Alt ->
-                    ( 0x0400, [] )
+                    Just ( 0x0400, [] )
 
                 -- index 6 in c_SPECCY_KEYBOARD_CHARS
                 Enter ->
-                    ( 6, [] )
+                    Just (6, [] )
 
 
 
@@ -537,11 +543,8 @@ keyDownEvent character keys =
 
         newkeys =
             event :: keys
-
-        o =
-            debug_log ("key down " ++ (character |> fromChar) ++ " keys ") newkeys Nothing
     in
-    event :: keys
+      debug_log ("key down " ++ (character |> fromChar) ++ " keys ") newkeys newkeys
 
 
 keyUpEvent : Char -> List KeyEvent -> List KeyEvent
