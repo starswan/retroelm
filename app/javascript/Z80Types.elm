@@ -27,11 +27,6 @@ type alias MainWithIndexRegisters =
     }
 
 
-type alias ProgramCounter =
-    { pc : Int
-    }
-
-
 type alias InterruptRegisters =
     { ir : Int
     , r : Int
@@ -454,3 +449,18 @@ set_de_main: Int -> MainWithIndexRegisters -> MainWithIndexRegisters
 set_de_main v z80_main =
     { z80_main | d = shiftRightBy8 v, e = Bitwise.and v 0xFF }
 
+--	private void jr()
+--	{
+--		int pc = PC;
+--		byte d = (byte)env.mem(pc); time += 8;
+--		MP = PC = (char)(pc+d+1);
+--	}
+jr: Z80 -> CpuTimeAndPc
+jr z80 =
+   let
+      mempc = mem z80.pc z80.env
+      d = byte mempc.value
+      --x = Debug.log "jr" ((String.fromInt d.value) ++ " " ++ (String.fromInt (byte d.value)))
+   in
+      --z80 |> set_env mempc.env |> add_cpu_time 8 |> set_pc (z80.pc + d + 1)
+      CpuTimeAndPc (mempc.time |> add_cpu_time_time 8) (Bitwise.and (z80.pc + d + 1) 0xFFFF)

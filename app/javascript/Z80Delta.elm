@@ -3,7 +3,7 @@ module Z80Delta exposing (..)
 import CpuTimeCTime exposing (CpuTimeCTime, add_cpu_time_time)
 import Z80Env exposing (Z80Env)
 import Z80Flags exposing (FlagRegisters)
-import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, ProgramCounter, Z80)
+import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80)
 
 
 type Z80Delta
@@ -23,7 +23,6 @@ type Z80Delta
     | EnvWithFlagsAndPc Z80Env FlagRegisters Int
     | CpuTimeWithFlagsAndPc CpuTimeCTime FlagRegisters Int
     | MainRegsWithEnv MainWithIndexRegisters Z80Env
-    | PcAndCpuTime ProgramCounter Int
     | SpAndCpuTime Int Int
     | EnvWithPc Z80Env Int
     | CpuTimeWithPc CpuTimeCTime Int
@@ -69,13 +68,6 @@ apply_delta z80 z80delta =
                     z80.env
             in
             { z80 | pc = z80delta.pc, env = { env | time = z80delta.time |> add_cpu_time_time cpu_time }, main = mainRegisters, interrupts = z80delta.interrupts }
-
-        PcAndCpuTime pc cpu_time ->
-            let
-                env =
-                    z80.env
-            in
-            { z80 | pc = pc.pc, env = { env | time = z80delta.time |> add_cpu_time_time cpu_time }, interrupts = z80delta.interrupts }
 
         FlagsWithMain flagRegisters mainRegisters ->
             let
