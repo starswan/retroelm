@@ -3,7 +3,7 @@ module Z80Types exposing (..)
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, add_cpu_time_time)
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8)
-import Z80Env exposing (Z80Env, Z80EnvWithPC, add_cpu_time_env, mem, mem16, set_mem, z80_push)
+import Z80Env exposing (Z80Env, Z80EnvWithPC, add_cpu_time_env, mem, mem16, z80_push)
 import Z80Flags exposing (FlagRegisters)
 
 
@@ -181,23 +181,6 @@ jp y z80 =
 --		int a = MP = imm16();
 --		if(y) {push(PC); PC = a;}
 --	}
---call_z80: Bool -> Z80 -> Z80
---call_z80 y z80 =
---   let
---      a = imm16 z80
---      env = z80.env
---      z80_2 = { z80 | pc = a.pc, env = { env | time = a.time } }
---   in
---     if y then
---      let
---         --b = debug_log "call" (a.value |> subName) Nothing
---         --z80_1 = z80_2 |> push z80_2.pc |> set_pc a.value
---         pushed = z80_2.env |> z80_push z80_2.pc
---         z80_1 = { z80_2 | env = pushed, pc = a.value }
---      in
---         z80_1
---     else
---       z80_2
 
 
 call : Bool -> Z80 -> Z80EnvWithPC
@@ -323,8 +306,6 @@ l_with_z80 ixiyhl z80 =
     CpuTimePcAndValue z80.env.time z80.pc (Bitwise.and (get_xy ixiyhl z80.main) 0xFF)
 
 
-
-
 set_flag_regs : FlagRegisters -> Z80 -> Z80
 set_flag_regs flags z80 =
     { z80 | flags = flags }
@@ -416,38 +397,53 @@ get_bc : Z80 -> Int
 get_bc z80 =
     z80.main.b |> shiftLeftBy8 |> Bitwise.or z80.main.c
 
+
 get_de : Z80 -> Int
 get_de z80 =
     z80.main.d |> shiftLeftBy8 |> Bitwise.or z80.main.e
 
-dec_pc2: Z80 -> Z80
+
+dec_pc2 : Z80 -> Z80
 dec_pc2 z80 =
-   { z80 | pc = Bitwise.and (z80.pc - 2) 0xFFFF }
+    { z80 | pc = Bitwise.and (z80.pc - 2) 0xFFFF }
+
+
 
 --	void bc(int v) {C=v&0xFF; B=v>>>8;}
-set_bc: Int -> Z80 -> Z80
+
+
+set_bc : Int -> Z80 -> Z80
 set_bc v z80 =
     let
-        z80_main = z80.main
+        z80_main =
+            z80.main
     in
-        { z80 | main = { z80_main | b = shiftRightBy8 v, c = Bitwise.and v 0xFF }}
+    { z80 | main = { z80_main | b = shiftRightBy8 v, c = Bitwise.and v 0xFF } }
+
 
 
 --	void de(int v) {E=v&0xFF; D=v>>>8;}
-set_de: Int -> Z80 -> Z80
+
+
+set_de : Int -> Z80 -> Z80
 set_de v z80 =
     let
-        z80_main = z80.main
+        z80_main =
+            z80.main
     in
-        { z80 | main = { z80_main | d = shiftRightBy8 v, e = Bitwise.and v 0xFF } }
+    { z80 | main = { z80_main | d = shiftRightBy8 v, e = Bitwise.and v 0xFF } }
 
-set_bc_main: Int -> MainWithIndexRegisters -> MainWithIndexRegisters
+
+set_bc_main : Int -> MainWithIndexRegisters -> MainWithIndexRegisters
 set_bc_main v z80_main =
-     { z80_main | b = shiftRightBy8 v, c = Bitwise.and v 0xFF }
+    { z80_main | b = shiftRightBy8 v, c = Bitwise.and v 0xFF }
 
-set_de_main: Int -> MainWithIndexRegisters -> MainWithIndexRegisters
+
+set_de_main : Int -> MainWithIndexRegisters -> MainWithIndexRegisters
 set_de_main v z80_main =
     { z80_main | d = shiftRightBy8 v, e = Bitwise.and v 0xFF }
+
+
 
 --	private void jr()
 --	{
@@ -455,12 +451,18 @@ set_de_main v z80_main =
 --		byte d = (byte)env.mem(pc); time += 8;
 --		MP = PC = (char)(pc+d+1);
 --	}
-jr: Z80 -> CpuTimeAndPc
+
+
+jr : Z80 -> CpuTimeAndPc
 jr z80 =
-   let
-      mempc = mem z80.pc z80.env
-      d = byte mempc.value
-      --x = Debug.log "jr" ((String.fromInt d.value) ++ " " ++ (String.fromInt (byte d.value)))
-   in
-      --z80 |> set_env mempc.env |> add_cpu_time 8 |> set_pc (z80.pc + d + 1)
-      CpuTimeAndPc (mempc.time |> add_cpu_time_time 8) (Bitwise.and (z80.pc + d + 1) 0xFFFF)
+    let
+        mempc =
+            mem z80.pc z80.env
+
+        d =
+            byte mempc.value
+
+        --x = Debug.log "jr" ((String.fromInt d.value) ++ " " ++ (String.fromInt (byte d.value)))
+    in
+    --z80 |> set_env mempc.env |> add_cpu_time 8 |> set_pc (z80.pc + d + 1)
+    CpuTimeAndPc (mempc.time |> add_cpu_time_time 8) (Bitwise.and (z80.pc + d + 1) 0xFFFF)

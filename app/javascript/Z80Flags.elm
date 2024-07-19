@@ -599,3 +599,19 @@ daa flags =
             Bitwise.or fr (Bitwise.and d 0x0100)
     in
     { flags | fr = fr, a = a, fb = fb, fa = fa, ff = ff }
+
+
+
+--	void af(int v) {A = v>>>8; flags(v&0xFF);}
+
+
+set_af : Int -> FlagRegisters
+set_af v =
+    let
+        a =
+            shiftRightBy8 v
+
+        flags =
+            Bitwise.and v 0xFF
+    in
+    set_flags flags a

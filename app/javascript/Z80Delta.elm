@@ -30,6 +30,7 @@ type Z80Delta
     | NoChange
     | OnlyPc Int
     | FlagsWithPcAndTime FlagRegisters Int CpuTimeCTime
+    | FlagsWithSpTimeAndPc FlagRegisters Int CpuTimeCTime Int
     | InterruptsWithCpuTime InterruptRegisters CpuTimeCTime
     | MainRegsWithSpAndTime MainWithIndexRegisters Int CpuTimeCTime
     | MainRegsWithSpPcAndTime MainWithIndexRegisters Int Int CpuTimeCTime
@@ -223,4 +224,12 @@ apply_delta z80 z80delta =
                     z80.env
             in
             { z80 | flags = flagRegisters, pc = pc, env = { env | time = time }, main = mainWithIndexRegisters, interrupts = z80delta.interrupts }
+
+        FlagsWithSpTimeAndPc flagRegisters sp time pc ->
+            let
+                env =
+                    z80.env
+            in
+            { z80 | flags = flagRegisters, pc = pc, env = { env | time = time, sp = sp }, interrupts = z80delta.interrupts }
+
 

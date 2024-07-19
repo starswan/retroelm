@@ -18,7 +18,7 @@ import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8, toHexString)
 import Z80Debug exposing (debug_todo)
 import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta)
 import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, pop, set_mem, set_mem16, z80_in, z80_push, z80env_constructor)
-import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_flags, z80_add, z80_and, z80_or, z80_sub, z80_xor)
+import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_af, set_flags, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
 import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, call, env_mem_hl, get_bc, get_de, get_xy, hl_deref_with_z80, imm16, imm8, inc_pc, jp, jp_z80, jr, rst, rst_z80, set_bc_main, set_de_main, set_flag_regs, set_h, set_l, set_xy)
 
@@ -138,14 +138,6 @@ set_pc pc z80 =
 --set_sp sp z80 =
 --   { z80 | sp = Bitwise.and sp 0xFFFF }
 
---	void af(int v) {A = v>>>8; flags(v&0xFF);}
-set_af: Int -> Z80 -> Z80
-set_af v z80 =
-    let
-        a = shiftRightBy8 v
-        flags = Bitwise.and v 0xFF
-    in
-        { z80 | flags = set_flags flags a }
 --	void r(int v) {R=v; IR = IR&0xFF00 | v&0x80;}
 --	void im(int v) {IM = v+1 & 3;}
 --	void iff(int v) {IFF = v;}
@@ -1553,6 +1545,7 @@ lt40_delta_dict_lite = Dict.fromList
           (0xEB, execute_0xEB),
           (0xED, group_ed),
           (0xEE, execute_0xEE),
+          (0xF1, execute_0xF1),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ]
 
@@ -1564,7 +1557,6 @@ lt40_dict_lite = Dict.fromList
           (0xFB, execute_0xFB),
           (0xF6, execute_0xF6),
           (0xF5, execute_0xF5),
-          (0xF1, execute_0xF1),
           (0xF8, execute_0xF8),
           (0xF2, execute_0xF2),
           (0xFA, execute_0xFA),
@@ -2115,15 +2107,16 @@ execute_0xEE z80 =
       --{ z80_1 | flags = flags }
       FlagsWithPcAndTime flags v.pc v.time
 
-execute_0xF1: Z80 -> Z80
+execute_0xF1: Z80 -> Z80Delta
 execute_0xF1 z80 =
     -- case 0xF1: af(pop()); break;
    let
       v = z80.env |> pop
-      env = z80.env
-      z80_1 = { z80 | env = { env | time = v.time, sp = v.sp } }
+      --env = z80.env
+      --z80_1 = { z80 | env = { env | time = v.time, sp = v.sp } }
    in
-      z80_1 |> set_af v.value
+      --z80_1 |> set_af v.value
+      FlagsWithSpTimeAndPc (set_af v.value) v.sp v.time z80.pc
 
 execute_0xF2: Z80 -> Z80
 execute_0xF2 z80 =
