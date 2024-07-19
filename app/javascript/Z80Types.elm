@@ -27,11 +27,6 @@ type alias MainWithIndexRegisters =
     }
 
 
-type alias ProgramCounter =
-    { pc : Int
-    }
-
-
 type alias InterruptRegisters =
     { ir : Int
     , r : Int
