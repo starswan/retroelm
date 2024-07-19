@@ -466,3 +466,12 @@ jr z80 =
     in
     --z80 |> set_env mempc.env |> add_cpu_time 8 |> set_pc (z80.pc + d + 1)
     CpuTimeAndPc (mempc.time |> add_cpu_time_time 8) (Bitwise.and (z80.pc + d + 1) 0xFFFF)
+
+get_h: IXIYHL -> MainWithIndexRegisters -> Int
+get_h ixiyhl z80 =
+    shiftRightBy8 (get_xy ixiyhl z80)
+
+get_l: IXIYHL -> MainWithIndexRegisters -> Int
+get_l ixiyhl z80 =
+    Bitwise.and (get_xy ixiyhl z80) 0xFF
+

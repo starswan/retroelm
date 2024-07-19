@@ -11,28 +11,17 @@ import Group0x00 exposing (ex_af, execute_0x01, execute_0x02, execute_0x03, exec
 import Group0x10 exposing (execute_0x10, execute_0x11, execute_0x12, execute_0x13, execute_0x14, execute_0x15, execute_0x16, execute_0x17, execute_0x18, execute_0x19, execute_0x1A, execute_0x1B, execute_0x1C, execute_0x1D, execute_0x1E, execute_0x1F)
 import Group0x20 exposing (execute_0x20, execute_0x21, execute_0x22, execute_0x23, execute_0x24, execute_0x25, execute_0x26, execute_0x27, execute_0x28, execute_0x29, execute_0x2A, execute_0x2B, execute_0x2C, execute_0x2D, execute_0x2E, execute_0x2F)
 import Group0x30 exposing (execute_0x30, execute_0x31, execute_0x32, execute_0x33, execute_0x34, execute_0x35, execute_0x36, execute_0x37, execute_0x38, execute_0x39, execute_0x3A, execute_0x3B, execute_0x3C, execute_0x3D, execute_0x3E, execute_0x3F)
+import Group0x40 exposing (execute_0x41, execute_0x42, execute_0x43, execute_0x44, execute_0x45, execute_0x46, execute_0x47, execute_0x48, execute_0x4A, execute_0x4B, execute_0x4C, execute_0x4D, execute_0x4E, execute_0x4F)
 import GroupCB exposing (group_cb, group_xy_cb)
 import GroupED exposing (group_ed)
 import Loop
-import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8, toHexString)
+import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString)
 import Z80Debug exposing (debug_todo)
 import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta)
-import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem, mem16, out, pop, set_mem, set_mem16, z80_in, z80_push, z80env_constructor)
-import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, add16, c_FC, c_FS, cp, cpl, daa, dec, get_flags, inc, rot, sbc, scf_ccf, set_af, set_flags, z80_add, z80_and, z80_or, z80_sub, z80_xor)
+import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem16, out, pop, set_mem, z80_in, z80_push, z80env_constructor)
+import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, c_FC, c_FS, cp, get_flags, sbc, set_af, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
-import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, call, env_mem_hl, get_bc, get_de, get_xy, hl_deref_with_z80, imm16, imm8, inc_pc, jp, jp_z80, jr, rst, rst_z80, set_bc_main, set_de_main, set_flag_regs, set_h, set_l, set_xy)
-
-type alias IntWithZ80 =
-    {
-        value: Int,
-        z80: Z80
-    }
-
-type alias EnvWithRegister =
-   {
-        register_value: Int,
-        env: Z80Env
-   }
+import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, call, env_mem_hl, get_bc, get_de, get_h, get_l, get_xy, hl_deref_with_z80, imm16, imm8, inc_pc, jp, jp_z80, rst, rst_z80, set_bc_main, set_de_main, set_flag_regs, set_h, set_l)
 
 constructor: Z80
 constructor =
@@ -284,139 +273,6 @@ execute_ltC0 c ixiyhl z80 =
 delta_noop: Z80 -> Z80Delta
 delta_noop z80 = NoChange
 
---noop: Z80 -> Z80
---noop z80 = z80
-
-execute_0x41: Z80 -> Z80Delta
-execute_0x41 z80 =
-   -- case 0x41: B=C; break;
-   --z80 |> set_b z80.main.c
-   let
-       main = z80.main
-   in
-       { main | b = main.c } |> MainRegs
-
-execute_0x42: Z80 -> Z80Delta
-execute_0x42 z80 =
-   -- case 0x42: B=D; break;
-   --z80 |> set_b z80.main.d
-   let
-       main = z80.main
-   in
-       { main | b = main.d } |> MainRegs
-
-execute_0x43: Z80 -> Z80Delta
-execute_0x43 z80 =
-   -- case 0x43: B=E; break;
-   --z80 |> set_b z80.main.e
-   let
-       main = z80.main
-   in
-       { main | b = main.e } |> MainRegs
-
-execute_0x44: IXIYHL -> Z80 -> Z80Delta
-execute_0x44 ixiyhl z80 =
-    -- case 0x44: B=HL>>>8; break;
-    -- case 0x44: B=xy>>>8; break;
-    --z80 |> set_b (get_h ixiyhl z80.main)
-   let
-       main = z80.main
-   in
-       MainRegsWithPc { main | b = (get_h ixiyhl z80.main) } z80.pc
-
-execute_0x45: IXIYHL -> Z80 -> Z80Delta
-execute_0x45 ixiyhl z80 =
-  -- case 0x45: B=HL&0xFF; break;
-  -- case 0x45: B=xy&0xFF; break;
-  --  z80 |> set_b (get_l ixiyhl z80.main)
-   let
-       main = z80.main
-   in
-       MainRegsWithPc { main | b = (get_l ixiyhl z80.main) } z80.pc
-
-execute_0x46: IXIYHL -> Z80 -> Z80Delta
-execute_0x46 ixiyhl z80 =
-    -- case 0x46: B=env.mem(HL); time+=3; break;
-    -- case 0x46: B=env.mem(getd(xy)); time+=3; break;
-    let
-       value = hl_deref_with_z80 ixiyhl z80
-       main = z80.main
-    in
-       --{ z80 | pc = value.pc, env = value.env } |> set_b value.value
-       MainRegsWithPcAndCpuTime { main | b = value.value } value.pc value.time
-
-execute_0x47: Z80 -> Z80Delta
-execute_0x47 z80 =
-   -- case 0x47: B=A; break;
-   --z80 |> set_b z80.flags.a
-   let
-       main = z80.main
-   in
-       { main | b = z80.flags.a } |> MainRegs
-
-execute_0x48: Z80 -> Z80Delta
-execute_0x48 z80 =
-    -- case 0x48: C=B; break;
-    --z80 |> set_c z80.main.b
-   let
-       main = z80.main
-   in
-       { main | c = z80.main.b } |> MainRegs
-
-execute_0x4A: Z80 -> Z80Delta
-execute_0x4A z80 =
-    -- case 0x4A: C=D; break;
-    --z80 |> set_c z80.main.d
-   let
-       main = z80.main
-   in
-      { main | c = z80.main.d } |> MainRegs
-
-execute_0x4B: Z80 -> Z80Delta
-execute_0x4B z80 =
-    -- case 0x4B: C=E; break;
-    --z80 |> set_c z80.main.e
-   let
-       main = z80.main
-   in
-      { main | c = z80.main.e } |> MainRegs
-
-execute_0x4C: IXIYHL -> Z80 -> Z80Delta
-execute_0x4C ixiyhl z80 =
-    -- case 0x4C: C=HL>>>8; break;
-    --z80 |> set_c (get_h ixiyhl z80.main)
-   let
-       main = z80.main
-   in
-       MainRegsWithPc { main | c = (get_h ixiyhl z80.main) } z80.pc
-
-execute_0x4D: IXIYHL -> Z80 -> Z80Delta
-execute_0x4D ixiyhl z80 =
-    -- case 0x4D: C=HL&0xFF; break;
-    --z80 |> set_c (get_l ixiyhl z80.main)
-   let
-       main = z80.main
-   in
-      { main | c = (get_l ixiyhl z80.main) } |> MainRegs
-
-execute_0x4E: IXIYHL -> Z80 -> Z80Delta
-execute_0x4E ixiyhl z80 =
-    -- case 0x4E: C=env.mem(HL); time+=3; break;
-    let
-       value = hl_deref_with_z80 ixiyhl z80
-       main = z80.main
-    in
-       --{ z80 | pc = value.pc, env = value.env } |> set_c value.value
-       MainRegsWithPcAndCpuTime { main | c = value.value} value.pc value.time
-
-execute_0x4F: Z80 -> Z80Delta
-execute_0x4F z80 =
-    -- case 0x4F: C=A; break;
-    --z80 |> set_c z80.flags.a
-    let
-       main = z80.main
-    in
-       { main | c = z80.flags.a } |> MainRegs
 
 execute_0x50: Z80 -> Z80Delta
 execute_0x50 z80 =
@@ -1672,14 +1528,6 @@ lt40_delta_dict = Dict.fromList
           (0xE5, execute_0xE5),
           (0xE9, execute_0xE9)
     ]
-
-get_h: IXIYHL -> MainWithIndexRegisters -> Int
-get_h ixiyhl z80 =
-    shiftRightBy8 (get_xy ixiyhl z80)
-
-get_l: IXIYHL -> MainWithIndexRegisters -> Int
-get_l ixiyhl z80 =
-    and (get_xy ixiyhl z80) 0xFF
 
 execute_0xC0: Z80 -> Z80Delta
 execute_0xC0 z80 =
