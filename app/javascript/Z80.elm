@@ -1404,6 +1404,7 @@ lt40_delta_dict_lite = Dict.fromList
           (0xF1, execute_0xF1),
           (0xF2, execute_0xF2),
           (0xF3, execute_0xF3),
+          (0xF5, execute_0xF5),
           (0xFB, execute_0xFB),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ]
@@ -1413,7 +1414,6 @@ lt40_dict_lite = Dict.fromList
     [
           (0xF9, execute_0xF9),
           (0xF6, execute_0xF6),
-          (0xF5, execute_0xF5),
           (0xF8, execute_0xF8),
           (0xFA, execute_0xFA),
           (0xFE, execute_0xFE),
@@ -1596,10 +1596,11 @@ execute_0xC5 z80 =
    --z80 |> push (z80 |> get_bc)
    let
      bc =  (z80 |> get_bc)
-     pushed = z80.env |> z80_push bc
+     --pushed = z80.env |> z80_push bc
    in
      --{ z80 | env = pushed }
-     OnlyEnv pushed
+     --OnlyEnv pushed
+     OnlyPush bc
 
 execute_0xC6: Z80 -> Z80Delta
 execute_0xC6 z80 =
@@ -1781,10 +1782,11 @@ execute_0xD5 z80 =
   --z80 |> push (z80 |> get_de)
   let
     de = z80 |> get_de
-    pushed = z80.env |> z80_push de
+    --pushed = z80.env |> z80_push de
   in
     --{ z80 | env = pushed }
-    OnlyEnv pushed
+    --OnlyEnv pushed
+    OnlyPush de
 
 execute_0xD6: Z80 -> Z80Delta
 execute_0xD6 z80 =
@@ -1977,14 +1979,15 @@ execute_0xF3 z80 =
    -- case 0xF3: IFF=0; break;
    z80 |> set_iff 0 |> OnlyInterrupts
 
-execute_0xF5: Z80 -> Z80
+execute_0xF5: Z80 -> Z80Delta
 execute_0xF5 z80 =
    -- case 0xF5: push(A<<8|flags()); break;
    let
       a = z80 |> get_af
-      pushed = z80.env |> z80_push a
+      --pushed = z80.env |> z80_push a
    in
-      { z80 | env = pushed }
+      --{ z80 | env = pushed }
+      OnlyPush a
 
 execute_0xF6: Z80 -> Z80
 execute_0xF6 z80 =
