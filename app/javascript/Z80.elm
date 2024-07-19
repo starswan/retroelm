@@ -130,13 +130,13 @@ set_pc pc z80 =
 --	void r(int v) {R=v; IR = IR&0xFF00 | v&0x80;}
 --	void im(int v) {IM = v+1 & 3;}
 --	void iff(int v) {IFF = v;}
-set_iff: Int -> Z80 -> Z80
+set_iff: Int -> Z80 -> InterruptRegisters
 set_iff value z80 =
    let
       --y = debug_log "set_iff" value Nothing
       interrupts = z80.interrupts
    in
-      { z80 | interrupts = { interrupts | iff = value } }
+      { interrupts | iff = value }
 --	void ei(boolean v) {IFF = v ? 3 : 0;}
 --
 --
@@ -1402,19 +1402,19 @@ lt40_delta_dict_lite = Dict.fromList
           (0xED, group_ed),
           (0xEE, execute_0xEE),
           (0xF1, execute_0xF1),
+          (0xF2, execute_0xF2),
+          (0xF3, execute_0xF3),
+          (0xFB, execute_0xFB),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ]
 
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
-          (0xF3, execute_0xF3),
           (0xF9, execute_0xF9),
-          (0xFB, execute_0xFB),
           (0xF6, execute_0xF6),
           (0xF5, execute_0xF5),
           (0xF8, execute_0xF8),
-          (0xF2, execute_0xF2),
           (0xFA, execute_0xFA),
           (0xFE, execute_0xFE),
           (0xEF, execute_0xEF),
@@ -1966,15 +1966,16 @@ execute_0xF1 z80 =
       --z80_1 |> set_af v.value
       FlagsWithSpTimeAndPc (set_af v.value) v.sp v.time z80.pc
 
-execute_0xF2: Z80 -> Z80
+execute_0xF2: Z80 -> Z80Delta
 execute_0xF2 z80 =
-    -- case 0xF2: jp((Ff&FS)==0); break;
-    z80 |> jp_z80 (Bitwise.and z80.flags.ff c_FS == 0)
+   -- case 0xF2: jp((Ff&FS)==0); break;
+   --z80 |> jp_z80 (Bitwise.and z80.flags.ff c_FS == 0)
+   z80 |> jp_delta (Bitwise.and z80.flags.ff c_FS == 0)
 
-execute_0xF3: Z80 -> Z80
+execute_0xF3: Z80 -> Z80Delta
 execute_0xF3 z80 =
    -- case 0xF3: IFF=0; break;
-   z80 |> set_iff 0
+   z80 |> set_iff 0 |> OnlyInterrupts
 
 execute_0xF5: Z80 -> Z80
 execute_0xF5 z80 =
@@ -2025,10 +2026,10 @@ execute_0xFA z80 =
    -- case 0xFA: jp((Ff&FS)!=0); break;
    z80 |> jp_z80 (Bitwise.and z80.flags.ff c_FS /= 0)
 
-execute_0xFB: Z80 -> Z80
+execute_0xFB: Z80 -> Z80Delta
 execute_0xFB z80 =
     -- case 0xFB: IFF=3; break;
-   z80 |> set_iff 3
+   z80 |> set_iff 3 |> OnlyInterrupts
 
 execute_0xFE: Z80 -> Z80
 execute_0xFE z80 =
