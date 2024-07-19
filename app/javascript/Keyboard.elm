@@ -182,13 +182,6 @@ z80_keyboard_input portnum keyboard =
 --	public int kempston = 0;
 --	public final KeyEvent keys[] = new KeyEvent[8];
 --	static final int arrowsDefault[] = {0143, 0124, 0134, 0144};
-
-
-c_ARROWS =
-    [ 0x63, 0x54, 0x5C, 0x64 ] |> Array.fromList
-
-
-
 --	int arrows[] = arrowsDefault;
 --
 --	void update_keyboard() {
@@ -229,14 +222,14 @@ update_keyboard keys =
             List.repeat 5 -1
 
         k_list =
-            keys |> List.map key |> List.filter (\( v, kemp ) -> v >= 0)
+            keys |> List.map keyEventToValue |> List.filter (\( v, kemp ) -> v >= 0)
 
         s1 =
             k_list |> List.map Tuple.first |> List.foldl (\k total -> Bitwise.or k total) 0
 
         ( keyboard, mlist ) =
             k_list
-                |> List.filter (\( v, kemp ) -> v < 0x0200)
+                --|> List.filter (\( v, kemp ) -> v < 0x0200)
                 |> List.foldl (\( k, kemp ) ( keyb, m_list ) -> pressed k { keyb | kempston = keyb.kempston ++ kemp } m_list) ( initial_keyboard, m_initial )
 
         s2 =
@@ -255,7 +248,7 @@ update_keyboard keys =
 
         ( keyb3, _ ) =
             if Bitwise.and s2 0x80 /= 0 then
-                pressed 0x17 keyb2 mlist2
+                pressed 0x0F keyb2 mlist2
 
             else
                 ( keyb2, mlist2 )
@@ -385,11 +378,88 @@ c_SPECCY_KEYBOARD_CHARS =
     "[AQ10P\n ZSW29OL]XDE38IKMCFR47UJNVGT56YHB" |> String.toList |> List.indexedMap (\index char -> ( char, index )) |> Dict.fromList
 
 
-key : KeyEvent -> ( Int, List Kempston )
-key event =
+--	i = "\t\0\0!_\"\0\0:\0\0@);=\0\0\0\0#(\0+.?\0<$'\0-,/\0>%&\0^*".indexOf(a);
+--       0 1 2 345 6 7 89 0 12345 6 7 8 901 2345 6789 0123 4567 89
+c_SYMBOL_SHIFT_CHARS =
+    Dict.fromList
+        [ ( '\t', 0 )
+        , ( '!', 3 )
+        , ( '_', 4 )
+        , ( '"', 5 )
+        , ( ':', 8 )
+        , ( '@', 11 )
+        , ( ')', 12 )
+        , ( ';', 13 )
+        , ( '=', 14 )
+        , ( '#', 19 )
+        , ( '(', 20 )
+        , ( '+', 22 )
+        , ( '.', 23 )
+        , ( '?', 24 )
+        , ( '<', 26 )
+        , ( '$', 27 )
+        , ( '\'', 28 )
+        , ( '-', 30 )
+        , ( ',', 31 )
+        , ( '/', 32 )
+        , ( '>', 34 )
+        , ( '%', 35 )
+        , ( '&', 36 )
+        , ( '^', 38 )
+        , ( '*', 39 )
+        ]
+
+
+
+--c_ARROWS =
+--    [ 0x63, 0x54, 0x5C, 0x64 ] |> Array.fromList
+-- These are Java Octal constants
+--	static final int arrowsDefault[] = {0143, 0124, 0134, 0144};
+
+
+c_ARROW_0 =
+    0x63
+
+
+c_ARROW_1 =
+    0x54
+
+
+c_ARROW_2 =
+    0x5C
+
+
+c_ARROW_3 =
+    0x64
+
+
+
+-- This is function key() in Java
+
+
+keyEventToValue : KeyEvent -> ( Int, List Kempston )
+keyEventToValue event =
     case event of
         KeyDownEvent char ->
-            ( Maybe.withDefault -1 (Dict.get char c_SPECCY_KEYBOARD_CHARS), [] )
+            let
+                simple_key =
+                    Dict.get char c_SPECCY_KEYBOARD_CHARS
+            in
+            case simple_key of
+                Just thekey ->
+                    ( thekey, [] )
+
+                Nothing ->
+                    let
+                        sym_shift =
+                            Dict.get char c_SYMBOL_SHIFT_CHARS
+                    in
+                    case sym_shift of
+                        Just sym ->
+                            ( Bitwise.or 0x0200 sym, [] )
+
+                        Nothing ->
+                            ( -1, [] )
 
         ControlKeyDownEvent controlKey ->
             case controlKey of
@@ -397,16 +467,20 @@ key event =
                     ( 0x43, [] )
 
                 ArrowLeft ->
-                    ( c_ARROWS |> Array.get 0 |> Maybe.withDefault -1, [ JoystickLeft ] )
+                    --( c_ARROWS |> Array.get 0 |> Maybe.withDefault -1, [ JoystickLeft ] )
+                    ( c_ARROW_0, [ JoystickLeft ] )
 
                 ArrowDown ->
-                    ( c_ARROWS |> Array.get 3 |> Maybe.withDefault -1, [ JoystickDown ] )
+                    --( c_ARROWS |> Array.get 3 |> Maybe.withDefault -1, [ JoystickDown ] )
+                    ( c_ARROW_3, [ JoystickDown ] )
 
                 ArrowUp ->
-                    ( c_ARROWS |> Array.get 2 |> Maybe.withDefault -1, [ JoystickUp ] )
+                    --( c_ARROWS |> Array.get 2 |> Maybe.withDefault -1, [ JoystickUp ] )
+                    ( c_ARROW_2, [ JoystickUp ] )
 
                 ArrowRight ->
-                    ( c_ARROWS |> Array.get 1 |> Maybe.withDefault -1, [ JoystickRight ] )
+                    --( c_ARROWS |> Array.get 1 |> Maybe.withDefault -1, [ JoystickRight ] )
+                    ( c_ARROW_1, [ JoystickRight ] )
 
                 Backspace ->
                     ( 0x44, [] )
