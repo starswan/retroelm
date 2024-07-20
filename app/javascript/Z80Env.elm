@@ -498,7 +498,7 @@ z80_in portnum env_in =
 
         x =
             if value /= 0xFF then
-                debug_log "keyboard value" (toHexString2 value) value
+                debug_log "keyboard value" ((portnum |> toHexString2) ++ " " ++ (toHexString2 value)) value
 
             else
                 value

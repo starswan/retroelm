@@ -5,21 +5,28 @@
 
 module Main exposing (..)
 
+import Array exposing (Array)
+import Bitwise exposing (complement)
 import Browser
 import Browser.Events exposing (onKeyDown, onKeyUp)
+import Bytes exposing (Bytes)
+import Bytes.Decode exposing (unsignedInt8)
 import Dict exposing (values)
 import Html exposing (Html, button, div, h2, span, text)
 import Html.Attributes exposing (disabled, id, style, tabindex)
 import Html.Events exposing (onClick)
+import Http exposing (Metadata)
+import Http.Detailed
 import Json.Decode as Decode
 import Keyboard exposing (ctrlKeyDownEvent, ctrlKeyUpEvent, keyDownEvent, keyUpEvent)
-import Loader exposing (LoadAction(..))
-import MessageHandler exposing (Message(..), gotRom, gotTap, run)
+import Loader exposing (LoadAction(..), trimActionList)
+import MessageHandler exposing (array_decoder, bytesToTap)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Qaop, pause)
-import Spectrum
+import Spectrum exposing (frames, new_tape, set_rom)
 import Svg exposing (Svg, line, rect, svg)
 import Svg.Attributes exposing (fill, height, rx, stroke, viewBox, width, x1, x2, y1, y2)
+import Tapfile exposing (Tapfile)
 import Time exposing (posixToMillis)
 import Utils exposing (speed_in_hz, time_display)
 import Z80Debug exposing (debug_log)
@@ -61,6 +68,19 @@ type alias Model =
     , elapsed_millis : Int
     , time : Maybe Time.Posix
     }
+
+
+type Message
+    = GotTAP (Result Http.Error (List Tapfile))
+    | GotRom (Result (Http.Detailed.Error Bytes) ( Metadata, Array Int ))
+    | Tick Time.Posix
+    | Pause
+    | CharacterKey Char
+    | CharacterUnKey Char
+    | ControlKeyDown String
+    | ControlUnKey String
+    | KeyRepeat
+    | LoadTape
 
 
 init : String -> ( Model, Cmd Message )
@@ -145,13 +165,13 @@ view model =
                 ]
             , button [ onClick LoadTape, disabled load_disabled ] [ text "Load Tape" ]
             ]
-        , div [tabindex 0, id "spectrum"]
-        [
-            svg
+        , div [ tabindex 0, id "spectrum" ]
+            [ svg
                 [ height (272 * c_SCALEFACTOR |> String.fromInt), width (352 * c_SCALEFACTOR |> String.fromInt), viewBox "0 0 352 272" ]
                 --<rect width="100%" height="100%" fill="green" />
                 screen_data_list
-        ]
+            ]
+
         --,svg [style "height" "192px", style "width" "256px"] (List.indexedMap lineListToSvg lines |> List.concat)
         ]
 
@@ -246,22 +266,19 @@ update message model =
 subscriptions : Model -> Sub Message
 subscriptions model =
     let
-        keypress =
-            onKeyDown keyDownDecoder
-
-        keyunpress =
-            onKeyUp keyUpDecoder
+        keysubs =
+            [ onKeyDown keyDownDecoder, onKeyUp keyUpDecoder ]
 
         subs =
             if model.qaop.spectrum.paused || not (List.isEmpty model.qaop.loader.actions) then
-                [ keypress, keyunpress ]
+                keysubs
 
             else
                 let
                     tick =
                         Time.every (model.tickInterval |> toFloat) Tick
                 in
-                [ tick, keypress, keyunpress ]
+                tick :: keysubs
     in
     Sub.batch subs
 
@@ -269,6 +286,11 @@ subscriptions model =
 keyDownDecoder : Decode.Decoder Message
 keyDownDecoder =
     Decode.map2 toKey (Decode.field "key" Decode.string) (Decode.field "repeat" Decode.bool)
+
+
+keyUpDecoder : Decode.Decoder Message
+keyUpDecoder =
+    Decode.map toUnKey (Decode.field "key" Decode.string)
 
 
 toKey : String -> Bool -> Message
@@ -285,11 +307,6 @@ toKey keyValue repeat =
                 ControlKeyDown keyValue
 
 
-keyUpDecoder : Decode.Decoder Message
-keyUpDecoder =
-    Decode.map toUnKey (Decode.field "key" Decode.string)
-
-
 toUnKey : String -> Message
 toUnKey keyValue =
     case String.uncons keyValue of
@@ -298,6 +315,115 @@ toUnKey keyValue =
 
         _ ->
             ControlUnKey keyValue
+
+
+actionToCmd : LoadAction -> Cmd Message
+actionToCmd action =
+    case action of
+        LoadTAP url ->
+            -- Not sure if this is helping - we want to pick out 16384 from the metadata so we know how many bytes to consume
+            -- as TAP files will not always be the same size...
+            --Http.request { method = "GET",
+            --               headers = [],
+            --               body = emptyBody,
+            --               timeout = Nothing,
+            --               tracker = Nothing,
+            --               url = String.concat ["http://localhost:3000/", fileName],
+            --               expect = Http.expectBytesResponse GotTAP convertResponse
+            --          }
+            debug_log "loadTap"
+                url
+                Http.get
+                { url = url
+                , expect = Http.expectBytesResponse GotTAP bytesToTap
+                }
+
+        LoadROM url ->
+            --loadRom: String -> Cmd Message
+            --loadRom fileName =
+            --    Http.get { url = String.concat ["http://localhost:3000/", fileName],
+            --               expect = Http.expectBytes GotRom (list_decoder 16384 unsignedInt8)
+            --              }
+            debug_log "loadRom"
+                url
+                Http.get
+                { url = url
+                , expect = Http.Detailed.expectBytes GotRom (array_decoder 16384 unsignedInt8)
+                }
+
+
+gotRom : Qaop -> Result (Http.Detailed.Error Bytes) ( Http.Metadata, Array Int ) -> ( Qaop, Cmd Message )
+gotRom qaop result =
+    case result of
+        Ok ( _, value ) ->
+            { qaop | spectrum = qaop.spectrum |> set_rom value } |> run
+
+        Err _ ->
+            ( qaop, Cmd.none )
+
+
+gotTap : Qaop -> Result Http.Error (List Tapfile) -> ( Qaop, Cmd Message )
+gotTap qaop result =
+    case result of
+        Ok value ->
+            -- THe infinite recursion issue goes away if tape is a Dict rather than a List or Array
+            -- it only happens when the VM starts running - if this is replaced with Cmd.none
+            -- and we unpause manually, it crashes on the unpause - so something to do with Qaop.run
+            -- and copying the Array
+            { qaop | spectrum = qaop.spectrum |> new_tape value } |> run
+
+        Err _ ->
+            ( qaop, Cmd.none )
+
+
+
+--	public void run() {
+--		Loader l;
+--		for(;;) try {
+--			synchronized(queue) {
+--				if(queue.isEmpty()) {
+--					state &= ~2;
+--					spectrum.pause(010);
+--					queue.wait();
+--					continue;
+--				}
+--				state |= 2;
+--				l = (Loader)queue.remove(0);
+--			}
+--			l.exec();
+--		} catch(InterruptedException x) {
+--			break;
+--		} catch(Exception x) {
+--			x.printStackTrace();
+--		}
+--	}
+
+
+run : Qaop -> ( Qaop, Cmd Message )
+run qaop =
+    if qaop.spectrum.paused then
+        let
+            loader =
+                qaop.loader
+
+            nextAction =
+                List.head loader.actions
+
+            qaop_1 =
+                { qaop | loader = { loader | actions = List.tail loader.actions |> trimActionList } }
+
+            ( q2, cmd ) =
+                case nextAction of
+                    Just action ->
+                        ( qaop_1, actionToCmd action )
+
+                    Nothing ->
+                        ( { qaop_1 | state = Bitwise.and qaop.state (complement 2), spectrum = qaop_1.spectrum |> Spectrum.pause 0x08 }, Cmd.none )
+        in
+        ( q2, cmd )
+
+    else
+        ( { qaop | spectrum = qaop.spectrum |> frames qaop.keys }, Cmd.none )
 
 
 main : Program String Model Message
