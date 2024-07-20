@@ -929,11 +929,14 @@ lt40_delta_dict_lite = Dict.fromList
           (0xEB, execute_0xEB),
           (0xED, group_ed),
           (0xEE, execute_0xEE),
+          (0xEF, execute_0xEF),
           (0xF1, execute_0xF1),
           (0xF2, execute_0xF2),
           (0xF3, execute_0xF3),
           (0xF5, execute_0xF5),
           (0xF6, execute_0xF6),
+          (0xF7, execute_0xF7),
+          (0xF8, execute_0xF8),
           (0xFB, execute_0xFB),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ] |> Dict.union delta_dict_lite_00
@@ -942,11 +945,8 @@ lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
     [
           (0xF9, execute_0xF9),
-          (0xF8, execute_0xF8),
           (0xFA, execute_0xFA),
           (0xFE, execute_0xFE),
-          (0xEF, execute_0xEF),
-          (0xF7, execute_0xF7),
           (0xFF, execute_0xFF)
     ]
 
@@ -958,10 +958,6 @@ lt40_dict_lite = Dict.fromList
 -- case 0xEF:
 -- case 0xF7:
 -- case 0xFF: push(PC); PC=c-199; break;
-
-execute_0xF7: Z80 -> Z80
-execute_0xF7 z80 =
-    z80 |> rst_z80 0xF7
 
 execute_0xFF: Z80 -> Z80
 execute_0xFF z80 =
@@ -1480,9 +1476,9 @@ execute_0xEE z80 =
       --{ z80_1 | flags = flags }
       FlagsWithPcAndTime flags v.pc v.time
 
-execute_0xEF: Z80 -> Z80
+execute_0xEF: Z80 -> Z80Delta
 execute_0xEF z80 =
-    z80 |> rst_z80 0xEF
+    z80 |> rst_delta 0xEF
 
 execute_0xF1: Z80 -> Z80Delta
 execute_0xF1 z80 =
@@ -1528,19 +1524,25 @@ execute_0xF6 z80 =
       --{ z80_1 | flags = flags }
       FlagsWithPcAndTime flags a.pc a.time
 
-execute_0xF8: Z80 -> Z80
+execute_0xF7: Z80 -> Z80Delta
+execute_0xF7 z80 =
+    z80 |> rst_delta 0xF7
+
+execute_0xF8: Z80 -> Z80Delta
 execute_0xF8 z80 =
     -- case 0xF8: time++; if((Ff&FS)!=0) MP=PC=pop(); break;
     let
-       z80_1 = z80 |> add_cpu_time 1
-       z80_2 = if (and z80_1.flags.ff c_FS) /= 0 then
+       z80_1_time = z80.env.time |> add_cpu_time_time 1
+       z80_2 = if (and z80.flags.ff c_FS) /= 0 then
                    let
-                       popped = z80_1.env |> pop
-                       env = z80_1.env
+                       env = z80.env
+                       popped = { env | time = z80_1_time } |> pop
                    in
-                       { z80_1 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
+                       --{ z80 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
+                       CpuTimeWithSpAndPc popped.time popped.sp popped.value
                else
-                   z80_1
+                   --z80
+                   OnlyTime z80_1_time
     in
        z80_2
 
