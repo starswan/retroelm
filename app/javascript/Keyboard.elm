@@ -254,7 +254,7 @@ update_keyboard keys =
 
         ( keyb3, _ ) =
             if Bitwise.and s2 c_0200 /= 0 then
-                pressed 0x0F keyb2 mlist2
+                pressed c_017 keyb2 mlist2
 
             else
                 ( keyb2, mlist2 )
