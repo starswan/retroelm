@@ -210,17 +210,21 @@ z80_keyboard_input portnum keyboard =
 --		if((s&0200)!=0) pressed(017,m);
 --	}
 --
+-- 01000 (octal) === 0x0200 (hex)
+m_initial = List.repeat 5 -1
+initial_keyboard = Keyboard (List.repeat 8 0xFF) []
+-- Java Keyboard routines use octal - convert here to avoid transcribing mistakes
+c_0300 = 0xC0
+c_01000 = 0x200
+c_0100 = 0x40
+c_0200 = 0x80
+c_0103 = 0x43
+c_017 = 0x0F
 
 
 update_keyboard : List KeyEvent -> Keyboard
 update_keyboard keys =
     let
-        initial_keyboard =
-            Keyboard (List.repeat 8 0xFF) []
-
-        m_initial =
-            List.repeat 5 -1
-
         -- more idiomatic to filter out the Nothings when mapping keys
         k_list =
             --keys |> List.map keyEventToValue |> List.filter (\( v, kemp ) -> v >= 0)
@@ -231,26 +235,25 @@ update_keyboard keys =
 
         ( keyboard, mlist ) =
             k_list
-                -- 01000 (octal) === 0x0200 (hex)
-                |> List.filter (\( v, kemp ) -> v < 0x0200)
+                |> List.filter (\( v, kemp ) -> v < c_01000)
                 |> List.foldl (\( k, kemp ) ( keyb, m_list ) -> pressed k { keyb | kempston = keyb.kempston ++ kemp } m_list) ( initial_keyboard, m_initial )
 
         s2 =
-            if Bitwise.and s1 0xC0 == 0 then
-                Bitwise.or s1 (Bitwise.and (s1 |> shiftRightBy 3) 0xC0)
+            if Bitwise.and s1 c_0300 == 0 then
+                Bitwise.or s1 (Bitwise.and (s1 |> shiftRightBy 3) c_0300)
 
             else
                 s1
 
         ( keyb2, mlist2 ) =
-            if Bitwise.and s2 0x40 /= 0 then
+            if Bitwise.and s2 c_0100 /= 0 then
                 pressed 0 keyboard mlist
 
             else
                 ( keyboard, mlist )
 
         ( keyb3, _ ) =
-            if Bitwise.and s2 0x80 /= 0 then
+            if Bitwise.and s2 c_0200 /= 0 then
                 pressed 0x0F keyb2 mlist2
 
             else
@@ -380,8 +383,6 @@ pressed k keyboard mlist =
 c_SPECCY_KEYBOARD_CHARS =
     "[AQ10P\n ZSW29OL]XDE38IKMCFR47UJNVGT56YHB" |> String.toList |> List.indexedMap (\index char -> ( char, index )) |> Dict.fromList
 
-
-
 --	i = "\t\0\0!_\"\0\0:\0\0@);=\0\0\0\0#(\0+.?\0<$'\0-,/\0>%&\0^*".indexOf(a);
 --       0 1 2 345 6 7 89 0 12345 6 7 8 901 2345 6789 0123 4567 89
 
@@ -462,15 +463,17 @@ keyEventToValue event =
                     in
                     case sym_shift of
                         Just sym ->
-                            Just ( Bitwise.or 0x0200 sym, [] )
+                            Just ( Bitwise.or c_0200 sym, [] )
 
                         Nothing ->
                             Nothing
 
         ControlKeyDownEvent controlKey ->
             case controlKey of
+    --			case KeyEvent.VK_INSERT:
+    --			case KeyEvent.VK_ESCAPE: return 0103;
                 Escape ->
-                    Just ( 0x43, [] )
+                    Just ( c_0103, [] )
 
                 ArrowLeft ->
                     --( c_ARROWS |> Array.get 0 |> Maybe.withDefault -1, [ JoystickLeft ] )
@@ -502,7 +505,7 @@ keyEventToValue event =
 
                 -- index 6 in c_SPECCY_KEYBOARD_CHARS
                 Enter ->
-                    Just (6, [] )
+                    Just ( 6, [] )
 
 
 
@@ -544,7 +547,7 @@ keyDownEvent character keys =
         newkeys =
             event :: keys
     in
-      debug_log ("key down " ++ (character |> fromChar) ++ " keys ") newkeys newkeys
+    debug_log ("key down " ++ (character |> fromChar) ++ " newkeys ") newkeys newkeys
 
 
 keyUpEvent : Char -> List KeyEvent -> List KeyEvent
@@ -555,11 +558,8 @@ keyUpEvent character keys =
 
         newkeys =
             keys |> List.filter (\item -> keyNotEqual item upperchar)
-
-        o =
-            debug_log ("key up " ++ (character |> fromChar) ++ " keys ") newkeys Nothing
     in
-    newkeys
+    debug_log ("key up " ++ (character |> fromChar) ++ " newkeys ") newkeys newkeys
 
 
 ctrlKeyNotEqual : KeyEvent -> ControlKey -> Bool
@@ -585,11 +585,8 @@ ctrlKeyDownEvent string keys =
 
                 Nothing ->
                     keys
-
-        o =
-            debug_log ("control key down " ++ string ++ " keys ") newkeys Nothing
     in
-    newkeys
+    debug_log ("control key down " ++ string ++ " newkeys ") newkeys newkeys
 
 
 ctrlKeyUpEvent : String -> List KeyEvent -> List KeyEvent
@@ -605,8 +602,5 @@ ctrlKeyUpEvent string keys =
 
                 Nothing ->
                     keys
-
-        o =
-            debug_log ("control key up " ++ string ++ " keys ") newkeys Nothing
     in
-    newkeys
+    debug_log ("control key up " ++ string ++ " newkeys ") newkeys newkeys

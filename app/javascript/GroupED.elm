@@ -14,7 +14,7 @@ import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString2)
 import Z80Debug exposing (debug_log, debug_todo)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (add_cpu_time_env, m1, mem, mem16, set_mem, set_mem16, z80_in)
-import Z80Flags exposing (FlagRegisters, c_F3, c_F5, c_F53, c_FC)
+import Z80Flags exposing (FlagRegisters, c_F3, c_F5, c_F53, c_FC, z80_sub)
 import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, dec_pc2, get_bc, get_de, imm16, inc_pc, set_bc, set_bc_main, set_de, set_de_main)
 
 execute_ED40: Z80 -> Z80Delta
@@ -39,6 +39,26 @@ execute_ED43 z80 =
    in
      --{ z80_2 | env = env } |> add_cpu_time 6 |> Whole
      EnvWithPc env v.pc
+
+-- All these other ED codes are 'undocumented' and do inteeresting things,
+-- but point back to ED44 in Qaop Java version
+ --case 0x44:
+ --case 0x4C:
+ --case 0x54:
+ --case 0x5C:
+ --case 0x64:
+ --case 0x6C:
+ --case 0x74:
+ --case 0x7C: v=A; A=0; sub(v); break;
+
+execute_ED44_neg: Z80 -> Z80Delta
+execute_ED44_neg z80 =
+   let
+     v = z80.flags.a
+     flags = z80.flags
+     new_flags = { flags | a = 0 } |> z80_sub v
+   in
+     FlagRegs new_flags
 
 execute_ED46: Z80 -> Z80Delta
 execute_ED46 z80 =
@@ -154,6 +174,7 @@ group_ed_dict = Dict.fromList
           (0x40, execute_ED40),
           (0x42, execute_ED42),
           (0x43, execute_ED43),
+          (0x44, execute_ED44_neg),
           (0x46, execute_ED46),
           (0x47, execute_ED47),
           (0x48, execute_ED48),
