@@ -42,6 +42,7 @@ type Z80Delta
     | SetMem8WithTime Int Int Int
     | SetMem16WithTimeAndPc Int Int Int Int
     | SetMem8WithCpuTimeIncrementAndPc Int Int CpuTimeCTime Int Int
+    | PushWithPc (Maybe Int) Int
 
 
 type alias DeltaWithChanges =
@@ -265,6 +266,18 @@ apply_delta z80 z80delta =
             in
             { z80 | pc = pc, env = { env | time = cpuTimeCTime } |> set_mem addr value |> add_cpu_time_env time, interrupts = z80delta.interrupts }
 
+        PushWithPc maybeInt pc ->
+            let
+                env =
+                    z80.env
+            in
+            case maybeInt of
+                Just pushed ->
+                    { z80 | pc = pc, env = { env | time = z80delta.time } |> z80_push pushed, interrupts = z80delta.interrupts }
+
+                Nothing ->
+                    { z80 | pc = pc, env = { env | time = z80delta.time }, interrupts = z80delta.interrupts }
+
 
 delta_noop : Z80ROM -> Z80 -> Z80Delta
 delta_noop rom48k z80 =
@@ -292,6 +305,7 @@ jp y rom48k z80 =
     else
         CpuTimeAndPc a.time a.pc
 
+
 rst_delta : Int -> Z80 -> Z80Delta
 rst_delta value z80 =
     --z80 |> rst_z80 0xC7
@@ -300,5 +314,3 @@ rst_delta value z80 =
             z80 |> rst value
     in
     EnvWithPc result.env result.pc
-
-

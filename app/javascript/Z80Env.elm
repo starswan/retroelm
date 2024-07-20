@@ -232,7 +232,7 @@ mem16 addr rom48k z80env  =
                 high =
                     getROMValue (addr1 + 0x4000) rom48k
             in
-            CpuTimeAndValue (CpuTimeCTime z80env_time.cpu_time c_NOCONT) (Bitwise.or low (shiftLeftBy8 high))
+            CpuTimeAndValue { z80env_time | ctime = c_NOCONT } (Bitwise.or low (shiftLeftBy8 high))
 
         else
             let
@@ -247,7 +247,7 @@ mem16 addr rom48k z80env  =
                         z80env_time |> cont1 0 |> cont1 3 |> add_cpu_time_time 6
 
                     else
-                        CpuTimeCTime z80env_time.cpu_time c_NOCONT
+                        { z80env_time | ctime = c_NOCONT }
             in
             CpuTimeAndValue z80env_1_time (Bitwise.or low (shiftLeftBy8 high))
 

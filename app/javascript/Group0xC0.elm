@@ -111,7 +111,7 @@ execute_0xC4 rom48k z80 =
         result =
             z80 |> call_if (z80.flags.fr /= 0) rom48k
     in
-    EnvWithPc result.env result.pc
+    PushWithPc result.value result.pc
 
 
 execute_0xC5 : Z80ROM -> Z80 -> Z80Delta
@@ -223,7 +223,7 @@ execute_0xCC rom48k z80 =
         result =
             z80 |> call_if (z80.flags.fr == 0) rom48k
     in
-    EnvWithPc result.env result.pc
+    PushWithPc result.value result.pc
 
 
 call_0xCD : Z80ROM -> Z80 -> Z80Delta
