@@ -39,6 +39,7 @@ type Z80Delta
     | MainRegsWithAltRegs MainWithIndexRegisters MainRegisters
     | MainRegsWithEnvAndPc MainWithIndexRegisters Z80Env Int
     | OnlyPush Int
+    | PushWithCpuTimeAndPc Int CpuTimeCTime Int
 
 
 type alias DeltaWithChanges =
@@ -247,6 +248,14 @@ apply_delta z80 z80delta =
                     z80.env
             in
             { z80 | pc = z80delta.pc, env = { env | time = z80delta.time } |> z80_push value, interrupts = z80delta.interrupts }
+
+        PushWithCpuTimeAndPc value time pc ->
+            let
+                env =
+                    z80.env
+            in
+            { z80 | pc = pc, env = { env | time = time } |> z80_push value, interrupts = z80delta.interrupts }
+
 
 delta_noop: Z80 -> Z80Delta
 delta_noop z80 = NoChange

@@ -183,8 +183,8 @@ jp y z80 =
 --	}
 
 
-call : Bool -> Z80 -> Z80EnvWithPC
-call y z80 =
+call_if : Bool -> Z80 -> Z80EnvWithPC
+call_if y z80 =
     let
         a =
             imm16 z80

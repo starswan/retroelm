@@ -24,7 +24,7 @@ import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta, delta_noo
 import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem16, out, pop, z80_in, z80_push, z80env_constructor)
 import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, c_FC, c_FS, cp, get_flags, sbc, set_af, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
-import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, call, get_bc, get_de, get_h, get_l, get_xy, hl_deref_with_z80, imm16, imm8, inc_pc, jp, jp_z80, rst, rst_z80, set_bc_main, set_de_main, set_flag_regs)
+import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, call_if, get_bc, get_de, get_h, get_l, get_xy, hl_deref_with_z80, imm16, imm8, inc_pc, jp, jp_z80, rst, rst_z80, set_bc_main, set_de_main, set_flag_regs)
 
 constructor: Z80
 constructor =
@@ -903,11 +903,11 @@ lt40_delta_dict_lite = Dict.fromList
           (0xC5, execute_0xC5),
           (0xC6, execute_0xC6),
           (0xC7, execute_0xC7),
-          (0xC8, execute_0xC8),
+          (0xC8, retz_0xC8),
           (0xC9, execute_0xC9),
           (0xCA, execute_0xCA),
           (0xCC, execute_0xCC),
-          (0xCD, execute_0xCD),
+          (0xCD, call_0xCD),
           (0xCE, execute_0xCE),
           (0xCF, execute_0xCF),
           (0xD0, execute_0xD0),
@@ -1105,7 +1105,7 @@ execute_0xC4 z80 =
       -- case 0xC4: call(Fr!=0); break;
    --call_z80 (z80.flags.fr /= 0) z80
    let
-     result = call (z80.flags.fr /= 0) z80
+     result = call_if (z80.flags.fr /= 0) z80
    in
       EnvWithPc result.env result.pc
 
@@ -1150,8 +1150,8 @@ execute_0xC7 z80 =
    --  EnvWithPc result.env result.pc
     z80 |> rst_delta 0xC7
 
-execute_0xC8: Z80 -> Z80Delta
-execute_0xC8 z80 =
+retz_0xC8: Z80 -> Z80Delta
+retz_0xC8 z80 =
     -- case 0xC8: time++; if(Fr==0) MP=PC=pop(); break;
    let
       z80_1_time = z80.env.time |> add_cpu_time_time 1
@@ -1200,21 +1200,22 @@ execute_0xCC z80 =
     -- case 0xCC: call(Fr==0); break;
    --call_z80 (z80.flags.fr == 0) z80
   let
-    result = z80 |> call (z80.flags.fr == 0)
+    result = z80 |> call_if (z80.flags.fr == 0)
   in
     EnvWithPc result.env result.pc
 
-execute_0xCD: Z80 -> Z80Delta
-execute_0xCD z80 =
+call_0xCD: Z80 -> Z80Delta
+call_0xCD z80 =
    -- case 0xCD: v=imm16(); push(PC); MP=PC=v; break;
    let
       v = z80 |> imm16
-      env = z80.env
+      --env = z80.env
       --d = debug_log "call" ("from " ++ (v.z80.pc |> toHexString) ++ " to " ++ (v.value |> subName)) Nothing
-      pushed = { env | time = v.time } |> z80_push v.pc
+      --pushed = { env | time = v.time } |> z80_push v.pc
    in
       --{ z80_1 | env = pushed, pc = v.value }
-      EnvWithPc pushed v.value
+      --EnvWithPc pushed v.value
+      PushWithCpuTimeAndPc v.pc v.time v.value
 
 execute_0xCE: Z80 -> Z80Delta
 execute_0xCE z80 =
