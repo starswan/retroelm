@@ -128,8 +128,8 @@ execute_0x75 ixiyhl z80 =
 --	}
 
 
-halt : Z80 -> Z80Delta
-halt z80 =
+execute_0x76_halt : Z80 -> Z80Delta
+execute_0x76_halt z80 =
     let
         interrupts =
             z80.interrupts

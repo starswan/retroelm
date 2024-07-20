@@ -2,11 +2,40 @@ module Group0x00 exposing (..)
 
 import Bitwise
 import CpuTimeCTime exposing (add_cpu_time_time)
+import Dict exposing (Dict)
 import Utils exposing (shiftLeftBy8)
-import Z80Delta exposing (Z80Delta(..))
+import Z80Delta exposing (Z80Delta(..), delta_noop)
 import Z80Env exposing (add_cpu_time_env, mem, set_mem)
 import Z80Flags exposing (add16, dec, inc, rot)
-import Z80Types exposing (IXIYHL, Z80, add_cpu_time, get_bc, get_xy, imm16, imm8, set_bc_main, set_xy)
+import Z80Types exposing (IXIYHL, Z80, get_bc, get_xy, imm16, imm8, set_bc_main, set_xy)
+
+
+delta_dict_00 : Dict Int (IXIYHL -> Z80 -> Z80Delta)
+delta_dict_00 =
+    Dict.fromList
+        [ ( 0x09, execute_0x09 )
+        ]
+
+
+delta_dict_lite_00 : Dict Int (Z80 -> Z80Delta)
+delta_dict_lite_00 =
+    Dict.fromList
+        [ ( 0x00, delta_noop )
+        , ( 0x01, execute_0x01 )
+        , ( 0x02, execute_0x02 )
+        , ( 0x03, execute_0x03 )
+        , ( 0x04, execute_0x04 )
+        , ( 0x05, execute_0x05 )
+        , ( 0x06, execute_0x06 )
+        , ( 0x07, execute_0x07 )
+        , ( 0x08, ex_af )
+        , ( 0x0A, execute_0x0A )
+        , ( 0x0B, execute_0x0B )
+        , ( 0x0C, execute_0x0C )
+        , ( 0x0D, execute_0x0D )
+        , ( 0x0E, execute_0x0E )
+        , ( 0x0F, execute_0x0F )
+        ]
 
 
 execute_0x01 : Z80 -> Z80Delta

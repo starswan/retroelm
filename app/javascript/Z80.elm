@@ -7,24 +7,24 @@ import Array exposing (Array)
 import Bitwise exposing (and, or, shiftRightBy)
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimePcAndValue, add_cpu_time_time)
 import Dict exposing (Dict)
-import Group0x00 exposing (ex_af, execute_0x01, execute_0x02, execute_0x03, execute_0x04, execute_0x05, execute_0x06, execute_0x07, execute_0x09, execute_0x0A, execute_0x0B, execute_0x0C, execute_0x0D, execute_0x0E, execute_0x0F)
+import Group0x00 exposing (delta_dict_00, delta_dict_lite_00)
 import Group0x10 exposing (execute_0x10, execute_0x11, execute_0x12, execute_0x13, execute_0x14, execute_0x15, execute_0x16, execute_0x17, execute_0x18, execute_0x19, execute_0x1A, execute_0x1B, execute_0x1C, execute_0x1D, execute_0x1E, execute_0x1F)
 import Group0x20 exposing (execute_0x20, execute_0x21, execute_0x22, execute_0x23, execute_0x24, execute_0x25, execute_0x26, execute_0x27, execute_0x28, execute_0x29, execute_0x2A, execute_0x2B, execute_0x2C, execute_0x2D, execute_0x2E, execute_0x2F)
 import Group0x30 exposing (execute_0x30, execute_0x31, execute_0x32, execute_0x33, execute_0x34, execute_0x35, execute_0x36, execute_0x37, execute_0x38, execute_0x39, execute_0x3A, execute_0x3B, execute_0x3C, execute_0x3D, execute_0x3E, execute_0x3F)
 import Group0x40 exposing (execute_0x41, execute_0x42, execute_0x43, execute_0x44, execute_0x45, execute_0x46, execute_0x47, execute_0x48, execute_0x4A, execute_0x4B, execute_0x4C, execute_0x4D, execute_0x4E, execute_0x4F)
 import Group0x50 exposing (execute_0x50, execute_0x51, execute_0x53, execute_0x54, execute_0x55, execute_0x56, execute_0x57, execute_0x58, execute_0x59, execute_0x5A, execute_0x5C, execute_0x5D, execute_0x5E, execute_0x5F)
 import Group0x60 exposing (execute_0x60, execute_0x61, execute_0x62, execute_0x63, execute_0x65, execute_0x66, execute_0x67, execute_0x68, execute_0x69, execute_0x6A, execute_0x6B, execute_0x6C, execute_0x6E, execute_0x6F)
-import Group0x70 exposing (execute_0x70, execute_0x71, execute_0x72, execute_0x73, execute_0x74, execute_0x75, execute_0x77, execute_0x78, execute_0x79, execute_0x7A, execute_0x7B, execute_0x7C, execute_0x7D, execute_0x7E, halt)
+import Group0x70 exposing (execute_0x70, execute_0x71, execute_0x72, execute_0x73, execute_0x74, execute_0x75, execute_0x76_halt, execute_0x77, execute_0x78, execute_0x79, execute_0x7A, execute_0x7B, execute_0x7C, execute_0x7D, execute_0x7E)
 import GroupCB exposing (group_cb, group_xy_cb)
 import GroupED exposing (group_ed)
 import Loop
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString)
 import Z80Debug exposing (debug_todo)
-import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta)
-import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem16, out, pop, set_mem, z80_in, z80_push, z80env_constructor)
+import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta, delta_noop)
+import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem16, out, pop, z80_in, z80_push, z80env_constructor)
 import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, c_FC, c_FS, cp, get_flags, sbc, set_af, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
-import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, call, env_mem_hl, get_bc, get_de, get_h, get_l, get_xy, hl_deref_with_z80, imm16, imm8, inc_pc, jp, jp_z80, rst, rst_z80, set_bc_main, set_de_main, set_flag_regs, set_h, set_l)
+import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, call, get_bc, get_de, get_h, get_l, get_xy, hl_deref_with_z80, imm16, imm8, inc_pc, jp, jp_z80, rst, rst_z80, set_bc_main, set_de_main, set_flag_regs)
 
 constructor: Z80
 constructor =
@@ -270,11 +270,6 @@ execute_ltC0 c ixiyhl z80 =
          case lt40_array_lite |> Array.get c |> Maybe.withDefault Nothing of
             Just f_without_ixiyhl -> Just (z80 |> f_without_ixiyhl)
             Nothing -> Nothing
-
-
-
-delta_noop: Z80 -> Z80Delta
-delta_noop z80 = NoChange
 
 
 
@@ -793,20 +788,6 @@ makeLt40Array =
 lt40_delta_dict_lite: Dict Int (Z80 -> Z80Delta)
 lt40_delta_dict_lite = Dict.fromList
     [
-          (0x01, execute_0x01),
-          (0x02, execute_0x02),
-          (0x03, execute_0x03),
-          (0x04, execute_0x04),
-          (0x05, execute_0x05),
-          (0x06, execute_0x06),
-          (0x07, execute_0x07),
-          (0x08, ex_af),
-          (0x0A, execute_0x0A),
-          (0x0B, execute_0x0B),
-          (0x0C, execute_0x0C),
-          (0x0D, execute_0x0D),
-          (0x0E, execute_0x0E),
-          (0x0F, execute_0x0F),
           (0x10, execute_0x10),
           (0x11, execute_0x11),
           (0x12, execute_0x12),
@@ -841,7 +822,6 @@ lt40_delta_dict_lite = Dict.fromList
           (0x3F, execute_0x3F),
           -- case 0x40: break;
           (0x40, delta_noop),
-          (0x00, delta_noop),
           (0x41, execute_0x41),
           (0x42, execute_0x42),
           (0x43, execute_0x43),
@@ -868,7 +848,7 @@ lt40_delta_dict_lite = Dict.fromList
           -- case 0x6D: break;
           (0x6D, delta_noop),
           -- case 0x76: halt(); break;
-          (0x76, halt),
+          (0x76, execute_0x76_halt),
           (0x78, execute_0x78),
           (0x79, execute_0x79),
           (0x7A, execute_0x7A),
@@ -956,7 +936,7 @@ lt40_delta_dict_lite = Dict.fromList
           (0xF6, execute_0xF6),
           (0xFB, execute_0xFB),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
-    ]
+    ] |> Dict.union delta_dict_lite_00
 
 lt40_dict_lite: Dict Int (Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
@@ -990,7 +970,6 @@ execute_0xFF z80 =
 lt40_delta_dict: Dict Int (IXIYHL -> Z80 -> Z80Delta)
 lt40_delta_dict = Dict.fromList
     [
-          (0x09, execute_0x09),
           (0x19, execute_0x19),
           (0x21, execute_0x21),
           (0x23, execute_0x23),
@@ -1071,7 +1050,7 @@ lt40_delta_dict = Dict.fromList
           (0xE3, execute_0xE3),
           (0xE5, execute_0xE5),
           (0xE9, execute_0xE9)
-    ]
+    ] |> Dict.union delta_dict_00
 
 execute_0xC0: Z80 -> Z80Delta
 execute_0xC0 z80 =

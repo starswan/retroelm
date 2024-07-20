@@ -248,5 +248,8 @@ apply_delta z80 z80delta =
             in
             { z80 | pc = z80delta.pc, env = { env | time = z80delta.time } |> z80_push value, interrupts = z80delta.interrupts }
 
+delta_noop: Z80 -> Z80Delta
+delta_noop z80 = NoChange
+
 
 
