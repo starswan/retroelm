@@ -24,13 +24,14 @@ import MessageHandler exposing (array_decoder, bytesToTap)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Qaop, pause)
 import Spectrum exposing (frames, new_tape, set_rom)
+import SpectrumColour exposing (colourToString, spectrumColour)
 import Svg exposing (Svg, line, rect, svg)
 import Svg.Attributes exposing (fill, height, rx, stroke, viewBox, width, x1, x2, y1, y2)
 import Tapfile exposing (Tapfile)
 import Time exposing (posixToMillis)
 import Utils exposing (speed_in_hz, time_display)
 import Z80Debug exposing (debug_log)
-import Z80Screen exposing (ScreenLine, screenLines, spectrumColour)
+import Z80Screen exposing (ScreenColourRun, screenLines)
 
 
 
@@ -97,19 +98,19 @@ init data =
     ( Model newQaop c_TICKTIME 0 0 Nothing, cmd )
 
 
-lineToSvg : Int -> ScreenLine -> Svg Message
+lineToSvg : Int -> ScreenColourRun -> Svg Message
 lineToSvg y_index linedata =
     line
         [ x1 (48 + linedata.start |> String.fromInt)
         , y1 (40 + y_index |> String.fromInt)
         , x2 ((48 + linedata.start + linedata.length) |> String.fromInt)
         , y2 (40 + y_index |> String.fromInt)
-        , stroke linedata.colour
+        , stroke (linedata.colour |> colourToString)
         ]
         []
 
 
-lineListToSvg : Int -> List ScreenLine -> List (Svg Message)
+lineListToSvg : Int -> List ScreenColourRun -> List (Svg Message)
 lineListToSvg y_index linelist =
     List.map (lineToSvg y_index) linelist
 
@@ -128,7 +129,7 @@ view model =
 
         -- border colour is never bright
         border_colour =
-            spectrumColour screen.border False
+            spectrumColour screen.border False |> colourToString
 
         background =
             [ rect [ height "100%", width "100%", fill border_colour, rx "15" ] [] ]
