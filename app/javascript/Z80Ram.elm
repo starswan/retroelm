@@ -41,11 +41,11 @@ getRam16Value addr z80ram =
          low = if ram_addr >= 0 then
                   z80ram.non_screen |> getValue ram_addr
                else
-                  z80ram.screen.screen |> getValue addr
+                  z80ram.screen |> getScreenValue addr
          high = if (ram_addr1) >= 0 then
                   z80ram.non_screen |> getValue (ram_addr1)
                else
-                  z80ram.screen.screen |> getValue (addr + 1)
+                  z80ram.screen |> getScreenValue (addr + 1)
     in
        (Bitwise.or low (shiftLeftBy8 high))
 

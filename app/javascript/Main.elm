@@ -23,6 +23,7 @@ import Loader exposing (LoadAction(..), trimActionList)
 import MessageHandler exposing (array_decoder, bytesToTap)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Qaop, pause)
+import ScreenTypes exposing (ScreenColourRun)
 import Spectrum exposing (frames, new_tape, set_rom)
 import SpectrumColour exposing (colourToString, spectrumColour)
 import Svg exposing (Svg, line, rect, svg)
@@ -31,7 +32,7 @@ import Tapfile exposing (Tapfile)
 import Time exposing (posixToMillis)
 import Utils exposing (speed_in_hz, time_display)
 import Z80Debug exposing (debug_log)
-import Z80Screen exposing (ScreenColourRun, screenLines)
+import Z80Screen exposing (screenLines)
 
 
 

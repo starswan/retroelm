@@ -2,7 +2,9 @@ module SpectrumColour exposing (..)
 
 import Dict
 import Maybe exposing (withDefault)
-type SpectrumColour
+
+
+type InkPaperColour
     = Black
     | Blue
     | Red
@@ -11,13 +13,40 @@ type SpectrumColour
     | Cyan
     | Yellow
     | White
-    | BrightBlue
-    | BrightRed
-    | BrightMagenta
-    | BrightGreen
-    | BrightCyan
-    | BrightYellow
-    | BrightWhite
+
+
+type alias SpectrumColour =
+    { colour : InkPaperColour
+    , bright : Bool
+    }
+
+plainGreen = SpectrumColour Green False
+brightGreen = SpectrumColour Green True
+plainWhite = SpectrumColour White False
+--brightWhite = SpectrumColour White True
+--plainBlue = SpectrumColour Blue False
+plainBlack = SpectrumColour Black False
+plainMagenta = SpectrumColour Magenta False
+brightMagenta = SpectrumColour Magenta True
+
+
+
+--= Black
+--| Blue
+--| Red
+--| Magenta
+--| Green
+--| Cyan
+--| Yellow
+--| White
+--| BrightBlue
+--| BrightRed
+--| BrightMagenta
+--| BrightGreen
+--| BrightCyan
+--| BrightYellow
+--| BrightWhite
+
 
 c_BLACK =
     "#000000"
@@ -68,73 +97,41 @@ spectrumColours =
         ]
 
 
-spectrumBrightColours =
-    Dict.fromList
-        [ ( 0, Black )
-        , ( 1, BrightBlue )
-        , ( 2, BrightRed )
-        , ( 3, BrightMagenta )
-        , ( 4, BrightGreen )
-        , ( 5, BrightCyan )
-        , ( 6, BrightYellow )
-        , ( 7, BrightWhite )
-        ]
-
-
 spectrumColour : Int -> Bool -> SpectrumColour
 spectrumColour value bright =
-    if bright then
-        Dict.get value spectrumBrightColours |> withDefault BrightWhite
-
-    else
-        Dict.get value spectrumColours |> withDefault White
-
+    SpectrumColour (Dict.get value spectrumColours |> withDefault White) bright
 
 colourToString : SpectrumColour -> String
 colourToString colour =
-    case colour of
-        Black ->
-            c_BLACK
+    let
+        brightVersion =
+            case colour.colour of
+                Black ->
+                    c_BLACK
 
-        Blue ->
-            c_BLUE |> String.replace "FF" c_UNBRIGHT
+                Blue ->
+                    c_BLUE
 
-        Red ->
-            c_RED |> String.replace "FF" c_UNBRIGHT
+                Red ->
+                    c_RED
 
-        Magenta ->
-            c_MAGENTA |> String.replace "FF" c_UNBRIGHT
+                Magenta ->
+                    c_MAGENTA
 
-        Green ->
-            c_GREEN |> String.replace "FF" c_UNBRIGHT
+                Green ->
+                    c_GREEN
 
-        Cyan ->
-            c_CYAN |> String.replace "FF" c_UNBRIGHT
+                Cyan ->
+                    c_CYAN
 
-        Yellow ->
-            c_YELLOW |> String.replace "FF" c_UNBRIGHT
+                Yellow ->
+                    c_YELLOW
 
-        White ->
-            c_WHITE |> String.replace "FF" c_UNBRIGHT
+                White ->
+                    c_WHITE
+    in
+    if colour.bright then
+        brightVersion
 
-        BrightBlue ->
-            c_BLUE
-
-        BrightRed ->
-            c_RED
-
-        BrightMagenta ->
-            c_MAGENTA
-
-        BrightGreen ->
-            c_GREEN
-
-        BrightCyan ->
-            c_CYAN
-
-        BrightYellow ->
-            c_YELLOW
-
-        BrightWhite ->
-            c_WHITE
-
+    else
+        brightVersion |> String.replace "FF" c_UNBRIGHT

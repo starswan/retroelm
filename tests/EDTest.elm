@@ -55,13 +55,13 @@ suite =
                   new_env = z80env
                                |> set_mem addr 0xED
                                |> set_mem (addr + 1) 0xB0
-                               |> set_mem (0x5050) 0xA0
-                               |> set_mem (0x5051) 0xA5
-                               |> set_mem (0x5052) 0xAA
-                               |> set_mem (0x5053) 0xBA
-                               |> set_mem (0x5054) 0xB5
+                               |> set_mem (0x7050) 0xA0
+                               |> set_mem (0x7051) 0xA5
+                               |> set_mem (0x7052) 0xAA
+                               |> set_mem (0x7053) 0xBA
+                               |> set_mem (0x7054) 0xB5
                   z80_1 = execute_instruction z80rom { z80 | env = { new_env | sp = 0xFF77 },
-                                                        main = { z80main | hl = 0x5050, d = 0x60, e = 0x00, b = 0x00, c = 0x05 }, flags = { flags | a = 0x60 } }
+                                                        main = { z80main | hl = 0x7050, d = 0x60, e = 0x00, b = 0x00, c = 0x05 }, flags = { flags | a = 0x60 } }
                   new_z80 = z80_1 |> execute_instruction z80rom |> execute_instruction z80rom |> execute_instruction z80rom |> execute_instruction z80rom
                   mem_vals = [(new_z80.env |> mem 0x6000 z80rom).value,
                               (new_z80.env |> mem 0x6001 z80rom).value,
@@ -69,7 +69,7 @@ suite =
                               (new_z80.env |> mem 0x6003 z80rom).value,
                               (new_z80.env |> mem 0x6004 z80rom).value]
                in
-                  Expect.equal {pc=(addr + 2), b=0x00, c=0x00,d=0x60,e=0x05,hl=0x5055,mem=[0xA0, 0xA5, 0xAA, 0xBA, 0xB5]}
+                  Expect.equal {pc=(addr + 2), b=0x00, c=0x00,d=0x60,e=0x05,hl=0x7055,mem=[0xA0, 0xA5, 0xAA, 0xBA, 0xB5]}
                   {pc=new_z80.pc, b=new_z80.main.b, c=new_z80.main.c,e=new_z80.main.e,d=new_z80.main.d,hl=new_z80.main.hl, mem=mem_vals}
             ,test "0xED 78 IN A, (C)" <|
             \_ ->

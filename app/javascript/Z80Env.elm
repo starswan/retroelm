@@ -33,6 +33,7 @@ type alias Z80EnvWithValue =
     , value : Int
     }
 
+
 type alias Z80EnvWithPC =
     { env : Z80Env
     , pc : Int
@@ -339,6 +340,9 @@ set_ram addr value z80env =
 set_mem : Int -> Int -> Z80Env -> Z80Env
 set_mem z80_addr value z80env =
     let
+        time =
+            z80env.time
+
         n =
             z80env.time.cpu_time - z80env.time.ctime
 
@@ -347,7 +351,7 @@ set_mem z80_addr value z80env =
                 z80env.time |> cont n
 
             else
-                CpuTimeCTime z80env.time.cpu_time c_NOCONT
+                { time | ctime = c_NOCONT }
 
         addr =
             z80_addr - 0x4000
@@ -377,7 +381,7 @@ set_mem z80_addr value z80env =
             else
                 ( z80env |> set_ram addr value, c_NOCONT )
     in
-    { new_env | time = CpuTimeCTime z80env_time.cpu_time ctime }
+    { new_env | time = { z80env_time | ctime = ctime } }
 
 
 
@@ -498,7 +502,7 @@ z80_in portnum env_in =
 
         x =
             if value /= 0xFF then
-                debug_log "keyboard value" ((portnum |> toHexString2) ++ " " ++ (toHexString2 value)) value
+                debug_log "keyboard value" ((portnum |> toHexString2) ++ " " ++ toHexString2 value) value
 
             else
                 value
@@ -558,4 +562,3 @@ pop z80rom z80_env  =
             v.time |> add_cpu_time_time 6
     in
     CpuTimeSpAndValue time (Bitwise.and (z80_env.sp + 2) 0xFFFF) v.value
-
