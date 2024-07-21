@@ -4,206 +4,277 @@ import Array exposing (Array)
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Byte exposing (Byte, getBit)
 import Dict exposing (Dict)
-import Maybe exposing (withDefault)
+import Maybe
+import SpectrumColour exposing (SpectrumColour, spectrumColour)
 import Z80Memory exposing (Z80Memory, getValue)
 
+
 type alias Z80Screen =
-    {
-        screen: Z80Memory,
-        border: Int
-        --flash: Int,
-        --refrs_a: Int,
-        --refrs_b: Int,
-        --refrs_t: Int,
-        --refrs_s: Int
+    { screen : Z80Memory
+    , border : Int
+
+    --flash: Int,
+    --refrs_a: Int,
+    --refrs_b: Int,
+    --refrs_t: Int,
+    --refrs_s: Int
     }
 
-constructor: Z80Screen
+
+constructor : Z80Screen
 constructor =
-   let
-      --for(int i=6144;i<6912;i++) ram[i] = 070; // white
-      screen_data = List.repeat 6144 0
-      attributes = List.repeat 768 0x38 -- white
-
-      screen = List.concat [screen_data, attributes] |> Z80Memory.constructor
-   in
-      --Z80Screen screen 7 0 0 0 0 0
-      Z80Screen screen 7
-
-set_value: Int -> Int -> Z80Screen -> Z80Screen
-set_value addr value z80s =
     let
-        z80screen = z80s |> refresh_screen
+        --for(int i=6144;i<6912;i++) ram[i] = 070; // white
+        screen_data =
+            List.repeat 6144 0
+
+        attributes =
+            List.repeat 768 0x38
+
+        -- white
+        screen =
+            List.concat [ screen_data, attributes ] |> Z80Memory.constructor
     in
-       { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
+    --Z80Screen screen 7 0 0 0 0 0
+    Z80Screen screen 7
+
+
+setScreenValue : Int -> Int -> Z80Screen -> Z80Screen
+setScreenValue addr value z80s =
+    let
+        z80screen =
+            z80s |> refresh_screen
+    in
+    { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
+
+getScreenValue: Int -> Z80Screen -> Int
+getScreenValue addr screen =
+    screen.screen |> getValue addr
 
 -- colour data is bit 7 flash, bit 6 bright, bits 5-3 paper, bits 2-0 ink
+
+
 type alias RawScreenData =
-   {
-      colour: Int,
-      data: Int
-   }
+    { colour : Int
+    , data : Int
+    }
+
 
 type alias ScreenData =
-   {
-      colour: Int,
-      data: List Int
-   }
+    { colour : Int
+    , data : List Int
+    }
+
+
 
 -- line definition - length colour (3 bits) and brightness
 -- ignore flash for now
-type alias ScreenLine =
-   {
-      start: Int,
-      length: Int,
-      colour: String,
-      flash: Bool
-   }
 
-isBitSet: Byte -> Int -> Bool
+
+type alias ScreenColourRun =
+    { start : Int
+    , length : Int
+    , colour : SpectrumColour
+    , flash : Bool
+    }
+
+
+isBitSet : Byte -> Int -> Bool
 isBitSet value shift =
-   getBit shift value
+    getBit shift value
 
-bitsToLines: Byte -> List Bool
+
+bitsToLines : Byte -> List Bool
 bitsToLines datum =
-   [7, 6, 5, 4, 3, 2, 1, 0] |> List.map (isBitSet datum)
+    [ 7, 6, 5, 4, 3, 2, 1, 0 ] |> List.map (isBitSet datum)
+
 
 type alias RunCount =
-   {
-      start: Int,
-      value: Bool,
-      count: Int
-   }
+    { start : Int
+    , value : Bool
+    , count : Int
+    }
 
-c_BLACK = "#000000"
-c_BLUE = "#0000FF"
-c_RED = "#FF0000"
-c_MAGENTA = "#FF00FF"
-c_GREEN = "#00FF00"
-c_CYAN = "#00FFFF"
-c_YELLOW = "#FFFF00"
-c_WHITE = "#FFFFFF"
-c_UNBRIGHT = "D7"
 
-spectrumColours = Dict.fromList [(0, c_BLACK), (1, c_BLUE), (2, c_RED), (3, c_MAGENTA),
-                                 (4, c_GREEN), (5, c_CYAN), (6,c_YELLOW), (7, c_WHITE)]
-
-spectrumColour: Int -> Bool -> String
-spectrumColour value bright =
-   let
-      colour = Dict.get value spectrumColours |> withDefault c_WHITE
-   in
-      if bright then colour else (String.replace "FF" c_UNBRIGHT colour)
-
-pairToColour: Int -> RunCount -> ScreenLine
+pairToColour : Int -> RunCount -> ScreenColourRun
 pairToColour raw_colour runcount =
-   let
-      colour_byte = Byte.fromInt raw_colour
-      bright = colour_byte |> getBit 6
-      colour = if runcount.value then
-                  Bitwise.and raw_colour 0x07
-               else
-                  (Bitwise.and raw_colour 0x38 |> shiftRightBy 3)
-   in
-      ScreenLine runcount.start runcount.count (spectrumColour colour bright) (colour_byte |> getBit 7)
+    let
+        colour_byte =
+            Byte.fromInt raw_colour
 
-bytes0to255 = List.range 0 255 |> List.map Byte.fromInt
+        bright =
+            colour_byte |> getBit 6
+
+        colour =
+            if runcount.value then
+                Bitwise.and raw_colour 0x07
+
+            else
+                Bitwise.and raw_colour 0x38 |> shiftRightBy 3
+    in
+    ScreenColourRun runcount.start runcount.count (spectrumColour colour bright) (colour_byte |> getBit 7)
+
+
+bytes0to255 =
+    List.range 0 255 |> List.map Byte.fromInt
+
+
 
 -- optimization of intToBools
-intToBoolsCache: Array (List Bool)
+
+
+intToBoolsCache : Array (List Bool)
 intToBoolsCache =
     List.map bitsToLines bytes0to255 |> Array.fromList
 
-intsToBools: List Int -> List Bool
+
+intsToBools : List Int -> List Bool
 intsToBools data =
-   data |> List.map (\index -> Array.get index intToBoolsCache)
+    data
+        |> List.map (\index -> Array.get index intToBoolsCache)
         |> List.map (Maybe.withDefault [])
         |> List.concat
 
-runCounts: Bool -> List RunCount -> List RunCount
+
+runCounts : Bool -> List RunCount -> List RunCount
 runCounts item list =
-   case list of
-       runcount :: tail ->
-         if item == runcount.value then
-            (RunCount runcount.start runcount.value (runcount.count + 1)) :: tail
-         else
-            (RunCount (runcount.start + runcount.count) item 1) :: list
-       _ ->
-         [RunCount 0 item 1]
+    case list of
+        runcount :: tail ->
+            if item == runcount.value then
+                RunCount runcount.start runcount.value (runcount.count + 1) :: tail
+
+            else
+                RunCount (runcount.start + runcount.count) item 1 :: list
+
+        _ ->
+            [ RunCount 0 item 1 ]
+
+
 
 -- need to work out how to filter out lines of background colour
 -- This isn't quite right - the colour is the attribute value
 --single_line |> List.filter (\item -> item.colour /= z80env.border)
 -- screenline is start length colour (0-7) and flash
-toDrawn: ScreenData -> List ScreenLine -> List ScreenLine
+
+
+toDrawn : ScreenData -> List ScreenColourRun -> List ScreenColourRun
 toDrawn screendata linelist =
-   let
-      bools = screendata.data |> intsToBools
-      run_counts = bools |> List.foldl runCounts []
-      new_list = run_counts |> List.reverse |> List.map (pairToColour screendata.colour)
-   in
-      new_list :: List.singleton(linelist) |> List.concat
+    let
+        bools =
+            screendata.data |> intsToBools
+
+        run_counts =
+            bools |> List.foldl runCounts []
+
+        new_list =
+            run_counts |> List.reverse |> List.map (pairToColour screendata.colour)
+    in
+    new_list :: List.singleton linelist |> List.concat
+
+
 
 -- convert a row of data, colour into a combo of repeated blocks
-foldUp: RawScreenData -> List ScreenData -> List ScreenData
+
+
+foldUp : RawScreenData -> List ScreenData -> List ScreenData
 foldUp raw list =
-   case list of
-       head :: tail ->
-         if head.colour == raw.colour then
-            (ScreenData raw.colour (raw.data :: head.data)) :: tail
-         else
-            (ScreenData raw.colour [raw.data]) :: list
-       _ ->
-         [ScreenData raw.colour [raw.data]]
+    case list of
+        head :: tail ->
+            if head.colour == raw.colour then
+                ScreenData raw.colour (raw.data :: head.data) :: tail
 
-fold_lines: List RawScreenData -> List ScreenData
+            else
+                ScreenData raw.colour [ raw.data ] :: list
+
+        _ ->
+            [ ScreenData raw.colour [ raw.data ] ]
+
+
+fold_lines : List RawScreenData -> List ScreenData
 fold_lines screen =
-   screen |> List.foldr foldUp []
+    screen |> List.foldr foldUp []
 
-rawToLines: List RawScreenData -> List ScreenLine
+
+rawToLines : List RawScreenData -> List ScreenColourRun
 rawToLines screen =
-   fold_lines screen |> List.foldr toDrawn []
+    fold_lines screen |> List.foldr toDrawn []
+
+
 
 -- Convert row index into start row data location and (colour-ish) attribute memory location
-calcOffsets: Int -> (Int, Int)
+
+
+calcOffsets : Int -> ( Int, Int )
 calcOffsets start =
-   let
-      bank = start // 64
-      bankOffset = start |> modBy 64
-      startDiv8 = bankOffset // 8
-      data_offset = start |> modBy 8 |> shiftLeftBy 3
-      row_index = 64 * bank + startDiv8 + data_offset
-      attr_index = (bank * 8) + (bankOffset |> modBy 8)
-      row_offset = row_index * 32
-      attr_offset = 0x1800 + (attr_index * 32)
-   in
-      (row_offset, attr_offset)
+    let
+        bank =
+            start // 64
 
-range0192 = List.range 0 191
+        bankOffset =
+            start |> modBy 64
 
-screenOffsets = range0192 |> List.map (\line_num -> calcOffsets line_num)
+        startDiv8 =
+            bankOffset // 8
 
-mapScreen: (Int, Int) -> Z80Memory -> Int -> RawScreenData
-mapScreen (row_offset, attr_offset) z80env_ram index  =
-   let
-      data = getValue (row_offset + index) z80env_ram
-      colour = getValue (attr_offset + index) z80env_ram
-   in
-      { colour=colour,data=data }
+        data_offset =
+            start |> modBy 8 |> shiftLeftBy 3
 
-range031 = List.range 0 31
+        row_index =
+            64 * bank + startDiv8 + data_offset
 
-singleScreenLine: (Int, Int) -> Z80Memory -> List RawScreenData
+        attr_index =
+            (bank * 8) + (bankOffset |> modBy 8)
+
+        row_offset =
+            row_index * 32
+
+        attr_offset =
+            0x1800 + (attr_index * 32)
+    in
+    ( row_offset, attr_offset )
+
+
+range0192 =
+    List.range 0 191
+
+
+screenOffsets =
+    range0192 |> List.map (\line_num -> calcOffsets line_num)
+
+
+mapScreen : ( Int, Int ) -> Z80Memory -> Int -> RawScreenData
+mapScreen ( row_offset, attr_offset ) z80env_ram index =
+    let
+        data =
+            getValue (row_offset + index) z80env_ram
+
+        colour =
+            getValue (attr_offset + index) z80env_ram
+    in
+    { colour = colour, data = data }
+
+
+range031 =
+    List.range 0 31
+
+
+singleScreenLine : ( Int, Int ) -> Z80Memory -> List RawScreenData
 singleScreenLine line_num z80env =
     List.map (mapScreen line_num z80env) range031
 
-screenLines: Z80Screen -> Dict Int (List ScreenLine)
+
+screenLines : Z80Screen -> Dict Int (List ScreenColourRun)
 screenLines z80env =
     let
-        rawlines = screenOffsets |> List.map (\line_num -> singleScreenLine line_num z80env.screen)
-        lines2 = List.map rawToLines rawlines
+        rawlines =
+            screenOffsets |> List.map (\line_num -> singleScreenLine line_num z80env.screen)
+
+        lines2 =
+            List.map rawToLines rawlines
     in
-        lines2 |> List.indexedMap (\index linelist -> (index, linelist)) |> Dict.fromList
+    lines2 |> List.indexedMap (\index linelist -> ( index, linelist )) |> Dict.fromList
+
+
 
 --private final void refresh_screen() {
 --	int ft = cpu.time;
@@ -253,7 +324,8 @@ screenLines z80env =
 --	refrs_a = a; refrs_b = b;
 --	refrs_t = t; refrs_s = s;
 --}
-refresh_screen: Z80Screen -> Z80Screen
-refresh_screen z80env =
-   z80env
 
+
+refresh_screen : Z80Screen -> Z80Screen
+refresh_screen z80env =
+    z80env
