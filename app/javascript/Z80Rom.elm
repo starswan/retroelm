@@ -25,8 +25,8 @@ getROMValue addr z80rom =
                 Nothing ->
                   debug_todo "getROMValue" (String.fromInt addr) -1
 
-set_spectrum_rom: Array Int -> Z80ROM -> Z80ROM
-set_spectrum_rom romdata z80env =
+make_spectrum_rom: Array Int -> Z80ROM
+make_spectrum_rom romdata =
    let
       romDict = listToDict (Array.toList romdata)
    in

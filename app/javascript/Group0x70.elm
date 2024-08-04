@@ -4,16 +4,17 @@ import Bitwise exposing (shiftRightBy)
 import CpuTimeCTime exposing (add_cpu_time_time)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (add_cpu_time_env, set_mem)
+import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL(..), Z80, env_mem_hl, get_h, get_l, hl_deref_with_z80)
 
 
-execute_0x7077 : IXIYHL -> Z80 -> Int -> Z80Delta
-execute_0x7077 ixiyhl z80 value =
+execute_0x7077 : IXIYHL -> Z80ROM -> Z80 -> Int -> Z80Delta
+execute_0x7077 ixiyhl rom48k z80 value =
     -- case 0x70: env.mem(HL,B); time+=3; break;
     -- case 0x70: env.mem(getd(xy),B); time+=3; break;
     let
         mem_target =
-            z80 |> env_mem_hl ixiyhl
+            z80 |> env_mem_hl ixiyhl rom48k
 
         env_1 =
             z80.env
@@ -27,8 +28,8 @@ execute_0x7077 ixiyhl z80 value =
     EnvWithPc new_env mem_target.pc
 
 
-execute_0x70 : IXIYHL -> Z80 -> Z80Delta
-execute_0x70 ixiyhl z80 =
+execute_0x70 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+execute_0x70 ixiyhl rom48k z80 =
     -- case 0x70: env.mem(HL,B); time+=3; break;
     -- case 0x70: env.mem(getd(xy),B); time+=3; break;
     --let
@@ -40,11 +41,11 @@ execute_0x70 ixiyhl z80 =
     --in
     --   --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
     --   EnvWithPc new_env mem_target.pc
-    execute_0x7077 ixiyhl z80 z80.main.b
+    execute_0x7077 ixiyhl rom48k z80 z80.main.b
 
 
-execute_0x71 : IXIYHL -> Z80 -> Z80Delta
-execute_0x71 ixiyhl z80 =
+execute_0x71 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+execute_0x71 ixiyhl rom48k z80 =
     -- case 0x71: env.mem(HL,C); time+=3; break;
     -- case 0x71: env.mem(getd(xy),C); time+=3; break;
     --let
@@ -56,11 +57,11 @@ execute_0x71 ixiyhl z80 =
     --in
     --    --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
     --    EnvWithPc new_env mem_target.pc
-    execute_0x7077 ixiyhl z80 z80.main.c
+    execute_0x7077 ixiyhl rom48k z80 z80.main.c
 
 
-execute_0x72 : IXIYHL -> Z80 -> Z80Delta
-execute_0x72 ixiyhl z80 =
+execute_0x72 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+execute_0x72 ixiyhl rom48k z80 =
     -- case 0x72: env.mem(HL,D); time+=3; break;
     -- case 0x72: env.mem(getd(xy),D); time+=3; break;
     --let
@@ -70,11 +71,11 @@ execute_0x72 ixiyhl z80 =
     --in
     --   --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
     --   EnvWithPc new_env mem_target.pc
-    execute_0x7077 ixiyhl z80 z80.main.d
+    execute_0x7077 ixiyhl rom48k z80 z80.main.d
 
 
-execute_0x73 : IXIYHL -> Z80 -> Z80Delta
-execute_0x73 ixiyhl z80 =
+execute_0x73 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+execute_0x73 ixiyhl rom48k z80 =
     -- case 0x73: env.mem(HL,E); time+=3; break;
     -- case 0x73: env.mem(getd(xy),E); time+=3; break;
     --let
@@ -84,11 +85,11 @@ execute_0x73 ixiyhl z80 =
     --in
     --   --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
     --   EnvWithPc new_env mem_target.pc
-    execute_0x7077 ixiyhl z80 z80.main.e
+    execute_0x7077 ixiyhl rom48k z80 z80.main.e
 
 
-execute_0x74 : IXIYHL -> Z80 -> Z80Delta
-execute_0x74 ixiyhl z80 =
+execute_0x74 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+execute_0x74 ixiyhl rom48k z80 =
     -- case 0x74: env.mem(HL,HL>>>8); time+=3; break;
     -- case 0x74: env.mem(getd(xy),HL>>>8); time+=3; break;
     --let
@@ -98,11 +99,11 @@ execute_0x74 ixiyhl z80 =
     --in
     --   --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
     --    EnvWithPc new_env mem_target.pc
-    execute_0x7077 ixiyhl z80 (get_h HL z80.main)
+    execute_0x7077 ixiyhl rom48k z80 (get_h HL z80.main)
 
 
-execute_0x75 : IXIYHL -> Z80 -> Z80Delta
-execute_0x75 ixiyhl z80 =
+execute_0x75 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+execute_0x75 ixiyhl rom48k z80 =
     -- case 0x75: env.mem(HL,HL&0xFF); time+=3; break;
     -- case 0x75: env.mem(getd(xy),HL&0xFF); time+=3; break;
     --let
@@ -112,7 +113,7 @@ execute_0x75 ixiyhl z80 =
     --in
     --   --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
     --   EnvWithPc new_env mem_target.pc
-    execute_0x7077 ixiyhl z80 (get_l HL z80.main)
+    execute_0x7077 ixiyhl rom48k z80 (get_l HL z80.main)
 
 
 
@@ -128,8 +129,8 @@ execute_0x75 ixiyhl z80 =
 --	}
 
 
-execute_0x76_halt : Z80 -> Z80Delta
-execute_0x76_halt z80 =
+execute_0x76_halt : Z80ROM -> Z80 -> Z80Delta
+execute_0x76_halt rom z80 =
     let
         interrupts =
             z80.interrupts
@@ -152,8 +153,8 @@ execute_0x76_halt z80 =
     InterruptsWithCpuTime { new_interrupts | halted = True } time
 
 
-execute_0x77 : IXIYHL -> Z80 -> Z80Delta
-execute_0x77 ixiyhl z80 =
+execute_0x77 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+execute_0x77 ixiyhl rom48k z80 =
     -- case 0x77: env.mem(HL,A); time+=3; break;
     -- case 0x77: env.mem(getd(xy),A); time+=3; break;
     --let
@@ -162,11 +163,11 @@ execute_0x77 ixiyhl z80 =
     --   new_env = { env_1 | time = mem_target.time } |> set_mem mem_target.value z80.flags.a
     --in
     --   { z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
-    execute_0x7077 ixiyhl z80 z80.flags.a
+    execute_0x7077 ixiyhl rom48k z80 z80.flags.a
 
 
-execute_0x78 : Z80 -> Z80Delta
-execute_0x78 z80 =
+execute_0x78 : Z80ROM -> Z80 -> Z80Delta
+execute_0x78 rom z80 =
     -- case 0x78: A=B; break;
     --z80 |> set_a z80.main.b
     let
@@ -176,8 +177,8 @@ execute_0x78 z80 =
     FlagRegs { flags | a = z80.main.b }
 
 
-execute_0x79 : Z80 -> Z80Delta
-execute_0x79 z80 =
+execute_0x79 : Z80ROM -> Z80 -> Z80Delta
+execute_0x79 rom z80 =
     -- case 0x79: A=C; break;
     --z80 |> set_a z80.main.c
     let
@@ -187,8 +188,8 @@ execute_0x79 z80 =
     FlagRegs { flags | a = z80.main.c }
 
 
-execute_0x7A : Z80 -> Z80Delta
-execute_0x7A z80 =
+execute_0x7A : Z80ROM -> Z80 -> Z80Delta
+execute_0x7A rom z80 =
     -- case 0x7A: A=D; break;
     --z80 |> set_a z80.main.d
     let
@@ -198,8 +199,8 @@ execute_0x7A z80 =
     FlagRegs { flags | a = z80.main.d }
 
 
-execute_0x7B : Z80 -> Z80Delta
-execute_0x7B z80 =
+execute_0x7B : Z80ROM -> Z80 -> Z80Delta
+execute_0x7B rom z80 =
     -- case 0x7B: A=E; break;
     --z80 |> set_a z80.main.e
     let
@@ -209,8 +210,8 @@ execute_0x7B z80 =
     FlagRegs { flags | a = z80.main.e }
 
 
-execute_0x7C : IXIYHL -> Z80 -> Z80Delta
-execute_0x7C ixiyhl z80 =
+execute_0x7C : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+execute_0x7C ixiyhl rom z80 =
     -- case 0x7C: A=HL>>>8; break;
     -- case 0x7C: A=xy>>>8; break;
     --z80 |> set_a (get_h ixiyhl z80.main)
@@ -221,8 +222,8 @@ execute_0x7C ixiyhl z80 =
     FlagRegs { flags | a = get_h ixiyhl z80.main }
 
 
-execute_0x7D : IXIYHL -> Z80 -> Z80Delta
-execute_0x7D ixiyhl z80 =
+execute_0x7D : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+execute_0x7D ixiyhl rom z80 =
     -- case 0x7D: A=HL&0xFF; break;
     -- case 0x7D: A=xy&0xFF; break;
     --z80 |> set_a (get_l ixiyhl z80.main)
@@ -233,13 +234,13 @@ execute_0x7D ixiyhl z80 =
     FlagRegs { flags | a = get_l ixiyhl z80.main }
 
 
-execute_0x7E : IXIYHL -> Z80 -> Z80Delta
-execute_0x7E ixiyhl z80 =
+execute_0x7E : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+execute_0x7E ixiyhl rom48k z80 =
     -- case 0x7E: A=env.mem(HL); time+=3; break;
     -- case 0x7E: A=env.mem(getd(xy)); time+=3; break;
     let
         value =
-            hl_deref_with_z80 ixiyhl z80
+            z80 |> hl_deref_with_z80 ixiyhl rom48k
 
         --env_1 = z80.env
         flags =

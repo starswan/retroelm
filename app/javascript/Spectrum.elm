@@ -12,6 +12,7 @@ import Z80 exposing (execute, interrupt)
 import Z80Debug exposing (debug_log)
 import Z80Env exposing (reset_cpu_time)
 import Z80Ram exposing (c_FRSTART, c_FRTIME)
+import Z80Rom exposing (Z80ROM, make_spectrum_rom)
 import Z80Tape exposing (Z80Tape)
 import Z80Types exposing (Z80)
 
@@ -81,8 +82,11 @@ set_rom: Array Int -> Spectrum -> Spectrum
 set_rom romdata spectrum =
    let
       z80 = spectrum.cpu
+      rommy =
+                  make_spectrum_rom romdata
    in
-      { spectrum | cpu = { z80 | env = z80.env |> Z80Env.set_rom romdata } }
+      --{ spectrum | cpu = { z80 | env = z80.env |> Z80Env.set_rom romdata } }
+      { spectrum | rom48k = rommy }
 
 --c_Mh = 6 -- margin
 --c_Mv = 5
@@ -100,6 +104,7 @@ set_rom romdata spectrum =
 type alias Spectrum =
     {
         cpu: Z80,
+        rom48k : Z80ROM,
         paused: Bool,
         want_pause: Int,
         tape: Maybe Z80Tape,
@@ -111,7 +116,7 @@ type alias Spectrum =
 constructor: Spectrum
 constructor =
     --Spectrum Z80.constructor True 1 Nothing Audio new_screen_refresh new_border_refresh
-    Spectrum Z80.constructor True 1 Nothing new_screen_refresh new_border_refresh
+    Spectrum Z80.constructor Z80Rom.constructor True 1 Nothing new_screen_refresh new_border_refresh
 --
 --	public void run()
 --	{
@@ -230,7 +235,7 @@ frames keys speccy =
     sz80 = speccy.cpu
     env = sz80.env |> reset_cpu_time
     cpu = { sz80 | time_limit = c_FRSTART + c_FRTIME,
-                   env = { env | keyboard = keys |> update_keyboard } } |> interrupt 0xFF |> execute
+                   env = { env | keyboard = keys |> update_keyboard } } |> interrupt 0xFF speccy.rom48k |> execute speccy.rom48k
   in
     { speccy | cpu = cpu }
       --x = if spectrum.paused then
