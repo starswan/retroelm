@@ -306,8 +306,6 @@ group_cb tmp_z80 =
 
 
 
---		}
---	}
 --
 --	private void group_xy_cb(int xy)
 --	{
@@ -419,6 +417,7 @@ group_xy_cb ixiyhl z80 =
         z80_4 |> Whole
 
 
+
 -- There appear to be many situations where we already know that we don't need all
 -- this complexity as we're just doing LD A,B or something similar - so stop using it in those cases
 
@@ -455,88 +454,53 @@ set408bit : Int -> Int -> IXIYHL -> Z80 -> Z80
 set408bit c value ixiyhl z80 =
     case Bitwise.and c 0x07 of
         0 ->
-            z80 |> set_b value
+            let
+                z80_main =
+                    z80.main
+            in
+            { z80 | main = { z80_main | b = value } }
 
         1 ->
-            z80 |> set_c value
+            let
+                z80_main =
+                    z80.main
+            in
+            { z80 | main = { z80_main | c = value } }
 
         2 ->
-            z80 |> set_d value
+            let
+                z80_main =
+                    z80.main
+            in
+            { z80 | main = { z80_main | d = value } }
 
         3 ->
-            z80 |> set_e value
+            let
+                z80_main =
+                    z80.main
+            in
+            { z80 | main = { z80_main | e = value } }
 
         4 ->
-            set_h_z80 value ixiyhl z80
+            let
+                main =
+                    z80.main |> set_h value ixiyhl
+            in
+            { z80 | main = main }
 
         5 ->
-            set_l_z80 value ixiyhl z80
+            let
+                main =
+                    z80.main |> set_l value ixiyhl
+            in
+            { z80 | main = main }
 
         6 ->
             { z80 | env = set_mem z80.main.hl value z80.env }
 
         _ ->
-            z80 |> set_a value
-
-
-set_b : Int -> Z80 -> Z80
-set_b value z80 =
-    let
-        z80_main =
-            z80.main
-    in
-    { z80 | main = { z80_main | b = value } }
-
-
-set_c : Int -> Z80 -> Z80
-set_c value z80 =
-    let
-        z80_main =
-            z80.main
-    in
-    { z80 | main = { z80_main | c = value } }
-
-
-set_d : Int -> Z80 -> Z80
-set_d value z80 =
-    let
-        z80_main =
-            z80.main
-    in
-    { z80 | main = { z80_main | d = value } }
-
-
-set_e : Int -> Z80 -> Z80
-set_e value z80 =
-    let
-        z80_main =
-            z80.main
-    in
-    { z80 | main = { z80_main | e = value } }
-
-set_h_z80 : Int -> IXIYHL -> Z80 -> Z80
-set_h_z80 value ixiyhl z80 =
-    let
-        main =
-            z80.main |> set_h value ixiyhl
-    in
-    { z80 | main = main }
-
-
-set_l_z80 : Int -> IXIYHL -> Z80 -> Z80
-set_l_z80 value ixiyhl z80 =
-    let
-        main =
-            z80.main |> set_l value ixiyhl
-    in
-    { z80 | main = main }
-
-
-set_a : Int -> Z80 -> Z80
-set_a value z80 =
-    let
-        z80_flags =
-            z80.flags
-    in
-    { z80 | flags = { z80_flags | a = value } }
-
+            let
+                z80_flags =
+                    z80.flags
+            in
+            { z80 | flags = { z80_flags | a = value } }
