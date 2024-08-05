@@ -4,6 +4,7 @@ import Expect exposing (Expectation)
 import Test exposing (..)
 import Z80 exposing (execute_instruction)
 import Z80Env exposing (mem, set_mem)
+import Z80Rom
 
 suite : Test
 suite =
@@ -17,6 +18,7 @@ suite =
        z80 = { old_z80 | pc = addr, env = { old_z80env | sp = sp }, main = { z80main | hl = hl } }
        flags = z80.flags
        z80env = z80.env
+       z80rom = Z80Rom.constructor
    in
        describe "Bit instructions (CB)"
          [
@@ -26,7 +28,7 @@ suite =
                   new_env = z80env
                                |> set_mem addr 0xCB
                                |> set_mem (addr + 1) 0x00
-                  new_z80 = execute_instruction { z80 | env = { new_env | sp = 0x8765 },
+                  new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | hl = 0x6545, b = 0x50 }, flags = { flags | a = 0x39 } }
                in
                   Expect.equal ((addr + 2), 0xA0) (new_z80.pc, new_z80.main.b)
@@ -36,7 +38,7 @@ suite =
                   new_env = z80env
                                |> set_mem addr 0xCB
                                |> set_mem (addr + 1) 0x00
-                  new_z80 = execute_instruction { z80 | env = { new_env | sp = 0x8765 },
+                  new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | b = 0xFE }, flags = { flags | ff = 0 } }
                in
                   Expect.equal ((addr + 2), 0xFD, 0x1FD) (new_z80.pc, new_z80.main.b, new_z80.flags.ff)
@@ -46,7 +48,7 @@ suite =
                   new_env = z80env
                                |> set_mem addr 0xCB
                                |> set_mem (addr + 1) 0x01
-                  new_z80 = execute_instruction { z80 | env = { new_env | sp = 0x8765 },
+                  new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                          main = { z80main | hl = 0x6545, c = 0x50 }, flags = { flags | a = 0x39 } }
                in
                   Expect.equal ((addr + 2), 0xA0) (new_z80.pc, new_z80.main.c)
@@ -56,7 +58,7 @@ suite =
                   new_env = z80env
                                |> set_mem addr 0xCB
                                |> set_mem (addr + 1) 0x02
-                  new_z80 = execute_instruction { z80 | env = { new_env | sp = 0x8765 },
+                  new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | hl = 0x6545, d = 0x50 }, flags = { flags | a = 0x39 } }
                in
                   Expect.equal ((addr + 2), 0xA0) (new_z80.pc, new_z80.main.d)
@@ -66,7 +68,7 @@ suite =
                   new_env = z80env
                                |> set_mem addr 0xCB
                                |> set_mem (addr + 1) 0x04
-                  new_z80 = execute_instruction { z80 | env = { new_env | sp = 0x8765 },
+                  new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | hl = 0x5045, d = 0x50 }, flags = { flags | a = 0x39 } }
                in
                   Expect.equal ((addr + 2), 0xA045) (new_z80.pc, new_z80.main.hl)
@@ -76,7 +78,7 @@ suite =
                   new_env = z80env
                                |> set_mem addr 0xCB
                                |> set_mem (addr + 1) 0x05
-                  new_z80 = execute_instruction { z80 | env = { new_env | sp = 0x8765 },
+                  new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | hl = 0x5050, d = 0x50 }, flags = { flags | a = 0x39 } }
                in
                   Expect.equal ((addr + 2), 0x50A0) (new_z80.pc, new_z80.main.hl)
@@ -87,9 +89,9 @@ suite =
                                |> set_mem addr 0xCB
                                |> set_mem (addr + 1) 0x06
                                |> set_mem 0x6545 0x31
-                  new_z80 = execute_instruction { z80 | env = { new_env | sp = 0x8765 },
+                  new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | hl = 0x6545, b = 0xA5 }, flags = { flags | a = 0x39 } }
-                  mem_value = mem 0x6545 new_z80.env
+                  mem_value =  new_z80.env |> mem 0x6545 z80rom
                in
                   Expect.equal ((addr + 2), 0x62) (new_z80.pc, mem_value.value)
             ,test "0xCB 0x07 RLC A" <|
@@ -98,7 +100,7 @@ suite =
                   new_env = z80env
                                |> set_mem addr 0xCB
                                |> set_mem (addr + 1) 0x07
-                  new_z80 = execute_instruction { z80 | env = { new_env | sp = 0x8765 },
+                  new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | hl = 0x5050, d = 0x50 }, flags = { flags | a = 0x30 } }
                in
                   Expect.equal ((addr + 2), 0x60) (new_z80.pc, new_z80.flags.a)

@@ -8,6 +8,7 @@ import Z80Debug exposing (debug_todo)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (add_cpu_time_env, m1, mem, set_mem)
 import Z80Flags exposing (IntWithFlags, bit, c_F53, shifter, shifter0)
+import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIY, IXIYHL(..), IntWithFlagsTimeAndPC, Z80, a_with_z80, add_cpu_time, b_with_z80, c_with_z80, d_with_z80, e_with_z80, get_ixiy_xy, h_with_z80, hl_deref_with_z80, inc_pc, inc_pc2, l_with_z80, set_flag_regs, set_h, set_l)
 
 
@@ -128,11 +129,11 @@ execute_CB05 z80 =
     FlagsWithPCMainAndCpuTime x.flags x.pc (z80.main |> set_l x.value HL) x.time
 
 
-execute_CB06 : Z80 -> Z80Delta
-execute_CB06 z80 =
+execute_CB06 : Z80ROM -> Z80 -> Z80Delta
+execute_CB06 rom48k z80 =
     let
         x =
-            z80 |> execute_CB0007 (z80 |> hl_deref_with_z80 HL)
+            z80 |> execute_CB0007 (z80 |> hl_deref_with_z80 HL rom48k)
 
         env =
             z80.env
@@ -155,8 +156,8 @@ execute_CB07 z80 =
     FlagsWithPcAndTime { flags | a = x.value } x.pc x.time
 
 
-group_cb : Z80 -> Z80Delta
-group_cb tmp_z80 =
+group_cb : Z80ROM -> Z80 -> Z80Delta
+group_cb rom48k tmp_z80 =
     --	private void group_cb()
     --	{
     --		int v, c = env.m1(PC, IR|R++&0x7F);
@@ -171,7 +172,7 @@ group_cb tmp_z80 =
             Bitwise.or tmp_z80.interrupts.ir new_r
 
         c =
-            m1 tmp_z80.pc (Bitwise.or tmp_z80.interrupts.ir ir_or_r) tmp_z80.env
+            tmp_z80.env |> m1 tmp_z80.pc (Bitwise.or tmp_z80.interrupts.ir ir_or_r) rom48k
 
         env =
             tmp_z80.env
@@ -214,7 +215,7 @@ group_cb tmp_z80 =
             if caseval < 0x08 then
                 let
                     raw =
-                        z80 |> load408bit caseval HL
+                        z80 |> load408bit caseval HL rom48k
 
                     --z = debug_log "group_cb raw" (raw.value |> toHexString2) Nothing
                     value =
@@ -240,7 +241,7 @@ group_cb tmp_z80 =
                 -- case 0x47: bit(o,A); break;
                 let
                     raw =
-                        z80 |> load408bit caseval HL
+                        z80 |> load408bit caseval HL rom48k
 
                     flags =
                         bit o raw.value z80.flags
@@ -264,7 +265,7 @@ group_cb tmp_z80 =
                 -- case 0x87: A=A&~(1<<o); break;
                 let
                     raw =
-                        z80 |> load408bit caseval HL
+                        z80 |> load408bit caseval HL rom48k
 
                     result =
                         Bitwise.and raw.value (1 |> shiftLeftBy o |> complement)
@@ -288,7 +289,7 @@ group_cb tmp_z80 =
                 -- case 0xC7: A=A|1<<o; break;
                 let
                     raw =
-                        z80 |> load408bit caseval HL
+                        z80 |> load408bit caseval HL rom48k
 
                     result =
                         Bitwise.or raw.value (1 |> shiftLeftBy o)
@@ -320,14 +321,14 @@ group_cb tmp_z80 =
 --		int o = c>>>3 & 7;
 
 
-group_xy_cb : IXIY -> Z80 -> Z80Delta
-group_xy_cb ixiyhl z80 =
+group_xy_cb : IXIY -> Z80ROM -> Z80 -> Z80Delta
+group_xy_cb ixiyhl rom48k z80 =
     let
         xy =
             get_ixiy_xy ixiyhl z80.main
 
         offset =
-            mem z80.pc z80.env
+            z80.env |> mem z80.pc rom48k
 
         a =
             char (xy + byte offset.value)
@@ -339,7 +340,7 @@ group_xy_cb ixiyhl z80 =
             { z80 | env = { env_1 | time = offset.time |> add_cpu_time_time 3 } }
 
         c =
-            z80_1.env |> mem (char (z80.pc + 1))
+            z80_1.env |> mem (char (z80.pc + 1)) rom48k
 
         new_pc =
             z80_1 |> inc_pc2
@@ -351,7 +352,7 @@ group_xy_cb ixiyhl z80 =
             { z80_1 | env = { env_2 | time = c.time |> add_cpu_time_time 5 }, pc = new_pc }
 
         v1 =
-            z80_2.env |> mem a
+            z80_2.env |> mem a rom48k
 
         env_3 =
             z80_2.env
@@ -422,8 +423,8 @@ group_xy_cb ixiyhl z80 =
 -- this complexity as we're just doing LD A,B or something similar - so stop using it in those cases
 
 
-load408bit : Int -> IXIYHL -> Z80 -> CpuTimePcAndValue
-load408bit c_value ixiyhl z80 =
+load408bit : Int -> IXIYHL -> Z80ROM -> Z80 -> CpuTimePcAndValue
+load408bit c_value ixiyhl rom48k z80 =
     case Bitwise.and c_value 0x07 of
         0 ->
             b_with_z80 z80
@@ -444,7 +445,7 @@ load408bit c_value ixiyhl z80 =
             l_with_z80 ixiyhl z80
 
         6 ->
-            hl_deref_with_z80 ixiyhl z80
+            z80 |> hl_deref_with_z80 ixiyhl rom48k
 
         _ ->
             a_with_z80 z80

@@ -3,6 +3,7 @@ module Z80Delta exposing (..)
 import CpuTimeCTime exposing (CpuTimeCTime, add_cpu_time_time)
 import Z80Env exposing (Z80Env, z80_push)
 import Z80Flags exposing (FlagRegisters)
+import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80)
 
 
@@ -257,8 +258,8 @@ apply_delta z80 z80delta =
             { z80 | pc = pc, env = { env | time = time } |> z80_push value, interrupts = z80delta.interrupts }
 
 
-delta_noop: Z80 -> Z80Delta
-delta_noop z80 = NoChange
+delta_noop: Z80ROM -> Z80 -> Z80Delta
+delta_noop rom48k z80 = NoChange
 
 
 
