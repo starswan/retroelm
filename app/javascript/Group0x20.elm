@@ -39,6 +39,34 @@ delta_dict_lite_20 =
         ]
 
 
+delta_dict_20 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
+delta_dict_20 =
+    Dict.fromList
+        [ ( 0x21, execute_0x21 )
+        , ( 0x23, execute_0x23 )
+        , ( 0x24, execute_0x24 )
+        , ( 0x25, execute_0x25 )
+        , ( 0x26, execute_0x26 )
+        , ( 0x29, execute_0x29 )
+        , ( 0x2A, execute_0x2A )
+        , ( 0x2B, execute_0x2B )
+        , ( 0x2C, execute_0x2C )
+        , ( 0x2D, execute_0x2D )
+        , ( 0x2E, execute_0x2E )
+        ]
+
+
+delta_dict_lite_20 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
+delta_dict_lite_20 =
+    Dict.fromList
+        [ ( 0x20, execute_0x20 )
+        , ( 0x22, execute_0x22 )
+        , ( 0x27, execute_0x27 )
+        , ( 0x28, execute_0x28 )
+        , ( 0x2F, execute_0x2F )
+        ]
+
+
 execute_0x20 : Z80ROM -> Z80 -> Z80Delta
 execute_0x20 rom48k z80 =
     -- case 0x20: if(Fr!=0) jr(); else imm8(); break;
