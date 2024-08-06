@@ -2,19 +2,20 @@ module Z80Memory exposing (..)
 
 import Dict exposing (Dict)
 import Utils exposing (toHexString)
+import Z80Byte exposing (Z80Byte)
 import Z80Debug exposing (debug_todo)
 
 
 type Z80Memory
-    = Z80Memory (Dict Int Int)
+    = Z80Memory (Dict Z80Byte Z80Byte)
 
 
-constructor : List Int -> Z80Memory
+constructor : List Z80Byte -> Z80Memory
 constructor list =
     Z80Memory (ramListToDict list)
 
 
-ramListToDict : List Int -> Dict Int Int
+ramListToDict : List Z80Byte -> Dict Z80Byte Z80Byte
 ramListToDict list =
     let
         ramarray =
