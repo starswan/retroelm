@@ -3,8 +3,7 @@
 --
 module Int8 exposing (..)
 
-import Bitwise
-import Byte exposing (Byte)
+import Byte exposing (Byte, toInt)
 type Int8 = Int8 Byte
 
 fromInt: Int -> Int8
@@ -14,4 +13,4 @@ fromInt value =
 add : Int -> Int8 -> Int8
 add int int8 =
    case int8 of
-      (Int8 value) -> fromInt (value + int)
+      (Int8 value) -> fromInt (toInt value + int)
