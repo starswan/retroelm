@@ -2,12 +2,44 @@ module Group0x20 exposing (..)
 
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeAndPc, add_cpu_time_time)
+import Dict exposing (Dict)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (mem16)
 import Z80Flags exposing (add16, cpl, daa, dec, inc)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL, Z80, get_xy, imm16, imm8, jr, set_xy)
+
+delta_dict_20 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
+delta_dict_20 =
+    Dict.fromList
+        [
+          (0x21, execute_0x21),
+          (0x23, execute_0x23),
+          (0x24, execute_0x24),
+          (0x25, execute_0x25),
+          (0x26, execute_0x26),
+          (0x29, execute_0x29),
+          (0x2A, execute_0x2A),
+          (0x2B, execute_0x2B),
+          (0x2C, execute_0x2C),
+          (0x2D, execute_0x2D),
+          (0x2E, execute_0x2E)
+        ]
+
+
+delta_dict_lite_20 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
+delta_dict_lite_20 =
+    Dict.fromList
+        [
+          (0x20, execute_0x20),
+          (0x22, execute_0x22),
+          (0x27, execute_0x27),
+          (0x28, execute_0x28),
+          (0x2F, execute_0x2F)
+        ]
+
+
 
 
 execute_0x20 : Z80ROM -> Z80 -> Z80Delta
