@@ -23,7 +23,7 @@ import Loader exposing (LoadAction(..), trimActionList)
 import MessageHandler exposing (array_decoder, bytesToTap)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Qaop, pause)
-import Spectrum exposing (frames, new_tape, set_rom)
+import Spectrum exposing (frames, new_tape, set_spectrum_rom)
 import SpectrumColour exposing (colourToString, spectrumColour)
 import Svg exposing (Svg, line, rect, svg)
 import Svg.Attributes exposing (fill, height, rx, stroke, viewBox, width, x1, x2, y1, y2)
@@ -359,7 +359,7 @@ gotRom : Qaop -> Result (Http.Detailed.Error Bytes) ( Http.Metadata, Array Int )
 gotRom qaop result =
     case result of
         Ok ( _, value ) ->
-            { qaop | spectrum = qaop.spectrum |> set_rom value } |> run
+            { qaop | spectrum = qaop.spectrum |> set_spectrum_rom value } |> run
 
         Err _ ->
             ( qaop, Cmd.none )
