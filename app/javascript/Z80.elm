@@ -963,7 +963,6 @@ execute_0xC5 _ z80 =
      --pushed = z80.env |> z80_push bc
    in
      --{ z80 | env = pushed }
-     --OnlyEnv pushed
      OnlyPush bc
 
 execute_0xC6: Z80ROM -> Z80 -> Z80Delta
@@ -1148,7 +1147,6 @@ execute_0xD5 _ z80 =
     --pushed = z80.env |> z80_push de
   in
     --{ z80 | env = pushed }
-    --OnlyEnv pushed
     OnlyPush de
 
 execute_0xD6: Z80ROM -> Z80 -> Z80Delta

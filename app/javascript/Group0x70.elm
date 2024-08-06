@@ -25,7 +25,8 @@ execute_0x7077 ixiyhl rom48k z80 value =
                 |> add_cpu_time_env 3
     in
     --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
-    EnvWithPc new_env mem_target.pc
+    --EnvWithPc new_env mem_target.pc
+    SetMem8WithCpuTimeIncrementAndPc mem_target.value value mem_target.time 3 mem_target.pc
 
 
 execute_0x70 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta

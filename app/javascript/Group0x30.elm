@@ -96,7 +96,7 @@ execute_0x34 ixiyhl rom48k z80 =
 
         --z80_1 = { z80 | pc = a.pc } |> add_cpu_time 4
         new_env =
-            { env_2 | time = value.time } |> add_cpu_time_env 4 |> set_mem a.value v.value
+            { env_2 | time = value.time |> add_cpu_time_time 4 } |> set_mem a.value v.value
     in
     --{ z80_1 | env = new_env, flags = v.flags } |> add_cpu_time 3
     EnvWithFlagsAndPc (new_env |> add_cpu_time_env 3) v.flags a.pc

@@ -101,7 +101,8 @@ execute_0x12 rom48k z80 =
         addr =
             shiftLeftBy8 z80.main.d + z80.main.e
     in
-    z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3 |> OnlyEnv
+    --z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3 |> OnlyEnv
+    SetMem8WithTime addr z80.flags.a 3
 
 
 execute_0x13 : Z80ROM -> Z80 -> Z80Delta
