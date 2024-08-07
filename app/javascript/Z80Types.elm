@@ -4,7 +4,7 @@ import Bitwise
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, add_cpu_time_time)
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8)
 import Z80Env exposing (Z80Env, Z80EnvWithPC, add_cpu_time_env, mem, mem16, z80_push)
-import Z80Flags exposing (FlagRegisters)
+import Z80Flags exposing (FlagRegisters, get_flags)
 import Z80Rom exposing (Z80ROM)
 
 
@@ -466,3 +466,17 @@ get_h ixiyhl z80 =
 get_l : IXIYHL -> MainWithIndexRegisters -> Int
 get_l ixiyhl z80 =
     Bitwise.and (get_xy ixiyhl z80) 0xFF
+
+--	void iff(int v) {IFF = v;}
+set_iff: Int -> Z80 -> InterruptRegisters
+set_iff value z80 =
+   let
+      --y = debug_log "set_iff" value Nothing
+      interrupts = z80.interrupts
+   in
+      { interrupts | iff = value }
+
+--	int af() {return A<<8 | flags();}
+get_af : Z80 -> Int
+get_af z80 =
+    Bitwise.or (shiftLeftBy8 z80.flags.a) (get_flags z80.flags)
