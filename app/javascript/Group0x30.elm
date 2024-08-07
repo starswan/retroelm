@@ -2,6 +2,7 @@ module Group0x30 exposing (..)
 
 import Bitwise
 import CpuTimeCTime exposing (add_cpu_time_time)
+import Dict exposing (Dict)
 import Utils exposing (byte, char)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (add_cpu_time_env, mem, set_mem)
@@ -9,6 +10,34 @@ import Z80Flags exposing (add16, dec, inc, scf_ccf)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL(..), Z80, env_mem_hl, get_xy, imm16, imm8, jr, set_xy)
 
+delta_dict_30 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
+delta_dict_30 =
+    Dict.fromList
+        [
+          (0x34, execute_0x34),
+          (0x35, execute_0x35),
+          (0x36, execute_0x36),
+          (0x39, execute_0x39)
+        ]
+
+
+delta_dict_lite_30 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
+delta_dict_lite_30 =
+    Dict.fromList
+        [
+          (0x30, execute_0x30),
+          (0x31, execute_0x31),
+          (0x32, execute_0x32),
+          (0x33, execute_0x33),
+          (0x37, execute_0x37),
+          (0x38, execute_0x38),
+          (0x3A, execute_0x3A),
+          (0x3B, execute_0x3B),
+          (0x3C, execute_0x3C),
+          (0x3D, execute_0x3D),
+          (0x3E, execute_0x3E),
+          (0x3F, execute_0x3F)
+        ]
 
 execute_0x30 : Z80ROM -> Z80 -> Z80Delta
 execute_0x30 rom48k z80 =
