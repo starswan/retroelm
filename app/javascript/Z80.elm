@@ -18,7 +18,7 @@ import Group0x70 exposing (delta_dict_70, delta_dict_lite_70)
 import Group0x80 exposing (delta_dict_80, delta_dict_lite_80)
 import Group0x90 exposing (delta_dict_90, delta_dict_lite_90)
 import Group0xA0 exposing (delta_dict_A0, delta_dict_lite_A0)
-import Group0xB0 exposing (delta_dict_B0, delta_dict_lite_B0, execute_0xBE)
+import Group0xB0 exposing (delta_dict_B0, delta_dict_lite_B0)
 import Group0xC0 exposing (delta_dict_C0, delta_dict_lite_C0)
 import Group0xE0 exposing (delta_dict_E0, delta_dict_lite_E0)
 import Loop
@@ -338,19 +338,14 @@ mergeIxiyFuncList afunc bfunc =
                         Just b -> Just b
                         Nothing -> Nothing
 
-lt40_dict: Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80)
-lt40_dict = Dict.fromList
-    [
-          (0xBE, execute_0xBE)
-    ]
-
 makeLt40Array: Array (Maybe ((IXIYHL -> Z80ROM -> Z80 -> Z80Delta)))
 makeLt40Array =
     let
-       z80_funcs = list0255 |> List.map (\index -> lt40_dict |> Dict.get index |> ixiyhl_z80_to_delta)
+       --z80_funcs = list0255 |> List.map (\index -> lt40_dict |> Dict.get index |> ixiyhl_z80_to_delta)
        delta_funcs = list0255 |> List.map (\index -> lt40_delta_dict |> Dict.get index)
     in
-       List.map2 mergeIxiyFuncList z80_funcs delta_funcs |> Array.fromList
+       --List.map2 mergeIxiyFuncList z80_funcs delta_funcs |> Array.fromList
+       delta_funcs |> Array.fromList
 
 lt40_delta_dict_lite: Dict Int (Z80ROM -> Z80 -> Z80Delta)
 lt40_delta_dict_lite = Dict.fromList
