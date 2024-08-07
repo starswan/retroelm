@@ -1,10 +1,10 @@
 module Z80Delta exposing (..)
 
-import CpuTimeCTime exposing (CpuTimeCTime, add_cpu_time_time)
+import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, add_cpu_time_time)
 import Z80Env exposing (Z80Env, add_cpu_time_env, set_mem, set_mem16, z80_push)
 import Z80Flags exposing (FlagRegisters)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80)
+import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, imm16)
 
 
 type Z80Delta
@@ -266,7 +266,28 @@ apply_delta z80 z80delta =
             { z80 | pc = pc, env = { env | time = cpuTimeCTime } |> set_mem addr value |> add_cpu_time_env time, interrupts = z80delta.interrupts }
 
 
-
 delta_noop : Z80ROM -> Z80 -> Z80Delta
 delta_noop rom48k z80 =
     NoChange
+
+
+jp_delta : Bool -> Z80ROM -> Z80 -> Z80Delta
+jp_delta y rom48k z80 =
+    let
+        result =
+            z80 |> jp y rom48k
+    in
+    CpuTimeWithPc result.time result.pc
+
+
+jp : Bool -> Z80ROM -> Z80 -> CpuTimeAndPc
+jp y rom48k z80 =
+    let
+        a =
+            z80 |> imm16 rom48k
+    in
+    if y then
+        CpuTimeAndPc a.time a.value
+
+    else
+        CpuTimeAndPc a.time a.pc
