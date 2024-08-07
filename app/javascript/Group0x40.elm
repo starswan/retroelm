@@ -1,8 +1,39 @@
 module Group0x40 exposing (..)
 
-import Z80Delta exposing (Z80Delta(..))
+import Dict exposing (Dict)
+import Z80Delta exposing (Z80Delta(..), delta_noop)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL, Z80, get_h, get_l, hl_deref_with_z80)
+
+
+delta_dict_40 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
+delta_dict_40 =
+    Dict.fromList
+        [ ( 0x44, execute_0x44 )
+        , ( 0x45, execute_0x45 )
+        , ( 0x46, execute_0x46 )
+        , ( 0x4C, execute_0x4C )
+        , ( 0x4D, execute_0x4D )
+        , ( 0x4E, execute_0x4E )
+        ]
+
+
+delta_dict_lite_40 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
+delta_dict_lite_40 =
+    Dict.fromList
+        [ -- case 0x40: break;
+          ( 0x40, delta_noop )
+        , ( 0x41, execute_0x41 )
+        , ( 0x42, execute_0x42 )
+        , ( 0x43, execute_0x43 )
+        , ( 0x47, execute_0x47 )
+        , ( 0x48, execute_0x48 )
+        , -- case 0x49: break;
+          ( 0x49, delta_noop )
+        , ( 0x4A, execute_0x4A )
+        , ( 0x4B, execute_0x4B )
+        , ( 0x4F, execute_0x4F )
+        ]
 
 
 execute_0x41 : Z80ROM -> Z80 -> Z80Delta

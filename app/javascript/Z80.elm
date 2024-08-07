@@ -11,13 +11,14 @@ import Group0x00 exposing (delta_dict_00, delta_dict_lite_00)
 import Group0x10 exposing (delta_dict_10, delta_dict_lite_10)
 import Group0x20 exposing (delta_dict_20, delta_dict_lite_20)
 import Group0x30 exposing (delta_dict_30, delta_dict_lite_30)
-import Group0x40 exposing (execute_0x41, execute_0x42, execute_0x43, execute_0x44, execute_0x45, execute_0x46, execute_0x47, execute_0x48, execute_0x4A, execute_0x4B, execute_0x4C, execute_0x4D, execute_0x4E, execute_0x4F)
+import Group0x40 exposing (delta_dict_40, delta_dict_lite_40)
 import Group0x50 exposing (execute_0x50, execute_0x51, execute_0x53, execute_0x54, execute_0x55, execute_0x56, execute_0x57, execute_0x58, execute_0x59, execute_0x5A, execute_0x5C, execute_0x5D, execute_0x5E, execute_0x5F)
 import Group0x60 exposing (execute_0x60, execute_0x61, execute_0x62, execute_0x63, execute_0x65, execute_0x66, execute_0x67, execute_0x68, execute_0x69, execute_0x6A, execute_0x6B, execute_0x6C, execute_0x6E, execute_0x6F)
 import Group0x70 exposing (execute_0x70, execute_0x71, execute_0x72, execute_0x73, execute_0x74, execute_0x75, execute_0x76_halt, execute_0x77, execute_0x78, execute_0x79, execute_0x7A, execute_0x7B, execute_0x7C, execute_0x7D, execute_0x7E)
 import Group0x80 exposing (delta_dict_80, delta_dict_lite_80)
 import Group0x90 exposing (delta_dict_90, delta_dict_lite_90)
 import Group0xA0 exposing (delta_dict_A0, delta_dict_lite_A0)
+import Group0xB0 exposing (delta_dict_B0, delta_dict_lite_B0, execute_0xBE)
 import GroupCB exposing (group_cb, group_xy_cb)
 import GroupED exposing (group_ed)
 import Loop
@@ -28,7 +29,7 @@ import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem16, out, pop, z80_in, z
 import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, c_FC, c_FS, cp, get_flags, set_af, z80_add, z80_and, z80_or, z80_sub, z80_xor)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, call_if, get_bc, get_de, get_h, get_l, get_xy, hl_deref_with_z80, imm16, imm8, inc_pc, jp, jp_z80, rst, rst_z80, set_bc_main, set_de_main, set_flag_regs)
+import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, call_if, get_bc, get_de, get_xy, imm16, imm8, inc_pc, jp, jp_z80, rst, rst_z80, set_bc_main, set_de_main)
 
 constructor: Z80
 constructor =
@@ -292,112 +293,6 @@ z80_halt z80 =
 
 
 
-execute_0xB0: Z80ROM -> Z80 -> Z80Delta
-execute_0xB0 _ z80 =
-    -- case 0xB0: or(B); break;
-    --z80 |> set_flag_regs (z80_or z80.main.b z80.flags)
-   z80.flags |> z80_or z80.main.b |> FlagRegs
-
-execute_0xB1: Z80ROM -> Z80 -> Z80Delta
-execute_0xB1 _ z80 =
-    -- case 0xB1: or(C); break;
-   z80.flags |> z80_or z80.main.c |> FlagRegs
-
-execute_0xB2: Z80ROM -> Z80 -> Z80Delta
-execute_0xB2 _ z80 =
-    -- case 0xB2: or(D); break;
-   z80.flags |> z80_or z80.main.d |> FlagRegs
-
-execute_0xB3: Z80ROM -> Z80 -> Z80Delta
-execute_0xB3 _ z80 =
-    -- case 0xB3: or(E); break;
-    --z80 |> set_flag_regs (z80_or z80.main.e z80.flags)
-   z80.flags |> z80_or z80.main.e |> FlagRegs
-
-execute_0xB4: IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0xB4 ixiyhl _ z80 =
-    -- case 0xB4: or(HL>>>8); break;
-    -- case 0xB4: or(xy>>>8); break;
-    --z80 |> set_flag_regs (z80_or (get_h ixiyhl z80.main) z80.flags)
-   z80.flags |> z80_or (get_h ixiyhl z80.main) |> FlagRegs
-
-execute_0xB5: IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0xB5 ixiyhl _ z80 =
-    -- case 0xB5: or(HL&0xFF); break;
-    -- case 0xB5: or(xy&0xFF); break;
-    --z80 |> set_flag_regs (z80_or (get_l ixiyhl z80.main) z80.flags)
-   z80.flags |> z80_or (get_l ixiyhl z80.main) |> FlagRegs
-
-execute_0xB6: IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0xB6 ixiyhl rom48k z80 =
-  -- case 0xB6: or(env.mem(HL)); time+=3; break;
-  -- case 0xB6: or(env.mem(getd(xy))); time+=3; break;
-  let
-    value = z80 |> hl_deref_with_z80 ixiyhl rom48k
-    --env_1 = z80.env
-  in
-    --{ z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (z80_or value.value z80.flags)
-    FlagsWithPcAndTime (z80.flags |> z80_or value.value) value.pc value.time
-
-execute_0xB7: Z80ROM -> Z80 -> Z80Delta
-execute_0xB7 _ z80 =
-    -- case 0xB7: or(A); break;
-    --z80 |> set_flag_regs (z80_or z80.flags.a z80.flags)
-   z80.flags |> z80_or z80.flags.a |> FlagRegs
-
-execute_0xB8: Z80ROM -> Z80 -> Z80Delta
-execute_0xB8 _ z80 =
-   -- case 0xB8: cp(B); break;
-   --z80 |> set_flag_regs (cp z80.main.b z80.flags)
-   z80.flags |> cp z80.main.b |> FlagRegs
-
-execute_0xB9: Z80ROM -> Z80 -> Z80Delta
-execute_0xB9 _ z80 =
-   -- case 0xB9: cp(C); break;
-   --z80 |> set_flag_regs (cp z80.main.c z80.flags)
-   z80.flags |> cp z80.main.c |> FlagRegs
-
-execute_0xBA: Z80ROM -> Z80 -> Z80Delta
-execute_0xBA _ z80 =
-   -- case 0xBA: cp(D); break;
-   --z80 |> set_flag_regs (cp z80.main.d z80.flags)
-   z80.flags |> cp z80.main.d |> FlagRegs
-
-execute_0xBB: Z80ROM -> Z80 -> Z80Delta
-execute_0xBB _ z80 =
-   -- case 0xBB: cp(E); break;
-   --z80 |> set_flag_regs (cp z80.main.e z80.flags)
-   z80.flags |> cp z80.main.e |> FlagRegs
-
-execute_0xBC: IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0xBC ixiyhl _ z80 =
-    -- case 0xBC: cp(HL>>>8); break;
-    -- case 0xBC: cp(xy>>>8); break;
-    --z80 |> set_flag_regs (cp (get_h ixiyhl z80.main) z80.flags)
-   z80.flags |> cp (get_h ixiyhl z80.main) |> FlagRegs
-
-execute_0xBD: IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0xBD ixiyhl _ z80 =
-    -- case 0xBD: cp(HL&0xFF); break;
-    -- case 0xBD: cp(xy&0xFF); break;
-    --z80 |> set_flag_regs (cp (get_l ixiyhl z80.main) z80.flags)
-   z80.flags |> cp (get_l ixiyhl z80.main) |> FlagRegs
-
-execute_0xBE: IXIYHL -> Z80ROM -> Z80 -> Z80
-execute_0xBE ixiyhl rom48k z80 =
-    -- case 0xBE: cp(env.mem(HL)); time+=3; break;
-    -- case 0xBE: cp(env.mem(getd(xy))); time+=3; break;
-    let
-       value = z80 |> hl_deref_with_z80 ixiyhl rom48k
-       env_1 = z80.env
-    in
-       { z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (cp value.value z80.flags)
-
-execute_0xBF: Z80ROM -> Z80 -> Z80Delta
-execute_0xBF _ z80 =
-    -- case 0xBF: cp(A); break;
-    --z80 |> set_flag_regs (cp z80.flags.a z80.flags)
-   z80.flags |> cp z80.flags.a |> FlagRegs
 
 lt40_array_lite: Array (Maybe (Z80ROM -> Z80 -> Z80Delta))
 lt40_array_lite = makeLiteArray
@@ -460,18 +355,6 @@ makeLt40Array =
 lt40_delta_dict_lite: Dict Int (Z80ROM -> Z80 -> Z80Delta)
 lt40_delta_dict_lite = Dict.fromList
     [
-          -- case 0x40: break;
-          (0x40, delta_noop),
-          (0x41, execute_0x41),
-          (0x42, execute_0x42),
-          (0x43, execute_0x43),
-          (0x47, execute_0x47),
-          (0x48, execute_0x48),
-          -- case 0x49: break;
-          (0x49, delta_noop),
-          (0x4A, execute_0x4A),
-          (0x4B, execute_0x4B),
-          (0x4F, execute_0x4F),
           (0x50, execute_0x50),
           (0x51, execute_0x51),
           (0x52, delta_noop),
@@ -495,16 +378,6 @@ lt40_delta_dict_lite = Dict.fromList
           (0x7B, execute_0x7B),
           -- case 0x7F: break;
           (0x7F, delta_noop),
-          (0xB0, execute_0xB0),
-          (0xB1, execute_0xB1),
-          (0xB2, execute_0xB2),
-          (0xB3, execute_0xB3),
-          (0xB7, execute_0xB7),
-          (0xB8, execute_0xB8),
-          (0xB9, execute_0xB9),
-          (0xBA, execute_0xBA),
-          (0xBB, execute_0xBB),
-          (0xBF, execute_0xBF),
           (0xC0, execute_0xC0),
           (0xC1, execute_0xC1),
           (0xC2, execute_0xC2),
@@ -556,6 +429,8 @@ lt40_delta_dict_lite = Dict.fromList
     |> Dict.union delta_dict_lite_10
     |> Dict.union delta_dict_lite_20
     |> Dict.union delta_dict_lite_30
+    |> Dict.union delta_dict_lite_40
+    |> Dict.union delta_dict_lite_B0
 
 lt40_dict_lite: Dict Int (Z80ROM -> Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
@@ -582,12 +457,6 @@ execute_0xFF _ z80 =
 lt40_delta_dict: Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 lt40_delta_dict = Dict.fromList
     [
-          (0x44, execute_0x44),
-          (0x45, execute_0x45),
-          (0x46, execute_0x46),
-          (0x4C, execute_0x4C),
-          (0x4D, execute_0x4D),
-          (0x4E, execute_0x4E),
           (0x54, execute_0x54),
           (0x55, execute_0x55),
           (0x56, execute_0x56),
@@ -618,11 +487,6 @@ lt40_delta_dict = Dict.fromList
           (0x7C, execute_0x7C),
           (0x7D, execute_0x7D),
           (0x7E, execute_0x7E),
-          (0xB4, execute_0xB4),
-          (0xB5, execute_0xB5),
-          (0xB6, execute_0xB6),
-          (0xBC, execute_0xBC),
-          (0xBD, execute_0xBD),
           (0xCB, execute_0xCB),
           (0xE1, execute_0xE1),
           (0xE3, execute_0xE3),
@@ -635,6 +499,8 @@ lt40_delta_dict = Dict.fromList
     |> Dict.union delta_dict_10
     |> Dict.union delta_dict_20
     |> Dict.union delta_dict_30
+    |> Dict.union delta_dict_B0
+    |> Dict.union delta_dict_40
 
 execute_0xC0: Z80ROM -> Z80 -> Z80Delta
 execute_0xC0 rom48k z80 =
