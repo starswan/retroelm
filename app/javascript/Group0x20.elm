@@ -2,9 +2,9 @@ module Group0x20 exposing (..)
 
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeAndPc, add_cpu_time_time)
-import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8)
+import Utils exposing (char, shiftLeftBy8, shiftRightBy8)
 import Z80Delta exposing (Z80Delta(..))
-import Z80Env exposing (add_cpu_time_env, mem, mem16, set_mem16)
+import Z80Env exposing (mem16)
 import Z80Flags exposing (add16, cpl, daa, dec, inc)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL, Z80, get_xy, imm16, imm8, jr, set_xy)
@@ -55,13 +55,13 @@ execute_0x22 rom48k z80 =
             z80 |> imm16 rom48k
 
         --new_z80 = { z80 | pc = v.pc }
-        env =
-            z80.env |> set_mem16 v.value z80.main.hl |> add_cpu_time_env 6
+        --env =
+        --    z80.env |> set_mem16 v.value z80.main.hl |> add_cpu_time_env 6
 
         --x = debug_log "LD nn, HL" ((z80.pc |> toHexString) ++ " addr " ++ (v.value |> toHexString) ++ " " ++ (new_z80.main.hl |> toHexString)) env
     in
-    --{ new_z80 | env = env }
-    EnvWithPc env v.pc
+    --EnvWithPc env v.pc
+    SetMem16WithTimeAndPc v.value z80.main.hl 6 v.pc
 
 
 execute_0x23 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta

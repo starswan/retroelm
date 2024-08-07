@@ -158,7 +158,7 @@ mem base_addr rom48k z80env =
         addr =
             base_addr - 0x4000
 
-        ( new_env, ctime, value ) =
+        ( new_time, ctime, value ) =
             if addr >= 0 then
                 if addr < 0x4000 then
                     let
@@ -173,7 +173,7 @@ mem base_addr rom48k z80env =
             else
                 ( z80env_time, c_NOCONT, rom48k |> getROMValue base_addr )
     in
-    CpuTimeAndValue (CpuTimeCTime new_env.cpu_time ctime) value
+    CpuTimeAndValue { new_time | ctime = ctime } value
 
 
 

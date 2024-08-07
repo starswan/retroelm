@@ -1,7 +1,7 @@
 module Z80Delta exposing (..)
 
 import CpuTimeCTime exposing (CpuTimeCTime, add_cpu_time_time)
-import Z80Env exposing (Z80Env, z80_push)
+import Z80Env exposing (Z80Env, add_cpu_time_env, set_mem, set_mem16, z80_push)
 import Z80Flags exposing (FlagRegisters)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80)
@@ -10,7 +10,6 @@ import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegist
 type Z80Delta
     = Whole Z80
     | MainRegsWithPcAndCpuTime MainWithIndexRegisters Int CpuTimeCTime
-    | OnlyEnv Z80Env
     | MainRegsAndCpuTime MainWithIndexRegisters Int
     | FlagsWithMain FlagRegisters MainWithIndexRegisters
     | FlagsWithPCMainAndTime FlagRegisters Int MainWithIndexRegisters Int
@@ -19,7 +18,6 @@ type Z80Delta
     | MainRegs MainWithIndexRegisters
     | MainRegsWithPc MainWithIndexRegisters Int
     | FlagsAndAlt FlagRegisters FlagRegisters
-    | EnvWithFlags Z80Env FlagRegisters
     | CpuTimeWithFlags CpuTimeCTime FlagRegisters
     | EnvWithFlagsAndPc Z80Env FlagRegisters Int
     | CpuTimeWithFlagsAndPc CpuTimeCTime FlagRegisters Int
@@ -41,6 +39,9 @@ type Z80Delta
     | MainRegsWithEnvAndPc MainWithIndexRegisters Z80Env Int
     | OnlyPush Int
     | PushWithCpuTimeAndPc Int CpuTimeCTime Int
+    | SetMem8WithTime Int Int Int
+    | SetMem16WithTimeAndPc Int Int Int Int
+    | SetMem8WithCpuTimeIncrementAndPc Int Int CpuTimeCTime Int Int
 
 
 type alias DeltaWithChanges =
@@ -63,9 +64,6 @@ apply_delta z80 z80delta =
                     z80.env
             in
             { z80 | pc = pc, env = { env | time = cpu_time }, main = mainRegisters, interrupts = z80delta.interrupts }
-
-        OnlyEnv z80Env ->
-            { z80 | pc = z80delta.pc, env = z80Env, interrupts = z80delta.interrupts }
 
         MainRegsAndCpuTime mainRegisters cpu_time ->
             let
@@ -94,9 +92,6 @@ apply_delta z80 z80delta =
                     z80.env
             in
             { z80 | flags = flagRegisters, alt_flags = altFlags, pc = z80delta.pc, env = { env | time = z80delta.time }, interrupts = z80delta.interrupts }
-
-        EnvWithFlags z80Env flagRegisters ->
-            { z80 | flags = flagRegisters, pc = z80delta.pc, env = z80Env, interrupts = z80delta.interrupts }
 
         CpuTimeWithFlags time flagRegisters ->
             let
@@ -257,9 +252,21 @@ apply_delta z80 z80delta =
             in
             { z80 | pc = pc, env = { env | time = time } |> z80_push value, interrupts = z80delta.interrupts }
 
+        SetMem8WithTime addr value time ->
+            { z80 | pc = z80delta.pc, env = z80.env |> set_mem addr value |> add_cpu_time_env time, interrupts = z80delta.interrupts }
 
-delta_noop: Z80ROM -> Z80 -> Z80Delta
-delta_noop rom48k z80 = NoChange
+        SetMem16WithTimeAndPc addr value time pc ->
+            { z80 | pc = pc, env = z80.env |> set_mem16 addr value |> add_cpu_time_env time, interrupts = z80delta.interrupts }
+
+        SetMem8WithCpuTimeIncrementAndPc addr value cpuTimeCTime time pc ->
+            let
+                env =
+                    z80.env
+            in
+            { z80 | pc = pc, env = { env | time = cpuTimeCTime } |> set_mem addr value |> add_cpu_time_env time, interrupts = z80delta.interrupts }
 
 
 
+delta_noop : Z80ROM -> Z80 -> Z80Delta
+delta_noop rom48k z80 =
+    NoChange
