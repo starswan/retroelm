@@ -193,22 +193,24 @@ call_if y rom48k z80 =
         env =
             z80.env
 
-        z80_2 =
-            { z80 | pc = a.pc, env = { env | time = a.time } }
+        --z80_2 =
+        --    { z80 | pc = a.pc, env = { env | time = a.time } }
+        new_env =
+            { env | time = a.time }
     in
     if y then
         let
             --b = debug_log "call" (a.value |> subName) Nothing
             --z80_1 = z80_2 |> push z80_2.pc |> set_pc a.value
             pushed =
-                z80_2.env |> z80_push z80_2.pc
+                new_env |> z80_push a.pc
 
             --z80_1 = { z80_2 | env = pushed, pc = a.value }
         in
         Z80EnvWithPC pushed a.value
 
     else
-        Z80EnvWithPC z80_2.env a.pc
+        Z80EnvWithPC new_env a.pc
 
 
 rst_z80 : Int -> Z80 -> Z80
