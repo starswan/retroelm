@@ -1,4 +1,4 @@
-module Group20 exposing (..)
+module Group0x20 exposing (..)
 
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeAndPc, add_cpu_time_time)

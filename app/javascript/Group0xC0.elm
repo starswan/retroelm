@@ -1,4 +1,4 @@
-module GroupC0 exposing (..)
+module Group0xC0 exposing (..)
 
 import CpuTimeCTime exposing (add_cpu_time_time)
 import Dict exposing (Dict)

@@ -1,4 +1,4 @@
-module Group60 exposing (..)
+module Group0x60 exposing (..)
 
 import CpuTimeCTime exposing (add_cpu_time_time)
 import Z80Delta exposing (Z80Delta(..))

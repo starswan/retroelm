@@ -1,4 +1,4 @@
-module Group50 exposing (..)
+module Group0x50 exposing (..)
 
 import Dict exposing (Dict)
 import Z80Delta exposing (Z80Delta(..), delta_noop)

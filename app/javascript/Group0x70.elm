@@ -1,4 +1,4 @@
-module Group70 exposing (..)
+module Group0x70 exposing (..)
 
 import Bitwise exposing (shiftRightBy)
 import CpuTimeCTime exposing (add_cpu_time_time)

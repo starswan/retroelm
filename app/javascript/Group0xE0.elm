@@ -1,4 +1,4 @@
-module GroupE0 exposing (..)
+module Group0xE0 exposing (..)
 
 import Dict exposing (Dict)
 import GroupED exposing (group_ed)
