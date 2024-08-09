@@ -14,7 +14,7 @@ import Group0x30 exposing (delta_dict_30, delta_dict_lite_30)
 import Group0x40 exposing (delta_dict_40, delta_dict_lite_40)
 import Group0x50 exposing (delta_dict_50, delta_dict_lite_50)
 import Group0x60 exposing (delta_dict_60, delta_dict_lite_60, execute_0x60, execute_0x61, execute_0x62, execute_0x63, execute_0x65, execute_0x66, execute_0x67, execute_0x68, execute_0x69, execute_0x6A, execute_0x6B, execute_0x6C, execute_0x6E, execute_0x6F)
-import Group0x70 exposing (execute_0x70, execute_0x71, execute_0x72, execute_0x73, execute_0x74, execute_0x75, execute_0x76_halt, execute_0x77, execute_0x78, execute_0x79, execute_0x7A, execute_0x7B, execute_0x7C, execute_0x7D, execute_0x7E)
+import Group0x70 exposing (delta_dict_70, delta_dict_lite_70, execute_0x70, execute_0x71, execute_0x72, execute_0x73, execute_0x74, execute_0x75, execute_0x76_halt, execute_0x77, execute_0x78, execute_0x79, execute_0x7A, execute_0x7B, execute_0x7C, execute_0x7D, execute_0x7E)
 import Group0x80 exposing (delta_dict_80, delta_dict_lite_80)
 import Group0x90 exposing (delta_dict_90, delta_dict_lite_90)
 import Group0xA0 exposing (delta_dict_A0, delta_dict_lite_A0)
@@ -355,14 +355,6 @@ makeLt40Array =
 lt40_delta_dict_lite: Dict Int (Z80ROM -> Z80 -> Z80Delta)
 lt40_delta_dict_lite = Dict.fromList
     [
-          -- case 0x76: halt(); break;
-          (0x76, execute_0x76_halt),
-          (0x78, execute_0x78),
-          (0x79, execute_0x79),
-          (0x7A, execute_0x7A),
-          (0x7B, execute_0x7B),
-          -- case 0x7F: break;
-          (0x7F, delta_noop),
           (0xD0, execute_0xD0),
           (0xD1, execute_0xD1),
           (0xD2, execute_0xD2),
@@ -399,6 +391,7 @@ lt40_delta_dict_lite = Dict.fromList
     |> Dict.union delta_dict_lite_C0
     |> Dict.union delta_dict_lite_E0
     |> Dict.union delta_dict_lite_60
+    |> Dict.union delta_dict_lite_70
 
 lt40_dict_lite: Dict Int (Z80ROM -> Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
@@ -423,19 +416,7 @@ execute_0xFF _ z80 =
     z80 |> rst_z80 0xFF
 
 lt40_delta_dict: Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
-lt40_delta_dict = Dict.fromList
-    [
-          (0x70, execute_0x70),
-          (0x71, execute_0x71),
-          (0x72, execute_0x72),
-          (0x73, execute_0x73),
-          (0x74, execute_0x74),
-          (0x75, execute_0x75),
-          (0x77, execute_0x77),
-          (0x7C, execute_0x7C),
-          (0x7D, execute_0x7D),
-          (0x7E, execute_0x7E)
-    ] |> Dict.union delta_dict_00
+lt40_delta_dict = delta_dict_00
     |> Dict.union delta_dict_80
     |> Dict.union delta_dict_90
     |> Dict.union delta_dict_A0
@@ -446,6 +427,7 @@ lt40_delta_dict = Dict.fromList
     |> Dict.union delta_dict_40
     |> Dict.union delta_dict_50
     |> Dict.union delta_dict_60
+    |> Dict.union delta_dict_70
     |> Dict.union delta_dict_C0
     |> Dict.union delta_dict_E0
 
