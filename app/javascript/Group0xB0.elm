@@ -150,10 +150,11 @@ execute_0xBE ixiyhl rom48k z80 =
         value =
             z80 |> hl_deref_with_z80 ixiyhl rom48k
 
-        env_1 =
-            z80.env
+        --env_1 =            z80.env
+        flags = cp value.value z80.flags
     in
-    { z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (cp value.value z80.flags) |> Whole
+    --{ z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (cp value.value z80.flags) |> Whole
+    FlagsWithPcAndTime flags value.pc value.time
 
 
 execute_0xBF : Z80ROM -> Z80 -> Z80Delta
