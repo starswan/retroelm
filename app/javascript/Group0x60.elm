@@ -10,33 +10,30 @@ import Z80Types exposing (IXIYHL(..), Z80, get_h, get_l, hl_deref_with_z80, set_
 delta_dict_60 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_60 =
     Dict.fromList
-        [
-          (0x60, execute_0x60),
-          (0x61, execute_0x61),
-          (0x62, execute_0x62),
-          (0x63, execute_0x63),
-          (0x65, execute_0x65),
-          (0x66, execute_0x66),
-          (0x67, execute_0x67),
-          (0x68, execute_0x68),
-          (0x69, execute_0x69),
-          (0x6A, execute_0x6A),
-          (0x6B, execute_0x6B),
-          (0x6C, execute_0x6C),
-          (0x6E, execute_0x6E),
-          (0x6F, execute_0x6F)
-
+        [ ( 0x60, execute_0x60 )
+        , ( 0x61, execute_0x61 )
+        , ( 0x62, execute_0x62 )
+        , ( 0x63, execute_0x63 )
+        , ( 0x65, execute_0x65 )
+        , ( 0x66, execute_0x66 )
+        , ( 0x67, execute_0x67 )
+        , ( 0x68, execute_0x68 )
+        , ( 0x69, execute_0x69 )
+        , ( 0x6A, execute_0x6A )
+        , ( 0x6B, execute_0x6B )
+        , ( 0x6C, execute_0x6C )
+        , ( 0x6E, execute_0x6E )
+        , ( 0x6F, execute_0x6F )
         ]
 
 
 delta_dict_lite_60 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_60 =
     Dict.fromList
-        [           -- case 0x64: break;
-                    (0x64, delta_noop),
-                    -- case 0x6D: break;
-                    (0x6D, delta_noop)
-
+        [ -- case 0x64: break;
+          ( 0x64, delta_noop )
+        , -- case 0x6D: break;
+          ( 0x6D, delta_noop )
         ]
 
 
