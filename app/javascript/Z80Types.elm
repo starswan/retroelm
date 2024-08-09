@@ -163,19 +163,6 @@ jp_z80 y rom48k z80 =
         z80_1
 
 
-jp : Bool -> Z80ROM -> Z80 -> CpuTimeAndPc
-jp y rom48k z80 =
-    let
-        a =
-            z80 |> imm16 rom48k
-    in
-    if y then
-        CpuTimeAndPc a.time a.value
-
-    else
-        CpuTimeAndPc a.time a.pc
-
-
 
 --	private void call(boolean y)
 --	{
@@ -470,11 +457,12 @@ jr rom48k z80 =
     --z80 |> set_env mempc.env |> add_cpu_time 8 |> set_pc (z80.pc + d + 1)
     CpuTimeAndPc (mempc.time |> add_cpu_time_time 8) (Bitwise.and (z80.pc + d + 1) 0xFFFF)
 
-get_h: IXIYHL -> MainWithIndexRegisters -> Int
+
+get_h : IXIYHL -> MainWithIndexRegisters -> Int
 get_h ixiyhl z80 =
     shiftRightBy8 (get_xy ixiyhl z80)
 
-get_l: IXIYHL -> MainWithIndexRegisters -> Int
+
+get_l : IXIYHL -> MainWithIndexRegisters -> Int
 get_l ixiyhl z80 =
     Bitwise.and (get_xy ixiyhl z80) 0xFF
-
