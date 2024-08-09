@@ -1,4 +1,4 @@
-module Group0x50 exposing (..)
+module Group50 exposing (..)
 
 import Z80Delta exposing (Z80Delta(..))
 import Z80Rom exposing (Z80ROM)

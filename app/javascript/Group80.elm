@@ -1,4 +1,4 @@
-module Group0x80 exposing (..)
+module Group80 exposing (..)
 
 import Dict exposing (Dict)
 import Z80Delta exposing (Z80Delta(..))

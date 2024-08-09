@@ -1,4 +1,4 @@
-module Group0x30 exposing (..)
+module Group30 exposing (..)
 
 import Bitwise
 import CpuTimeCTime exposing (add_cpu_time_time)
