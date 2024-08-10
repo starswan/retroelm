@@ -2,10 +2,41 @@ module Group0x70 exposing (..)
 
 import Bitwise exposing (shiftRightBy)
 import CpuTimeCTime exposing (add_cpu_time_time)
-import Z80Delta exposing (Z80Delta(..))
+import Dict exposing (Dict)
+import Z80Delta exposing (Z80Delta(..), delta_noop)
 import Z80Env exposing (add_cpu_time_env, set_mem)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL(..), Z80, env_mem_hl, get_h, get_l, hl_deref_with_z80)
+
+
+delta_dict_70 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
+delta_dict_70 =
+    Dict.fromList
+        [ ( 0x70, execute_0x70 )
+        , ( 0x71, execute_0x71 )
+        , ( 0x72, execute_0x72 )
+        , ( 0x73, execute_0x73 )
+        , ( 0x74, execute_0x74 )
+        , ( 0x75, execute_0x75 )
+        , ( 0x77, execute_0x77 )
+        , ( 0x7C, execute_0x7C )
+        , ( 0x7D, execute_0x7D )
+        , ( 0x7E, execute_0x7E )
+        ]
+
+
+delta_dict_lite_70 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
+delta_dict_lite_70 =
+    Dict.fromList
+        [ -- case 0x76: halt(); break;
+          ( 0x76, execute_0x76_halt )
+        , ( 0x78, execute_0x78 )
+        , ( 0x79, execute_0x79 )
+        , ( 0x7A, execute_0x7A )
+        , ( 0x7B, execute_0x7B )
+        , -- case 0x7F: break;
+          ( 0x7F, delta_noop )
+        ]
 
 
 execute_0x7077 : IXIYHL -> Z80ROM -> Z80 -> Int -> Z80Delta

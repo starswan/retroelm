@@ -4,7 +4,7 @@ import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, add_cpu_time_time)
 import Z80Env exposing (Z80Env, add_cpu_time_env, set_mem, set_mem16, z80_push)
 import Z80Flags exposing (FlagRegisters)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, imm16)
+import Z80Types exposing (InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, imm16, rst)
 
 
 type Z80Delta
@@ -291,3 +291,14 @@ jp y rom48k z80 =
 
     else
         CpuTimeAndPc a.time a.pc
+
+rst_delta : Int -> Z80 -> Z80Delta
+rst_delta value z80 =
+    --z80 |> rst_z80 0xC7
+    let
+        result =
+            z80 |> rst value
+    in
+    EnvWithPc result.env result.pc
+
+

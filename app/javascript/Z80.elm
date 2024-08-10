@@ -12,19 +12,19 @@ import Group0x10 exposing (delta_dict_10, delta_dict_lite_10)
 import Group0x20 exposing (delta_dict_20, delta_dict_lite_20)
 import Group0x30 exposing (delta_dict_30, delta_dict_lite_30)
 import Group0x40 exposing (delta_dict_40, delta_dict_lite_40)
-import Group0x50 exposing (execute_0x50, execute_0x51, execute_0x53, execute_0x54, execute_0x55, execute_0x56, execute_0x57, execute_0x58, execute_0x59, execute_0x5A, execute_0x5C, execute_0x5D, execute_0x5E, execute_0x5F)
-import Group0x60 exposing (execute_0x60, execute_0x61, execute_0x62, execute_0x63, execute_0x65, execute_0x66, execute_0x67, execute_0x68, execute_0x69, execute_0x6A, execute_0x6B, execute_0x6C, execute_0x6E, execute_0x6F)
-import Group0x70 exposing (execute_0x70, execute_0x71, execute_0x72, execute_0x73, execute_0x74, execute_0x75, execute_0x76_halt, execute_0x77, execute_0x78, execute_0x79, execute_0x7A, execute_0x7B, execute_0x7C, execute_0x7D, execute_0x7E)
+import Group0x50 exposing (delta_dict_50, delta_dict_lite_50)
+import Group0x60 exposing (delta_dict_60, delta_dict_lite_60)
+import Group0x70 exposing (delta_dict_70, delta_dict_lite_70)
 import Group0x80 exposing (delta_dict_80, delta_dict_lite_80)
 import Group0x90 exposing (delta_dict_90, delta_dict_lite_90)
 import Group0xA0 exposing (delta_dict_A0, delta_dict_lite_A0)
 import Group0xB0 exposing (delta_dict_B0, delta_dict_lite_B0, execute_0xBE)
-import Group0xC0 exposing (delta_dict_C0, delta_dict_lite_C0, rst_delta)
+import Group0xC0 exposing (delta_dict_C0, delta_dict_lite_C0)
 import Group0xE0 exposing (delta_dict_E0, delta_dict_lite_E0)
 import Loop
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString)
 import Z80Debug exposing (debug_todo)
-import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta, delta_noop, jp_delta)
+import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta, jp_delta, rst_delta)
 import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem16, out, pop, z80_in, z80_push, z80env_constructor)
 import Z80Flags exposing (FlagRegisters, IntWithFlags, c_FC, c_FS, cp, get_flags, set_af, z80_or, z80_sub)
 import Z80Ram exposing (c_FRSTART)
@@ -355,29 +355,6 @@ makeLt40Array =
 lt40_delta_dict_lite: Dict Int (Z80ROM -> Z80 -> Z80Delta)
 lt40_delta_dict_lite = Dict.fromList
     [
-          (0x50, execute_0x50),
-          (0x51, execute_0x51),
-          (0x52, delta_noop),
-          (0x53, execute_0x53),
-          (0x57, execute_0x57),
-          (0x58, execute_0x58),
-          (0x59, execute_0x59),
-          (0x5A, execute_0x5A),
-          -- case 0x5B: break;
-          (0x5B, delta_noop),
-          (0x5F, execute_0x5F),
-          -- case 0x64: break;
-          (0x64, delta_noop),
-          -- case 0x6D: break;
-          (0x6D, delta_noop),
-          -- case 0x76: halt(); break;
-          (0x76, execute_0x76_halt),
-          (0x78, execute_0x78),
-          (0x79, execute_0x79),
-          (0x7A, execute_0x7A),
-          (0x7B, execute_0x7B),
-          -- case 0x7F: break;
-          (0x7F, delta_noop),
           (0xD0, execute_0xD0),
           (0xD1, execute_0xD1),
           (0xD2, execute_0xD2),
@@ -409,9 +386,12 @@ lt40_delta_dict_lite = Dict.fromList
     |> Dict.union delta_dict_lite_20
     |> Dict.union delta_dict_lite_30
     |> Dict.union delta_dict_lite_40
+    |> Dict.union delta_dict_lite_50
     |> Dict.union delta_dict_lite_B0
     |> Dict.union delta_dict_lite_C0
     |> Dict.union delta_dict_lite_E0
+    |> Dict.union delta_dict_lite_60
+    |> Dict.union delta_dict_lite_70
 
 lt40_dict_lite: Dict Int (Z80ROM -> Z80 -> Z80)
 lt40_dict_lite = Dict.fromList
@@ -436,39 +416,7 @@ execute_0xFF _ z80 =
     z80 |> rst_z80 0xFF
 
 lt40_delta_dict: Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
-lt40_delta_dict = Dict.fromList
-    [
-          (0x54, execute_0x54),
-          (0x55, execute_0x55),
-          (0x56, execute_0x56),
-          (0x5C, execute_0x5C),
-          (0x5D, execute_0x5D),
-          (0x5E, execute_0x5E),
-          (0x60, execute_0x60),
-          (0x61, execute_0x61),
-          (0x62, execute_0x62),
-          (0x63, execute_0x63),
-          (0x65, execute_0x65),
-          (0x66, execute_0x66),
-          (0x67, execute_0x67),
-          (0x68, execute_0x68),
-          (0x69, execute_0x69),
-          (0x6A, execute_0x6A),
-          (0x6B, execute_0x6B),
-          (0x6C, execute_0x6C),
-          (0x6E, execute_0x6E),
-          (0x6F, execute_0x6F),
-          (0x70, execute_0x70),
-          (0x71, execute_0x71),
-          (0x72, execute_0x72),
-          (0x73, execute_0x73),
-          (0x74, execute_0x74),
-          (0x75, execute_0x75),
-          (0x77, execute_0x77),
-          (0x7C, execute_0x7C),
-          (0x7D, execute_0x7D),
-          (0x7E, execute_0x7E)
-    ] |> Dict.union delta_dict_00
+lt40_delta_dict = delta_dict_00
     |> Dict.union delta_dict_80
     |> Dict.union delta_dict_90
     |> Dict.union delta_dict_A0
@@ -477,6 +425,9 @@ lt40_delta_dict = Dict.fromList
     |> Dict.union delta_dict_30
     |> Dict.union delta_dict_B0
     |> Dict.union delta_dict_40
+    |> Dict.union delta_dict_50
+    |> Dict.union delta_dict_60
+    |> Dict.union delta_dict_70
     |> Dict.union delta_dict_C0
     |> Dict.union delta_dict_E0
 

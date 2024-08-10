@@ -3,11 +3,11 @@ module Group0xC0 exposing (..)
 import CpuTimeCTime exposing (add_cpu_time_time)
 import Dict exposing (Dict)
 import GroupCB exposing (group_cb, group_xy_cb)
-import Z80Delta exposing (Z80Delta(..), jp, jp_delta)
+import Z80Delta exposing (Z80Delta(..), jp, jp_delta, rst_delta)
 import Z80Env exposing (add_cpu_time_env, pop)
 import Z80Flags exposing (adc, z80_add)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY(..), IXIYHL(..), Z80, call_if, get_bc, imm16, imm8, rst, set_bc_main)
+import Z80Types exposing (IXIY(..), IXIYHL(..), Z80, call_if, get_bc, imm16, imm8, set_bc_main)
 
 
 delta_dict_C0 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
@@ -142,16 +142,6 @@ execute_0xC6 rom48k z80 =
     in
     --{ z80_1 | flags = flags }
     FlagsWithPcAndTime flags v.pc v.time
-
-
-rst_delta : Int -> Z80 -> Z80Delta
-rst_delta value z80 =
-    --z80 |> rst_z80 0xC7
-    let
-        result =
-            z80 |> rst value
-    in
-    EnvWithPc result.env result.pc
 
 
 execute_0xC7 : Z80ROM -> Z80 -> Z80Delta
