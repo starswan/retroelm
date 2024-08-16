@@ -1,0 +1,186 @@
+THE SPECTRUM GAMES DATABSE
+
+FOOTBALL MANAGER
+
+Download URL:
+https://spectrumcomputing.co.uk/pub/sinclair/games/f/FootballManager.tap.zip
+
+PUBLISHER
+Addictive Games
+
+ADDRESS
+7A Richmond Hill, Bournemouth. BH2 6HE.
+
+AUTHOR
+Kevin Toms
+
+YEAR
+1982
+
+DESCRIPTION
+Very early and BASIC football management simulation
+
+INLAY CARD TEXT
+There are three main parts to the game.  On first loading, the
+game will start at part 1.  When restoring a previsouly saved
+game it will restart at part 2.  The following notes will guide
+you through the various parts of the game.
+
+  Part 1 - Starting the game
+a) When your name is requested, type your full name as team
+manager.
+b) No matter which team you choose to manage, you will start in
+Division 4.  If your favourite isn't in the 64 included, choose
+any as you will be able to change the name later on.
+c) Start at the beginner's level and progress as you become more
+skillful.
+d) You may have noticed (h=copy) in the bottom right of the
+screen.  When this is displayed, entering h will give a hard copy
+of what is on screen on your ZX printer.  DO NOT use this option
+unless you have a printer connected.
+
+  Part 2 - The main game
+This consists of five phases.
+
+  Phase 1 - Optional actions
+a) Sell or list players - a list of players in your squad is
+displayed. See "Important notes - Player attributes".  If you now
+select a player to be sold, a team will make you an offer for
+him.  Note that if you refuse the offer there is a risk that
+interested clubs will no longer want to buy him.  You will see
+why!
+
+b) Obtain a loan - You may increase your bank loan up to your
+credit limit as follows:
+
+   Your division     Credit limit
+        1             1 000 000
+        2               750 000
+        3               500 000
+        4               250 000
+
+c) Change team or player names - first you have the option to
+change team names.  If taken, the teams are displayed by
+division.  You may change any team names including your own. 
+Take care not to duplicate an existing team name.  Colour control
+codes may be included to give your team name a colour.  This is
+done by pressing CAPS SHIFT and SYMBOL SHIFT together to give an
+E cursor, then pressing CAPS SHIFT and one of the number keys
+0,1,2,3,4,5 to set the colour (black to green) shown above the
+keys, then typing the team name.  
+
+Next you have the option to change player names.  If taken, you
+can type your own choice of player names or perhaps even make
+yourself player/manager!
+
+d) Saving the game - to save the game to be continued at a later
+time, take the KEEP option.  Now prepare your tape recorder to
+record on a blank tape and press any key to commence saving. 
+After about three and a quarter minutes the computer will ask you
+if you want to play some more. Type yes to continue where you
+left off or no to stop the game.
+
+  Phase 2 - Playing a match
+a) Team attributes.
+Energy, Morale, Defence, Midfield and Attack have a minimum value
+of 1 and maximum 20.  They are calculated as follows:
+
+  Energy is the average energy rating of all the players picked
+to play in your team.
+  Morale is 10 at the start of the season and increases when you
+win and decreases when you lose.
+  Defence is the total skill rating of all the defenders picked
+to play in your team.
+  Midfield is the total skill rating of all the midfielders
+picked to play in your team.
+  Attack is the total skill rating of all the attackers picked
+to play in your team.  
+b) You may select your team - see "Important notes - Player
+attributes".  
+c) The match highlights are shown in 3D graphics.  The home
+team always plays from left to right and you play in the colours
+you chose at the start of the game.  The team with the best
+attributes will often win, but there is always a chance of shock
+results or giant killings, just like real football. 
+
+  Phase 3 - Result of match
+Note that your home gate money increases when you win and
+decreases when you lose.  Your away gate money depends on the
+quality of your opponents.
+
+  Phase 4 - Weekly bills
+a) Wage bill - the higher your division and the greater the total
+skill of your players, the higher the wage bill.
+b) Loan interest - is 1% of your outstanding bank loan.
+c) Weekly balance - is the profit or loss for the week.
+
+  Phase 5 - The transfer market
+a) You are given the option of bidding for a player.  The more
+you bid in relation to his value, the more chance you have of
+purchasing him.  If your bid fails, the value of the player will
+increase.
+b) If the "No players for sale" message appears, you will have
+to sell one of your squad in order to regain access to the
+transfer market.
+
+The five phases are repeated until 15 league matches and all your
+FA Cup matches have been played.  Then the game moves to Part 3.
+
+  Part 3 - End of season
+a) The final league table is printed.
+b) Your league success money, which is in relation to how high
+you are up in the league, is allocated to you and displayed.
+c) The top three teams are promoted, and the bottom three are
+relegated from your division.
+d) A new managerial rating is calculated for you depending on
+your success so far.
+e) New skill and Energy ratings are generated for all your
+players.
+f) The new season starts at Part 2.
+
+  Important Notes
+Restoring a saved game.
+a) Load the program from your tape using LOAD "".  The program
+will restart at Part 2.
+
+Player Attributes
+When players are listed, several details are shown.
+a) Defender, Midfield player or Attacker - is indicated by an
+inverse video D, M or A respectively in the far left hand column.
+b) Player's name
+c) Player's number - used when selecting the player for various
+purposes.
+d) Skill rating - highest is 5, lowest is 1.
+e) Energy - in the range 1 to 20.  The energy rating of each
+player reduces by one for each match he plays in.  It will
+increase by 10 if he does not play in a match.  Part of the skill
+of the game is in resting the right players to increase their
+energy without doing too much harm to the skill ratings of the
+complete team.
+f) Value in  - relates directly to the skill rating of the player
+and the division your team is in.
+g) Picked to play, Injured, Available for selection - indicated
+by p,i and yellow space respectively in the far right-hand
+column.  NB: Injured players cannot be selected to play.
+
+
+SEQUELS/PREQUELS
+Football Manager 2 and (I think) 3 were released.
+
+SCORES RECEIVED:
+Unknown by me
+
+URLs:
+ftp://ftp.nvg.unit.no/pub/spectrum/snaps/games/by-letter/f/foo
+tball.zip
+ftp://ftp.dcc.uchile.cl/pub/OS/sinclair/snapshots/f/football.zip
+ftp://ftp.gui.uva.es/pub/sinclair/games/f/football.zip
+
+GENERAL FACTS:
+
+CHEATS:
+Press the BREAK key and mess about with the BASIC.
+
+NOTES:
+Has a very nostalgic feel to it (i.e. really shows its age now).
+The term "3D graphics" in the inlay card is used very loosely.

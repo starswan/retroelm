@@ -30,3 +30,4 @@ yarn-debug.log*
 .yarn-integrity
 index.html
 /public/z80test/
+/public/*.tap
