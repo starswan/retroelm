@@ -75,6 +75,28 @@ suite =
                             ]
                             (a |> Z80Screen.rawToLines False)
             , only <|
+                test "screen set 1 data 2 colours" <|
+                    \_ ->
+                        let
+                            screen =
+                                Z80Screen.constructor
+                                    |> setScreenValue 0 0x80
+                                    --|> setScreenValue 1 0x80
+                                    |> setScreenValue 0x1800 0x23
+                                    |> setScreenValue 0x1801 0x23
+
+                            b =
+                                screen |> screenLines |> Dict.get 0
+
+                            expected =
+                                Just
+                                    [ { start = 0, length = 1, colour = plainMagenta }
+                                    , { start = 1, length = 15, colour = plainGreen }
+                                    , { start = 16, length = 240, colour = plainWhite }
+                                    ]
+                        in
+                        Expect.equal expected b
+            , only <|
                 test "screen set first 2 top left corners" <|
                     \_ ->
                         let
@@ -85,8 +107,12 @@ suite =
                                     |> setScreenValue 0x1800 0x23
                                     |> setScreenValue 0x1801 0x23
 
-                            rawlines = screen.bank_0.charline_0 |> charLineToScreenLines |> List.head |> Maybe.withDefault [] |> List.head
-                            expected_line = Just { data = 0x80, colour = 0x23 }
+                            rawlines =
+                                screen.bank_0.charline_0 |> charLineToScreenLines |> List.head |> Maybe.withDefault [] |> List.head
+
+                            expected_line =
+                                Just { data = 0x80, colour = 0x23 }
+
                             b =
                                 screen |> screenLines |> Dict.get 0
 
