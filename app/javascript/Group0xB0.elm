@@ -15,6 +15,7 @@ delta_dict_B0 =
         , ( 0xB6, execute_0xB6 )
         , ( 0xBC, execute_0xBC )
         , ( 0xBD, execute_0xBD )
+        , ( 0xBE, execute_0xBE )
         ]
 
 
@@ -141,7 +142,7 @@ execute_0xBD ixiyhl _ z80 =
     z80.flags |> cp (get_l ixiyhl z80.main) |> FlagRegs
 
 
-execute_0xBE : IXIYHL -> Z80ROM -> Z80 -> Z80
+execute_0xBE : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
 execute_0xBE ixiyhl rom48k z80 =
     -- case 0xBE: cp(env.mem(HL)); time+=3; break;
     -- case 0xBE: cp(env.mem(getd(xy))); time+=3; break;
@@ -149,10 +150,11 @@ execute_0xBE ixiyhl rom48k z80 =
         value =
             z80 |> hl_deref_with_z80 ixiyhl rom48k
 
-        env_1 =
-            z80.env
+        --env_1 =            z80.env
+        flags = cp value.value z80.flags
     in
-    { z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (cp value.value z80.flags)
+    --{ z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_flag_regs (cp value.value z80.flags) |> Whole
+    FlagsWithPcAndTime flags value.pc value.time
 
 
 execute_0xBF : Z80ROM -> Z80 -> Z80Delta

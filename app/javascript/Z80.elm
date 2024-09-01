@@ -18,7 +18,7 @@ import Group0x70 exposing (delta_dict_70, delta_dict_lite_70)
 import Group0x80 exposing (delta_dict_80, delta_dict_lite_80)
 import Group0x90 exposing (delta_dict_90, delta_dict_lite_90)
 import Group0xA0 exposing (delta_dict_A0, delta_dict_lite_A0)
-import Group0xB0 exposing (delta_dict_B0, delta_dict_lite_B0, execute_0xBE)
+import Group0xB0 exposing (delta_dict_B0, delta_dict_lite_B0)
 import Group0xC0 exposing (delta_dict_C0, delta_dict_lite_C0)
 import Group0xE0 exposing (delta_dict_E0, delta_dict_lite_E0)
 import Loop
@@ -26,10 +26,10 @@ import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString)
 import Z80Debug exposing (debug_todo)
 import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta, jp_delta, rst_delta)
 import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem16, out, pop, z80_in, z80_push, z80env_constructor)
-import Z80Flags exposing (FlagRegisters, IntWithFlags, c_FC, c_FS, cp, get_flags, set_af, z80_or, z80_sub)
+import Z80Flags exposing (FlagRegisters, IntWithFlags, c_FC, c_FS, cp, set_af, z80_or, z80_sub)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, get_de, imm8, inc_pc, jp_z80, rst_z80, set_de_main)
+import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, get_af, get_de, imm8, inc_pc, jp_z80, rst_z80, set_de_main, set_iff)
 
 constructor: Z80
 constructor =
@@ -50,11 +50,6 @@ constructor =
 --get_f z80 =
 --    get_flags z80
 
---	int af() {return A<<8 | flags();}
-get_af : Z80 -> Int
-get_af z80 =
-    or (shiftLeftBy8 z80.flags.a) (get_flags z80.flags)
---
 --get_i: Z80 -> Int
 --get_i z80 =
 --    shiftRightBy8 z80.interrupts.ir
@@ -137,14 +132,6 @@ set_pc pc z80 =
 
 --	void r(int v) {R=v; IR = IR&0xFF00 | v&0x80;}
 --	void im(int v) {IM = v+1 & 3;}
---	void iff(int v) {IFF = v;}
-set_iff: Int -> Z80 -> InterruptRegisters
-set_iff value z80 =
-   let
-      --y = debug_log "set_iff" value Nothing
-      interrupts = z80.interrupts
-   in
-      { interrupts | iff = value }
 --	void ei(boolean v) {IFF = v ? 3 : 0;}
 --
 --
@@ -305,11 +292,11 @@ z80_to_delta z80func =
         Just f ->  Just (\rom48k z80  -> Whole (z80 |> f rom48k))
         Nothing -> Nothing
 
-ixiyhl_z80_to_delta: Maybe (IXIYHL -> Z80ROM -> Z80 -> Z80) -> Maybe (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
-ixiyhl_z80_to_delta z80func =
-    case z80func of
-        Just f ->  Just (\ixiyhl rom48k z80  -> Whole (z80 |> f ixiyhl rom48k))
-        Nothing -> Nothing
+--ixiyhl_z80_to_delta: Maybe (IXIYHL -> Z80ROM -> Z80 -> Z80) -> Maybe (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
+--ixiyhl_z80_to_delta z80func =
+--    case z80func of
+--        Just f ->  Just (\ixiyhl rom48k z80  -> Whole (z80 |> f ixiyhl rom48k))
+--        Nothing -> Nothing
 
 mergeFuncList:  Maybe (Z80ROM -> Z80 -> Z80Delta) -> Maybe (Z80ROM -> Z80 -> Z80Delta) -> Maybe (Z80ROM -> Z80 -> Z80Delta)
 mergeFuncList afunc bfunc =
@@ -330,27 +317,12 @@ makeLiteArray =
 lt40_array: Array (Maybe ((IXIYHL -> Z80ROM -> Z80 -> Z80Delta)))
 lt40_array = makeLt40Array
 
-mergeIxiyFuncList:  Maybe (IXIYHL -> Z80ROM -> Z80 -> Z80Delta) -> Maybe (IXIYHL -> Z80ROM -> Z80 -> Z80Delta) -> Maybe (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
-mergeIxiyFuncList afunc bfunc =
-    case afunc of
-        Just a -> Just a
-        Nothing -> case bfunc of
-                        Just b -> Just b
-                        Nothing -> Nothing
-
-lt40_dict: Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80)
-lt40_dict = Dict.fromList
-    [
-          (0xBE, execute_0xBE)
-    ]
-
 makeLt40Array: Array (Maybe ((IXIYHL -> Z80ROM -> Z80 -> Z80Delta)))
 makeLt40Array =
     let
-       z80_funcs = list0255 |> List.map (\index -> lt40_dict |> Dict.get index |> ixiyhl_z80_to_delta)
        delta_funcs = list0255 |> List.map (\index -> lt40_delta_dict |> Dict.get index)
     in
-       List.map2 mergeIxiyFuncList z80_funcs delta_funcs |> Array.fromList
+       delta_funcs |> Array.fromList
 
 lt40_delta_dict_lite: Dict Int (Z80ROM -> Z80 -> Z80Delta)
 lt40_delta_dict_lite = Dict.fromList
