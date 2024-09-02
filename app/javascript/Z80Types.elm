@@ -170,10 +170,10 @@ jp_z80 y rom48k z80 =
 --		if(y) {push(PC); PC = a;}
 --	}
 
+
 type alias PcWithPushed =
-    {
-        pc: Int,
-        value: Maybe Int
+    { pc : Int
+    , value : Maybe Int
     }
 
 
@@ -185,7 +185,6 @@ call_if y rom48k z80 =
 
         --env =
         --    z80.env
-
         --z80_2 =
         --    { z80 | pc = a.pc, env = { env | time = a.time } }
         --new_env =
@@ -193,11 +192,10 @@ call_if y rom48k z80 =
     in
     if y then
         --let
-            --b = debug_log "call" (a.value |> subName) Nothing
-            --z80_1 = z80_2 |> push z80_2.pc |> set_pc a.value
-            --pushed =
-            --    new_env |> z80_push a.pc
-
+        --b = debug_log "call" (a.value |> subName) Nothing
+        --z80_1 = z80_2 |> push z80_2.pc |> set_pc a.value
+        --pushed =
+        --    new_env |> z80_push a.pc
         --in
         --Z80EnvWithPC pushed a.value
         PcWithPushed a.value (Just a.pc)
@@ -474,16 +472,25 @@ get_l : IXIYHL -> MainWithIndexRegisters -> Int
 get_l ixiyhl z80 =
     Bitwise.and (get_xy ixiyhl z80) 0xFF
 
+
+
 --	void iff(int v) {IFF = v;}
-set_iff: Int -> Z80 -> InterruptRegisters
+
+
+set_iff : Int -> Z80 -> InterruptRegisters
 set_iff value z80 =
-   let
-      --y = debug_log "set_iff" value Nothing
-      interrupts = z80.interrupts
-   in
-      { interrupts | iff = value }
+    let
+        --y = debug_log "set_iff" value Nothing
+        interrupts =
+            z80.interrupts
+    in
+    { interrupts | iff = value }
+
+
 
 --	int af() {return A<<8 | flags();}
+
+
 get_af : Z80 -> Int
 get_af z80 =
     Bitwise.or (shiftLeftBy8 z80.flags.a) (get_flags z80.flags)
