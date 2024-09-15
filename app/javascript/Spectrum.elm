@@ -78,9 +78,10 @@ new_tape tapfile_list spectrum =
   -- in
   --    { spectrum | cpu = { z80 | env = z80.env |> Z80Env.set_tape tape_string } }
 
-set_rom: Array Int -> Spectrum -> Spectrum
-set_rom romdata spectrum =
+set_spectrum_rom: Array Int -> Spectrum -> Spectrum
+set_spectrum_rom romdata spectrum =
    let
+      --z80 = debug_log "about to" "set_rom" spectrum.cpu
       z80 = spectrum.cpu
       rommy =
                   make_spectrum_rom romdata
