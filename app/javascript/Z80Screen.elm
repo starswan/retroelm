@@ -47,9 +47,12 @@ setScreenValue addr value z80s =
     in
     { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
 
-getScreenValue: Int -> Z80Screen -> Int
+
+getScreenValue : Int -> Z80Screen -> Int
 getScreenValue addr screen =
     screen.screen |> getValue addr
+
+
 
 -- colour data is bit 7 flash, bit 6 bright, bits 5-3 paper, bits 2-0 ink
 
@@ -213,25 +216,16 @@ calcOffsets start =
         bankOffset =
             start |> modBy 64
 
-        startDiv8 =
-            bankOffset // 8
-
         data_offset =
             start |> modBy 8 |> shiftLeftBy 3
 
         row_index =
-            64 * bank + startDiv8 + data_offset
+            64 * bank + (bankOffset // 8) + data_offset
 
         attr_index =
             (bank * 8) + (bankOffset |> modBy 8)
-
-        row_offset =
-            row_index * 32
-
-        attr_offset =
-            0x1800 + (attr_index * 32)
     in
-    ( row_offset, attr_offset )
+    ( row_index, attr_index )
 
 
 range0192 =
@@ -243,8 +237,14 @@ screenOffsets =
 
 
 mapScreen : ( Int, Int ) -> Z80Memory -> Int -> RawScreenData
-mapScreen ( row_offset, attr_offset ) z80env_ram index =
+mapScreen ( row_index, attr_index ) z80env_ram index =
     let
+        row_offset =
+            row_index * 32
+
+        attr_offset =
+            0x1800 + (attr_index * 32)
+
         data =
             getValue (row_offset + index) z80env_ram
 
