@@ -1,7 +1,7 @@
 module Z80MemoryTest exposing (..)
 
 import Expect
-import Z80Screen exposing (calcOffsets)
+import Z80Screen exposing (screenOffsets)
 import Test exposing (Test, describe, test)
 suite : Test
 suite =
@@ -13,110 +13,68 @@ suite =
          test "line 0" <|
             \_ ->
                let
-                  (data, attrs) = calcOffsets 0
+                  data = screenOffsets |> List.take 8
                in
-                  Expect.equal (0, 6144) (data, attrs)
-         ,test "line 1" <|
-            \_ ->
-               let
-                  (data, attrs) = calcOffsets 1
-               in
-                  Expect.equal (256, 6176) (data, attrs)
-         ,test "line 2" <|
-            \_ ->
-               let
-                  (data, attrs) = calcOffsets 2
-               in
-                  Expect.equal (512, 6208) (data, attrs)
-         ,test "line 3" <|
-            \_ ->
-               let
-                  (data, attrs) = calcOffsets 3
-               in
-                  Expect.equal (768, 6240) (data, attrs)
-         ,test "line 7" <|
-            \_ ->
-               let
-                  (data, attrs) = calcOffsets 7
-               in
-                  Expect.equal (1792, 6368) (data, attrs)
+                  Expect.equal [(0,0),(8,1),(16,2),(24,3),(32,4),(40,5),(48,6),(56,7)] data
          ,test "line 8" <|
             \_ ->
                let
-                  (data, attrs) = calcOffsets 8
+                  data = screenOffsets |> List.drop 8 |> List.take 8
                in
-                  Expect.equal (32, 6144) (data, attrs)
-         ,test "line 9" <|
-            \_ ->
-               let
-                  (data, attrs) = calcOffsets 9
-               in
-                  Expect.equal (256 + 32, 6176) (data, attrs)
-         ,test "line 15" <|
-            \_ ->
-               let
-                  (data, attrs) = calcOffsets 15
-               in
-                  Expect.equal (256*7 + 32, 6368) (data, attrs)
+                  Expect.equal [(1,0),(9,1),(17,2),(25,3),(33,4),(41,5),(49,6),(57,7)] data
          ,test "line 16" <|
             \_ ->
                let
-                  (data, attrs) = calcOffsets 16
+                  data = screenOffsets |> List.drop 16 |> List.take 8
                in
-                  Expect.equal (64, 6144) (data, attrs)
+                  Expect.equal [(2,0),(10,1),(18,2),(26,3),(34,4),(42,5),(50,6),(58,7)] data
          ,test "line 24" <|
             \_ ->
                let
-                  (data, attrs) = calcOffsets 24
+                  data = screenOffsets |> List.drop 24 |> List.take 8
                in
-                  Expect.equal (96, 6144) (data, attrs)
+                  Expect.equal [(3,0),(11,1),(19,2),(27,3),(35,4),(43,5),(51,6),(59,7)] data
          ,test "line 32" <|
             \_ ->
                let
-                  (data, attrs) = calcOffsets 32
+                  data = screenOffsets |> List.drop 32 |> List.take 8
                in
-                  Expect.equal (128, 6144) (data, attrs)
+                  Expect.equal [(4,0),(12,1),(20,2),(28,3),(36,4),(44,5),(52,6),(60,7)] data
          ,test "line 40" <|
             \_ ->
                let
-                  (data, attrs) = calcOffsets 40
+                  data = screenOffsets |> List.drop 40 |> List.take 8
                in
-                  Expect.equal (160, 6144) (data, attrs)
+                  Expect.equal [(5,0),(13,1),(21,2),(29,3),(37,4),(45,5),(53,6),(61,7)] data
          ,test "line 48" <|
             \_ ->
                let
-                  (data, attrs) = calcOffsets 48
+                  data = screenOffsets |> List.drop 48 |> List.take 8
                in
-                  Expect.equal (192, 6144) (data, attrs)
+                  Expect.equal [(6,0),(14,1),(22,2),(30,3),(38,4),(46,5),(54,6),(62,7)] data
          ,test "line 56" <|
             \_ ->
                let
-                  (data, attrs) = calcOffsets 56
+                  data = screenOffsets |> List.drop 56 |> List.take 8
                in
-                  Expect.equal (224, 6144) (data, attrs)
+                  Expect.equal [(7,0),(15,1),(23,2),(31,3),(39,4),(47,5),(55,6),(63,7)] data
          ,test "line 64" <|
             \_ ->
                let
-                  (data, attrs) = calcOffsets 64
+                  data = screenOffsets |> List.drop 64 |> List.take 8
                in
-                  Expect.equal (256 * 8, 6144 + 32 * 8) (data, attrs)
-         ,test "line 65" <|
-            \_ ->
-               let
-                  (data, attrs) = calcOffsets 65
-               in
-                  Expect.equal (256 * 8 + 256, 6144 + 32 * 8 + 32) (data, attrs)
+                  Expect.equal [(64,8),(72,9),(80,10),(88,11),(96,12),(104,13),(112,14),(120,15)] data
          ,test "line 128" <|
             \_ ->
                let
-                  (data, attrs) = calcOffsets 128
+                  data = screenOffsets |> List.drop 128 |> List.take 8
                in
-                  Expect.equal (256 * 16, 6144 + 32 * 16) (data, attrs)
+                  Expect.equal [(128,16),(136,17),(144,18),(152,19),(160,20),(168,21),(176,22),(184,23)] data
          ,test "line 191" <|
             \_ ->
                let
-                  (data, attrs) = calcOffsets 191
+                  data = screenOffsets |> List.drop 184 |> List.take 8
                in
-                  Expect.equal (6112, 6880) (data, attrs)
+                  Expect.equal [(135,16),(143,17),(151,18),(159,19),(167,20),(175,21),(183,22),(191,23)] data
          ]
       ]
