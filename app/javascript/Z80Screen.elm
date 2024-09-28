@@ -39,20 +39,6 @@ constructor =
     Z80Screen screen 7
 
 
-setScreenValue : Int -> Int -> Z80Screen -> Z80Screen
-setScreenValue addr value z80s =
-    let
-        z80screen =
-            z80s |> refresh_screen
-    in
-    { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
-
-
-getScreenValue : Int -> Z80Screen -> Int
-getScreenValue addr screen =
-    screen.screen |> getValue addr
-
-
 
 -- colour data is bit 7 flash, bit 6 bright, bits 5-3 paper, bits 2-0 ink
 
@@ -291,6 +277,20 @@ screenLines z80env =
             List.map rawToLines rawlines
     in
     lines2 |> List.indexedMap (\index linelist -> ( index, linelist )) |> Dict.fromList
+
+
+setScreenValue : Int -> Int -> Z80Screen -> Z80Screen
+setScreenValue addr value z80s =
+    let
+        z80screen =
+            z80s |> refresh_screen
+    in
+    { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
+
+
+getScreenValue : Int -> Z80Screen -> Int
+getScreenValue addr screen =
+    screen.screen |> getValue addr
 
 
 
