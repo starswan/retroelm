@@ -217,7 +217,7 @@ calcDataOffset start =
             start |> Bitwise.and 0x3F |> shiftRightBy 3
 
         data_offset =
-            start |> modBy 8 |> shiftLeftBy 3
+            start |> Bitwise.and 0x07 |> shiftLeftBy 3
     in
     bankStart + bankOffset + data_offset
 
