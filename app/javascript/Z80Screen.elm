@@ -179,16 +179,6 @@ foldUp raw list =
             [ ScreenData raw.colour [ raw.data ] ]
 
 
-fold_lines : List RawScreenData -> List ScreenData
-fold_lines screen =
-    screen |> List.foldr foldUp []
-
-
-rawToLines : List RawScreenData -> List ScreenColourRun
-rawToLines screen =
-    fold_lines screen |> List.foldr toDrawn []
-
-
 
 -- Convert row index into start row data location
 
@@ -275,19 +265,24 @@ singleScreenLine line_num z80ram =
     range031 |> List.map (mapScreen line_num z80ram)
 
 
+rawToLines : List RawScreenData -> List ScreenColourRun
+rawToLines screen =
+    screen
+        |> List.foldr foldUp []
+        |> List.foldr toDrawn []
+
+
 screenLines : Z80Screen -> Dict Int (List ScreenColourRun)
 screenLines z80_screen =
-    let
-        raw_lines =
-            screenOffsets
-                |> List.map
-                    (\line_num ->
-                        z80_screen.screen
-                            |> singleScreenLine line_num
-                    )
-                |> List.map rawToLines
-    in
-    raw_lines |> List.indexedMap (\index linelist -> ( index, linelist )) |> Dict.fromList
+    screenOffsets
+        |> List.map
+            (\line_num ->
+                z80_screen.screen
+                    |> singleScreenLine line_num
+            )
+        |> List.map rawToLines
+        |> List.indexedMap (\index linelist -> ( index, linelist ))
+        |> Dict.fromList
 
 
 setScreenValue : Int -> Int -> Z80Screen -> Z80Screen

@@ -3,7 +3,7 @@ module ScreenTest exposing (..)
 import Bitwise
 import Expect exposing (Expectation)
 import SpectrumColour exposing (SpectrumColour(..))
-import Z80Screen exposing (getScreenValue, runCounts, setScreenValue)
+import Z80Screen exposing (foldUp, getScreenValue, runCounts, setScreenValue)
 import Test exposing (..)
 
 suite : Test
@@ -17,13 +17,13 @@ suite =
                let
                   a = [{colour=0x70, data=0x76}]
                in
-                  Expect.equal [{colour=0x70, data=[0x76]}] (a |> Z80Screen.fold_lines)
+                  Expect.equal [{colour=0x70, data=[0x76]}] (a |> List.foldr foldUp [])
          ,test "with dups" <|
             \_ ->
                let
                   a = [{colour=0x70, data=0x76}, {colour=0x70, data=0x71}, { colour=0x45, data=0x87}]
                in
-                  Expect.equal [{colour=0x70, data=[0x76, 0x71]}, {colour=0x45, data=[0x87]}] (a |> Z80Screen.fold_lines)
+                  Expect.equal [{colour=0x70, data=[0x76, 0x71]}, {colour=0x45, data=[0x87]}] (a |> List.foldr foldUp [])
       ],
       describe "rawToLines"
       [
