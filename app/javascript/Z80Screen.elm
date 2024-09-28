@@ -210,16 +210,19 @@ rawToLines screen =
 calcDataOffset : Int -> Int
 calcDataOffset start =
     let
-        bank =
-            start // 64
+        bankStart =
+            start |> Bitwise.and 0xC0
+
+        offset =
+            start |> modBy 64
 
         bankOffset =
-            start |> modBy 64
+            offset // 8
 
         data_offset =
             start |> modBy 8 |> shiftLeftBy 3
     in
-    64 * bank + (bankOffset // 8) + data_offset
+    bankStart + bankOffset + data_offset
 
 
 range07 =
@@ -251,7 +254,7 @@ attr_indexes =
 
 
 screenOffsets =
-    attr_indexes |> List.indexedMap (\line_num attr_index -> ( calcDataOffset line_num, attr_index ))
+    attr_indexes |> List.indexedMap (\index attr_index -> ( calcDataOffset index, attr_index ))
 
 
 mapScreen : ( Int, Int ) -> Z80Memory -> Int -> RawScreenData
