@@ -207,8 +207,8 @@ rawToLines screen =
 -- Convert row index into start row data location and (colour-ish) attribute memory location
 
 
-calcDataOffset : Int -> Int -> ( Int, Int )
-calcDataOffset start attr_index =
+calcDataOffset : Int -> Int
+calcDataOffset start =
     let
         bank =
             start // 64
@@ -222,7 +222,7 @@ calcDataOffset start attr_index =
         row_index =
             64 * bank + (bankOffset // 8) + data_offset
     in
-    ( row_index, attr_index )
+    row_index
 
 
 range07 =
@@ -254,7 +254,7 @@ attr_indexes =
 
 
 screenOffsets =
-    attr_indexes |> List.indexedMap (\line_num attr_index -> calcDataOffset line_num attr_index)
+    attr_indexes |> List.indexedMap (\line_num attr_index -> ((calcDataOffset line_num), attr_index))
 
 
 mapScreen : ( Int, Int ) -> Z80Memory -> Int -> RawScreenData
