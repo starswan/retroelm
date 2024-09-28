@@ -271,8 +271,8 @@ range031 =
 
 
 singleScreenLine : ( Int, Int ) -> Z80Memory -> List RawScreenData
-singleScreenLine line_num z80env =
-    range031 |> List.map (mapScreen line_num z80env)
+singleScreenLine line_num z80ram =
+    range031 |> List.map (mapScreen line_num z80ram)
 
 
 screenLines : Z80Screen -> Dict Int (List ScreenColourRun)
