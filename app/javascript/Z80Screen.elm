@@ -260,18 +260,16 @@ range031 =
     List.range 0 31
 
 
-singleScreenLine : ( Int, Int ) -> Z80Memory -> List RawScreenData
-singleScreenLine line_num z80ram =
-    range031 |> List.map (mapScreen line_num z80ram)
-
-
 rawScreenData : Z80Screen -> List (List RawScreenData)
 rawScreenData z80_screen =
+    let
+        z80ram =
+            z80_screen.screen
+    in
     screenOffsets
         |> List.map
             (\line_num ->
-                z80_screen.screen
-                    |> singleScreenLine line_num
+                range031 |> List.map (mapScreen line_num z80ram)
             )
 
 
