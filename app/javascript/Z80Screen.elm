@@ -39,17 +39,6 @@ constructor =
     Z80Screen screen 7
 
 
-setScreenValue : Int -> Int -> Z80Screen -> Z80Screen
-setScreenValue addr value z80s =
-    let
-        z80screen =
-            z80s |> refresh_screen
-    in
-    { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
-
-getScreenValue: Int -> Z80Screen -> Int
-getScreenValue addr screen =
-    screen.screen |> getValue addr
 
 -- colour data is bit 7 flash, bit 6 bright, bits 5-3 paper, bits 2-0 ink
 
@@ -190,61 +179,74 @@ foldUp raw list =
             [ ScreenData raw.colour [ raw.data ] ]
 
 
-fold_lines : List RawScreenData -> List ScreenData
-fold_lines screen =
-    screen |> List.foldr foldUp []
+
+-- Convert row index into start row data location
 
 
-rawToLines : List RawScreenData -> List ScreenColourRun
-rawToLines screen =
-    fold_lines screen |> List.foldr toDrawn []
-
-
-
--- Convert row index into start row data location and (colour-ish) attribute memory location
-
-
-calcOffsets : Int -> ( Int, Int )
-calcOffsets start =
+calcDataOffset : Int -> Int
+calcDataOffset start =
     let
-        bank =
-            start // 64
+        bankStart =
+            start |> Bitwise.and 0xC0
 
         bankOffset =
-            start |> modBy 64
-
-        startDiv8 =
-            bankOffset // 8
+            start |> Bitwise.and 0x3F |> shiftRightBy 3
 
         data_offset =
-            start |> modBy 8 |> shiftLeftBy 3
+            start |> Bitwise.and 0x07 |> shiftLeftBy 3
+    in
+    bankStart + bankOffset + data_offset
 
-        row_index =
-            64 * bank + startDiv8 + data_offset
 
-        attr_index =
-            (bank * 8) + (bankOffset |> modBy 8)
+range07 =
+    List.range 0 7
 
+
+range8_15 =
+    List.range 8 15
+
+
+range16_23 =
+    List.range 16 23
+
+
+bank0_attr_indexes =
+    range07 ++ range07 ++ range07 ++ range07 ++ range07 ++ range07 ++ range07 ++ range07
+
+
+bank1_attr_indexes =
+    range8_15 ++ range8_15 ++ range8_15 ++ range8_15 ++ range8_15 ++ range8_15 ++ range8_15 ++ range8_15
+
+
+bank2_attr_indexes =
+    range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23
+
+
+attr_indexes =
+    bank0_attr_indexes ++ bank1_attr_indexes ++ bank2_attr_indexes
+
+
+screenOffsets =
+    attr_indexes |> List.indexedMap (\index attr_index -> ( calcDataOffset index, attr_index ))
+
+
+range0_191 =
+    List.range 0 191
+
+
+dataOffsets =
+    range0_191 |> List.map calcDataOffset
+
+
+mapScreen : ( Int, Int ) -> Z80Memory -> Int -> RawScreenData
+mapScreen ( row_index, attr_index ) z80env_ram index =
+    let
         row_offset =
             row_index * 32
 
         attr_offset =
             0x1800 + (attr_index * 32)
-    in
-    ( row_offset, attr_offset )
 
-
-range0192 =
-    List.range 0 191
-
-
-screenOffsets =
-    range0192 |> List.map (\line_num -> calcOffsets line_num)
-
-
-mapScreen : ( Int, Int ) -> Z80Memory -> Int -> RawScreenData
-mapScreen ( row_offset, attr_offset ) z80env_ram index =
-    let
         data =
             getValue (row_offset + index) z80env_ram
 
@@ -259,20 +261,36 @@ range031 =
 
 
 singleScreenLine : ( Int, Int ) -> Z80Memory -> List RawScreenData
-singleScreenLine line_num z80env =
-    List.map (mapScreen line_num z80env) range031
+singleScreenLine line_num z80ram =
+    range031 |> List.map (mapScreen line_num z80ram)
 
 
 screenLines : Z80Screen -> Dict Int (List ScreenColourRun)
-screenLines z80env =
-    let
-        rawlines =
-            screenOffsets |> List.map (\line_num -> singleScreenLine line_num z80env.screen)
+screenLines z80_screen =
+    screenOffsets
+        |> List.map
+            (\line_num ->
+                z80_screen.screen
+                    |> singleScreenLine line_num
+            )
+        |> List.map (\x -> x |> List.foldr foldUp [])
+        |> List.map (\x -> x |> List.foldr toDrawn [])
+        |> List.indexedMap (\index linelist -> ( index, linelist ))
+        |> Dict.fromList
 
-        lines2 =
-            List.map rawToLines rawlines
+
+setScreenValue : Int -> Int -> Z80Screen -> Z80Screen
+setScreenValue addr value z80s =
+    let
+        z80screen =
+            z80s |> refresh_screen
     in
-    lines2 |> List.indexedMap (\index linelist -> ( index, linelist )) |> Dict.fromList
+    { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
+
+
+getScreenValue : Int -> Z80Screen -> Int
+getScreenValue addr screen =
+    screen.screen |> getValue addr
 
 
 
