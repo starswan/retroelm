@@ -276,10 +276,10 @@ singleScreenLine line_num z80env =
 
 
 screenLines : Z80Screen -> Dict Int (List ScreenColourRun)
-screenLines z80env =
+screenLines z80_screen =
     let
         rawlines =
-            screenOffsets |> List.map (\line_num -> singleScreenLine line_num z80env.screen)
+            screenOffsets |> List.map (\line_num -> singleScreenLine line_num z80_screen.screen)
 
         lines2 =
             List.map rawToLines rawlines
