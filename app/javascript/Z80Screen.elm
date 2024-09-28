@@ -265,14 +265,20 @@ singleScreenLine line_num z80ram =
     range031 |> List.map (mapScreen line_num z80ram)
 
 
-screenLines : Z80Screen -> Dict Int (List ScreenColourRun)
-screenLines z80_screen =
+rawScreenData : Z80Screen -> List (List RawScreenData)
+rawScreenData z80_screen =
     screenOffsets
         |> List.map
             (\line_num ->
                 z80_screen.screen
                     |> singleScreenLine line_num
             )
+
+
+screenLines : Z80Screen -> Dict Int (List ScreenColourRun)
+screenLines z80_screen =
+    z80_screen
+        |> rawScreenData
         |> List.map (\x -> x |> List.foldr foldUp [])
         |> List.map (\x -> x |> List.foldr toDrawn [])
         |> List.indexedMap (\index linelist -> ( index, linelist ))
