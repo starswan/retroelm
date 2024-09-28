@@ -278,13 +278,16 @@ singleScreenLine line_num z80ram =
 screenLines : Z80Screen -> Dict Int (List ScreenColourRun)
 screenLines z80_screen =
     let
-        rawlines =
-            screenOffsets |> List.map (\line_num -> z80_screen.screen |> singleScreenLine line_num)
-
-        lines2 =
-            List.map rawToLines rawlines
+        raw_lines =
+            screenOffsets
+                |> List.map
+                    (\line_num ->
+                        z80_screen.screen
+                            |> singleScreenLine line_num
+                    )
+                |> List.map rawToLines
     in
-    lines2 |> List.indexedMap (\index linelist -> ( index, linelist )) |> Dict.fromList
+    raw_lines |> List.indexedMap (\index linelist -> ( index, linelist )) |> Dict.fromList
 
 
 setScreenValue : Int -> Int -> Z80Screen -> Z80Screen
