@@ -240,6 +240,14 @@ screenOffsets =
     attr_indexes |> List.indexedMap (\index attr_index -> ( calcDataOffset index, attr_index ))
 
 
+range0_191 =
+    List.range 0 191
+
+
+dataOffsets =
+    range0_191 |> List.map calcDataOffset
+
+
 mapScreen : ( Int, Int ) -> Z80Memory -> Int -> RawScreenData
 mapScreen ( row_index, attr_index ) z80env_ram index =
     let
@@ -264,7 +272,7 @@ range031 =
 
 singleScreenLine : ( Int, Int ) -> Z80Memory -> List RawScreenData
 singleScreenLine line_num z80env =
-    List.map (mapScreen line_num z80env) range031
+    range031 |> List.map (mapScreen line_num z80env)
 
 
 screenLines : Z80Screen -> Dict Int (List ScreenColourRun)
