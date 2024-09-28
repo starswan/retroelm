@@ -204,7 +204,7 @@ rawToLines screen =
 
 
 
--- Convert row index into start row data location and (colour-ish) attribute memory location
+-- Convert row index into start row data location
 
 
 calcDataOffset : Int -> Int
@@ -213,11 +213,8 @@ calcDataOffset start =
         bankStart =
             start |> Bitwise.and 0xC0
 
-        offset =
-            start |> modBy 64
-
         bankOffset =
-            offset // 8
+            start |> Bitwise.and 0x3F |> shiftRightBy 3
 
         data_offset =
             start |> modBy 8 |> shiftLeftBy 3
