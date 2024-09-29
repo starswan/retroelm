@@ -9,6 +9,7 @@ import Bitwise exposing (and, or, shiftRightBy)
 import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimePcAndValue, CpuTimeSpAndValue, addCpuTimeTime, c_NOCONT, cont, cont1, cont_port)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (shiftLeftBy8, shiftRightBy8, toHexString2)
+import Z80Address exposing (Z80Address(..), Z80WriteableAddress(..), increment)
 import Z80Debug exposing (debugLog)
 import Z80Ram exposing (Z80Ram, c_FRSTART, getRamValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
@@ -83,7 +84,7 @@ z80env_constructor =
 --}
 
 
-m1 : Int -> Int -> Z80ROM -> Z80Env -> CpuTimeAndValue
+m1 : Z80Address -> Int -> Z80ROM -> Z80Env -> CpuTimeAndValue
 m1 tmp_addr ir rom48k z80env =
     let
         n =
@@ -96,15 +97,18 @@ m1 tmp_addr ir rom48k z80env =
             else
                 z80env.time
 
-        addr =
-            tmp_addr - 0x4000
+        --addr =
+        --    tmp_addr - 0x4000
 
         z80env_1_time =
-            if and addr 0xC000 == 0 then
-                z80env_time |> cont1 0
-
-            else
-                z80env_time
+            case tmp_addr of
+                ROMAddress _ ->  z80env_time |> cont1 0
+                RAMAddress _ -> z80env_time
+        --    if and addr 0xC000 == 0 then
+        --        z80env_time |> cont1 0
+        --
+        --    else
+        --        z80env_time
 
         ctime =
             if and ir 0xC000 == 0x4000 then
@@ -113,13 +117,18 @@ m1 tmp_addr ir rom48k z80env =
             else
                 c_NOCONT
 
+        --value =
+        --    if addr >= 0 then
+        --        z80env.ram |> getRamValue addr
+        --
+        --    else
+        --        -- not implementing IF1 switching for now
+        --        rom48k |> getROMValue tmp_addr
         value =
-            if addr >= 0 then
-                z80env.ram |> getRamValue addr
-
-            else
+            case tmp_addr of
                 -- not implementing IF1 switching for now
-                rom48k |> getROMValue tmp_addr
+                ROMAddress int ->  rom48k |> getROMValue int
+                RAMAddress address -> z80env.ram |> getRamValue address
     in
     CpuTimeAndValue (CpuTimeCTime z80env_1_time.cpu_time ctime) value
 
@@ -142,7 +151,7 @@ m1 tmp_addr ir rom48k z80env =
 --}
 
 
-mem : Int -> CpuTimeCTime -> Z80ROM -> Z80Ram -> CpuTimeAndValue
+mem : Z80Address -> CpuTimeCTime -> Z80ROM -> Z80Ram -> CpuTimeAndValue
 mem base_addr time rom48k ram =
     let
         n =
@@ -155,23 +164,43 @@ mem base_addr time rom48k ram =
             else
                 time
 
-        addr =
-            base_addr - 0x4000
+        --addr =
+        --    base_addr - 0x4000
 
         ( new_time, ctime, value ) =
-            if addr >= 0 then
-                if addr < 0x4000 then
-                    let
-                        new_z80 =
-                            z80env_time |> cont1 0
-                    in
-                    ( new_z80, new_z80.cpu_time + 3, ram |> getRamValue addr )
+            case base_addr of
+                ROMAddress int -> ( z80env_time, c_NOCONT, rom48k |> getROMValue int )
+                RAMAddress address -> case address of
+                    Z80ScreenAddress _ ->
+                        let
+                            new_z80 =
+                                z80env_time |> cont1 0
+                        in
+                        ( new_z80, new_z80.cpu_time + 3, z80env.ram |> getRamValue address )
 
-                else
-                    ( z80env_time, c_NOCONT, ram |> getRamValue addr )
+                    Z80MemoryAddress addr ->
+                        if addr < 0x4000 - 0x1B00 then
+                            let
+                                new_z80 =
+                                    z80env_time |> cont1 0
+                            in
+                            ( new_z80, new_z80.cpu_time + 3, ram |> getRamValue address )
 
-            else
-                ( z80env_time, c_NOCONT, rom48k |> getROMValue base_addr )
+                        else
+                            ( z80env_time, c_NOCONT, z80env.ram |> getRamValue address )
+            --if addr >= 0 then
+            --    if addr < 0x4000 then
+            --        let
+            --            new_z80 =
+            --                z80env_time |> cont1 0
+            --        in
+            --        ( new_z80, new_z80.cpu_time + 3, z80env.ram |> getRamValue addr )
+            --
+            --    else
+            --        ( z80env_time, c_NOCONT, ram |> getRamValue addr )
+            --
+            --else
+            --    ( z80env_time, c_NOCONT, rom48k |> getROMValue base_addr )
     in
     CpuTimeAndValue { new_time | ctime = ctime } value
 
@@ -207,7 +236,7 @@ mem base_addr time rom48k ram =
 --	}
 
 
-mem16 : Int -> Z80ROM -> Z80Env -> CpuTimeAndValue
+mem16 : Z80Address -> Z80ROM -> Z80Env -> CpuTimeAndValue
 mem16 addr rom48k z80env  =
     let
         n =
@@ -220,87 +249,165 @@ mem16 addr rom48k z80env  =
             else
                 z80env.time
 
-        addr1 =
-            addr - 0x3FFF
+        --addr1 =
+            --addr - 0x3FFF
     in
-    if and addr1 0x3FFF /= 0 then
-        if addr1 < 0 then
-            let
-                low =
-                    getROMValue addr rom48k
+      case addr of
+          ROMAddress int ->
+             if int == 0x3FFF then
+                 let
+                     new_z80_time =
+                         cont1 3 z80env_time
 
-                high =
-                    getROMValue (addr1 + 0x4000) rom48k
-            in
-            CpuTimeAndValue (CpuTimeCTime z80env_time.cpu_time c_NOCONT) (Bitwise.or low (shiftLeftBy8 high))
+                     low =
+                         rom48k |> getROMValue int
 
-        else
-            let
-                low =
-                    getRamValue (addr - 0x4000) z80env.ram
+                     high =
+                         getRamValue (Z80ScreenAddress 0) z80env.ram
+                 in
+                 CpuTimeAndValue new_z80_time (or low (shiftLeftBy8 high))
+             else
+                let
+                    low =
+                        getROMValue int rom48k
 
-                high =
-                    getRamValue addr1 z80env.ram
+                    high =
+                        getROMValue (int + 1) rom48k
+                in
+                CpuTimeAndValue (CpuTimeCTime z80env_time.cpu_time c_NOCONT) (Bitwise.or low (shiftLeftBy8 high))
+          RAMAddress address ->
+              case address of
+                  Z80ScreenAddress int ->
+                      if int == 6912 then
+                          let
+                              low =
+                                  getRamValue address z80env.ram
 
-                z80env_1_time =
-                    if addr1 < 0x4000 then
-                        z80env_time |> cont1 0 |> cont1 3 |> addCpuTimeTime 6
+                              high =
+                                  getRamValue (Z80MemoryAddress 0) z80env.ram
 
-                    else
-                        CpuTimeCTime z80env_time.cpu_time c_NOCONT
-            in
-            CpuTimeAndValue z80env_1_time (Bitwise.or low (shiftLeftBy8 high))
+                              z80env_1_time =
+                                      z80env_time |> cont1 0 |> cont1 3 |> addCpuTimeTime 6
+                          in
+                          CpuTimeAndValue z80env_1_time (Bitwise.or low (shiftLeftBy8 high))
+                      else
+                          let
+                              low =
+                                  getRamValue address z80env.ram
 
-    else
-        let
-            addr1shift14 =
-                shiftRightBy 14 addr1
-        in
-        if addr1shift14 == 0 then
-            let
-                new_z80_time =
-                    cont1 3 z80env_time
+                              high =
+                                  getRamValue (Z80ScreenAddress (int + 1)) z80env.ram
 
-                low =
-                    rom48k |> getROMValue addr
+                              z80env_1_time =
+                                      z80env_time |> cont1 0 |> cont1 3 |> add_cpu_time_time 6
+                          in
+                          CpuTimeAndValue z80env_1_time (Bitwise.or low (shiftLeftBy8 high))
 
-                high =
-                    getRamValue 0 z80env.ram
-            in
-            CpuTimeAndValue new_z80_time (or low (shiftLeftBy8 high))
+                  Z80MemoryAddress int ->
+                      if int == 49152 - 6912 then
+                        let
+                            low =
+                                getRamValue address z80env.ram
 
-        else if addr1shift14 == 1 then
-            let
-                new_env_time =
-                    z80env_time |> cont1 0
+                            high =
+                                getROMValue int rom48k
+                        in
+                        CpuTimeAndValue (CpuTimeCTime z80env_time.cpu_time c_NOCONT) (or low (shiftLeftBy8 high))
+                      else
+                          let
+                              low =
+                                  getRamValue address z80env.ram
 
-                low =
-                    getRamValue (addr - 0x4000) z80env.ram
+                              high =
+                                  getRamValue (Z80MemoryAddress (int + 1)) z80env.ram
 
-                high =
-                    getRamValue addr1 z80env.ram
-            in
-            CpuTimeAndValue new_env_time (or low (shiftLeftBy8 high))
+                              z80env_1_time =
+                                  if int < 0x4000 - 0x1B00 then
+                                      z80env_time |> cont1 0 |> cont1 3 |> add_cpu_time_time 6
 
-        else if addr1shift14 == 2 then
-            let
-                low =
-                    getRamValue (addr - 0x4000) z80env.ram
+                                  else
+                                      CpuTimeCTime z80env_time.cpu_time c_NOCONT
+                          in
+                          CpuTimeAndValue z80env_1_time (Bitwise.or low (shiftLeftBy8 high))
 
-                high =
-                    getRamValue addr1 z80env.ram
-            in
-            CpuTimeAndValue (CpuTimeCTime z80env_time.cpu_time c_NOCONT) (or low (shiftLeftBy8 high))
-
-        else
-            let
-                low =
-                    getRamValue 0xBFFF z80env.ram
-
-                high =
-                    getRamValue 0 z80env.ram
-            in
-            CpuTimeAndValue (CpuTimeCTime z80env_time.cpu_time c_NOCONT) (or low (shiftLeftBy8 high))
+    --if and addr1 0x3FFF /= 0 then
+    --    if addr1 < 0 then
+    --        let
+    --            low =
+    --                getROMValue addr rom48k
+    --
+    --            high =
+    --                getROMValue (addr1 + 0x4000) rom48k
+    --        in
+    --        CpuTimeAndValue (CpuTimeCTime z80env_time.cpu_time c_NOCONT) (Bitwise.or low (shiftLeftBy8 high))
+    --
+    --    else
+    --        let
+    --            low =
+    --                getRamValue (addr - 0x4000) z80env.ram
+    --
+    --            high =
+    --                getRamValue addr1 z80env.ram
+    --
+    --            z80env_1_time =
+    --                if addr1 < 0x4000 then
+    --                    z80env_time |> cont1 0 |> cont1 3 |> add_cpu_time_time 6
+    --
+    --                else
+    --                    CpuTimeCTime z80env_time.cpu_time c_NOCONT
+    --        in
+    --        CpuTimeAndValue z80env_1_time (Bitwise.or low (shiftLeftBy8 high))
+    --
+    --else
+    --    let
+    --        addr1shift14 =
+    --            shiftRightBy 14 addr1
+    --    in
+    --    if addr1shift14 == 0 then
+    --        let
+    --            new_z80_time =
+    --                cont1 3 z80env_time
+    --
+    --            low =
+    --                rom48k |> getROMValue addr
+    --
+    --            high =
+    --                getRamValue 0 z80env.ram
+    --        in
+    --        CpuTimeAndValue new_z80_time (or low (shiftLeftBy8 high))
+    --
+    --    else if addr1shift14 == 1 then
+    --        let
+    --            new_env_time =
+    --                z80env_time |> cont1 0
+    --
+    --            low =
+    --                getRamValue (addr - 0x4000) z80env.ram
+    --
+    --            high =
+    --                getRamValue addr1 z80env.ram
+    --        in
+    --        CpuTimeAndValue new_env_time (or low (shiftLeftBy8 high))
+    --
+    --    else if addr1shift14 == 2 then
+    --        let
+    --            low =
+    --                getRamValue (addr - 0x4000) z80env.ram
+    --
+    --            high =
+    --                getRamValue addr1 z80env.ram
+    --        in
+    --        CpuTimeAndValue (CpuTimeCTime z80env_time.cpu_time c_NOCONT) (or low (shiftLeftBy8 high))
+    --
+    --    else
+    --        let
+    --            low =
+    --                getRamValue 0xBFFF z80env.ram
+    --
+    --            high =
+    --                getRomValue 0 rom48k
+    --        in
+    --        CpuTimeAndValue (CpuTimeCTime z80env_time.cpu_time c_NOCONT) (or low (shiftLeftBy8 high))
 
 
 
@@ -324,7 +431,7 @@ mem16 addr rom48k z80env  =
 --}
 
 
-setRam : Int -> Int -> Z80Env -> Z80Env
+setRam : Z80WriteableAddress -> Int -> Z80Env -> Z80Env
 setRam addr value z80env =
     --let
     --ram_value = getValue addr z80env.ram
@@ -336,7 +443,7 @@ setRam addr value z80env =
     { z80env | ram = z80env.ram |> Z80Ram.setRamValue addr value }
 
 
-setMem : Int -> Int -> Z80Env -> Z80Env
+setMem : Z80Address -> Int -> Z80Env -> Z80Env
 setMem z80_addr value z80env =
     let
         n =
@@ -349,33 +456,75 @@ setMem z80_addr value z80env =
             else
                 CpuTimeCTime z80env.time.cpu_time c_NOCONT
 
-        addr =
-            z80_addr - 0x4000
+        --addr = 0
+            --z80_addr - 0x4000
 
         ( new_env, ctime ) =
-            if addr < 0x4000 then
-                if addr < 0 then
-                    ( z80env, c_NOCONT )
+            case addr of
+                ROMAddress int -> ( z80env, c_NOCONT )
+                RAMAddress address ->
+                    case address of
+                        Z80ScreenAddress int ->
+                            let
+                                z80env_1_time =
+                                    z80env_time |> cont1 0
 
-                else
-                    let
-                        z80env_1_time =
-                            z80env_time |> cont1 0
+                                new_time =
+                                    z80env_1_time.cpu_time + 3
 
-                        new_time =
-                            z80env_1_time.cpu_time + 3
+                                ram_value =
+                                    getRamValue address z80env.ram
+                            in
+                            if ram_value == value then
+                                ( z80env, new_time )
 
-                        ram_value =
-                            getRamValue addr z80env.ram
-                    in
-                    if ram_value == value then
-                        ( z80env, new_time )
+                            else
+                                ( z80env |> set_ram address value, new_time )
 
-                    else
-                        ( z80env |> setRam addr value, new_time )
+                        Z80MemoryAddress int ->
+                            if int < 0x4000 - 0x1B00 then
+                                let
+                                    z80env_1_time =
+                                        z80env_time |> cont1 0
 
-            else
-                ( z80env |> setRam addr value, c_NOCONT )
+                                    new_time =
+                                        z80env_1_time.cpu_time + 3
+
+                                    ram_value =
+                                        getRamValue address z80env.ram
+                                in
+                                if ram_value == value then
+                                    ( z80env, new_time )
+
+                                else
+                                    ( z80env |> set_ram address value, new_time )
+                            else
+                                ( z80env |> set_ram address value, c_NOCONT )
+
+
+            --if addr < 0x4000 then
+            --    if addr < 0 then
+            --        ( z80env, c_NOCONT )
+            --
+            --    else
+            --        let
+            --            z80env_1_time =
+            --                z80env_time |> cont1 0
+            --
+            --            new_time =
+            --                z80env_1_time.cpu_time + 3
+            --
+            --            ram_value =
+            --                getRamValue addr z80env.ram
+            --        in
+            --        if ram_value == value then
+            --            ( z80env, new_time )
+            --
+            --        else
+            --            ( z80env |> setRam addr value, new_time )
+            --
+            --else
+            --    ( z80env |> setRam addr value, c_NOCONT )
     in
     { new_env | time = CpuTimeCTime z80env_time.cpu_time ctime }
 
@@ -403,11 +552,11 @@ setMem z80_addr value z80env =
 --}
 
 
-setMem16 : Int -> Int -> Z80Env -> Z80Env
+setMem16 : Z80Address -> Int -> Z80Env -> Z80Env
 setMem16 addr value z80env =
     let
-        addr1 =
-            addr - 0x3FFF
+        --addr1 = addr - 0x3FFF
+        addr1 = 0
     in
     if Bitwise.and addr1 0x3FFF /= 0 then
         let
@@ -423,19 +572,41 @@ setMem16 addr value z80env =
 
             env_1 =
                 { z80env | time = CpuTimeCTime z80env_time.cpu_time c_NOCONT }
+
         in
-        if addr1 < 0 then
-            env_1
+            case addr of
+                ROMAddress _ -> env_1
+                RAMAddress address ->
+                    case address of
+                        Z80ScreenAddress int ->
+                            env_1
+                                |> set_mem addr (Bitwise.and value 0xFF)
+                                |> set_mem (addr |> increment) (shiftRightBy8 value)
 
-        else if addr1 >= 0x4000 then
-            env_1
-                |> setRam (addr1 - 1) (Bitwise.and value 0xFF)
-                |> setRam addr1 (shiftRightBy8 value)
+                        Z80MemoryAddress int ->
+                            if addr1 >= 0x4000 then
+                                        env_1
+                                            |> setRam address (Bitwise.and value 0xFF)
+                                            |> setRam (address |> increment) (shiftRightBy8 value)
 
-        else
-            env_1
-                |> setMem addr (Bitwise.and value 0xFF)
-                |> setMem (addr + 1) (shiftRightBy8 value)
+                                    else
+                                        env_1
+                                            |> setMem addr (Bitwise.and value 0xFF)
+                                            |> setMem (addr + 1) (shiftRightBy8 value)
+
+
+        --if addr1 < 0 then
+        --    env_1
+        --
+        --else if addr1 >= 0x4000 then
+        --    env_1
+        --        |> set_ram (addr1 - 1) (Bitwise.and value 0xFF)
+        --        |> set_ram addr1 (shiftRightBy8 value)
+        --
+        --else
+        --    env_1
+        --        |> set_mem addr (Bitwise.and value 0xFF)
+        --        |> set_mem (addr + 1) (shiftRightBy8 value)
 
     else
         z80env
