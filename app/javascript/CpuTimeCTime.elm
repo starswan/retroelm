@@ -55,7 +55,7 @@ cont1 tmp_t z80  =
                z80
            else
                if (modBy 224 t) < 126 then
-                  z80 |> add_cpu_time_time (6 - (Bitwise.and t 7))
+                  z80 |> addCpuTimeTime (6 - (Bitwise.and t 7))
                else
                    z80
 --
@@ -166,12 +166,12 @@ cont_port portn z80env =
                    contval = Bitwise.and portn 1 |> shiftLeftBy 1
                    env4 = env3 |> cont (2 + contval)
                in
-                   env4 |> add_cpu_time_time 4
+                   env4 |> addCpuTimeTime 4
    in
       env2
 
-add_cpu_time_time: Int -> CpuTimeCTime -> CpuTimeCTime
-add_cpu_time_time value z80env =
+addCpuTimeTime: Int -> CpuTimeCTime -> CpuTimeCTime
+addCpuTimeTime value z80env =
    { z80env | cpu_time = z80env.cpu_time + value }
 
 

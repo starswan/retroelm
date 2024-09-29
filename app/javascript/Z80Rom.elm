@@ -3,7 +3,7 @@ module Z80Rom exposing (..)
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Utils exposing (listToDict, toHexString)
-import Z80Debug exposing (debug_todo)
+import Z80Debug exposing (debugTodo)
 type Z80ROM = Z80ROM (Dict Int Int)
 
 constructor: Z80ROM
@@ -23,7 +23,7 @@ getROMValue addr z80rom =
                 Just a ->
                   a
                 Nothing ->
-                  debug_todo "getROMValue" (String.fromInt addr) -1
+                  debugTodo "getROMValue" (String.fromInt addr) -1
 
 make_spectrum_rom: Array Int -> Z80ROM
 make_spectrum_rom romdata =

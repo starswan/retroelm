@@ -3,7 +3,7 @@ module CBTest exposing (..)
 import Expect exposing (Expectation)
 import Test exposing (..)
 import Z80 exposing (execute_instruction)
-import Z80Env exposing (mem, set_mem)
+import Z80Env exposing (mem, setMem)
 import Z80Rom
 
 suite : Test
@@ -26,8 +26,8 @@ suite =
             \_ ->
                let
                   new_env = z80env
-                               |> set_mem addr 0xCB
-                               |> set_mem (addr + 1) 0x00
+                               |> setMem addr 0xCB
+                               |> setMem (addr + 1) 0x00
                   new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | hl = 0x6545, b = 0x50 }, flags = { flags | a = 0x39 } }
                in
@@ -36,8 +36,8 @@ suite =
             \_ ->
                let
                   new_env = z80env
-                               |> set_mem addr 0xCB
-                               |> set_mem (addr + 1) 0x00
+                               |> setMem addr 0xCB
+                               |> setMem (addr + 1) 0x00
                   new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | b = 0xFE }, flags = { flags | ff = 0 } }
                in
@@ -46,8 +46,8 @@ suite =
             \_ ->
                let
                   new_env = z80env
-                               |> set_mem addr 0xCB
-                               |> set_mem (addr + 1) 0x01
+                               |> setMem addr 0xCB
+                               |> setMem (addr + 1) 0x01
                   new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                          main = { z80main | hl = 0x6545, c = 0x50 }, flags = { flags | a = 0x39 } }
                in
@@ -56,8 +56,8 @@ suite =
             \_ ->
                let
                   new_env = z80env
-                               |> set_mem addr 0xCB
-                               |> set_mem (addr + 1) 0x02
+                               |> setMem addr 0xCB
+                               |> setMem (addr + 1) 0x02
                   new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | hl = 0x6545, d = 0x50 }, flags = { flags | a = 0x39 } }
                in
@@ -66,8 +66,8 @@ suite =
             \_ ->
                let
                   new_env = z80env
-                               |> set_mem addr 0xCB
-                               |> set_mem (addr + 1) 0x04
+                               |> setMem addr 0xCB
+                               |> setMem (addr + 1) 0x04
                   new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | hl = 0x5045, d = 0x50 }, flags = { flags | a = 0x39 } }
                in
@@ -76,8 +76,8 @@ suite =
             \_ ->
                let
                   new_env = z80env
-                               |> set_mem addr 0xCB
-                               |> set_mem (addr + 1) 0x05
+                               |> setMem addr 0xCB
+                               |> setMem (addr + 1) 0x05
                   new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | hl = 0x5050, d = 0x50 }, flags = { flags | a = 0x39 } }
                in
@@ -86,9 +86,9 @@ suite =
             \_ ->
                let
                   new_env = z80env
-                               |> set_mem addr 0xCB
-                               |> set_mem (addr + 1) 0x06
-                               |> set_mem 0x6545 0x31
+                               |> setMem addr 0xCB
+                               |> setMem (addr + 1) 0x06
+                               |> setMem 0x6545 0x31
                   new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | hl = 0x6545, b = 0xA5 }, flags = { flags | a = 0x39 } }
                   mem_value =  new_z80.env |> mem 0x6545 z80rom
@@ -98,8 +98,8 @@ suite =
             \_ ->
                let
                   new_env = z80env
-                               |> set_mem addr 0xCB
-                               |> set_mem (addr + 1) 0x07
+                               |> setMem addr 0xCB
+                               |> setMem (addr + 1) 0x07
                   new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | hl = 0x5050, d = 0x50 }, flags = { flags | a = 0x30 } }
                in

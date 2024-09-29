@@ -1,6 +1,6 @@
 module Group0xC0 exposing (..)
 
-import CpuTimeCTime exposing (add_cpu_time_time)
+import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import GroupCB exposing (group_cb, group_xy_cb)
 import Z80Delta exposing (Z80Delta(..), jp, jp_delta, rst_delta)
@@ -159,7 +159,7 @@ retz_0xC8 rom48k z80 =
     -- case 0xC8: time++; if(Fr==0) MP=PC=pop(); break;
     let
         z80_1_time =
-            z80.env.time |> add_cpu_time_time 1
+            z80.env.time |> addCpuTimeTime 1
 
         env =
             z80.env

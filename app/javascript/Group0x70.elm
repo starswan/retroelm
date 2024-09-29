@@ -1,10 +1,10 @@
 module Group0x70 exposing (..)
 
 import Bitwise exposing (shiftRightBy)
-import CpuTimeCTime exposing (add_cpu_time_time)
+import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import Z80Delta exposing (Z80Delta(..), delta_noop)
-import Z80Env exposing (add_cpu_time_env, set_mem)
+import Z80Env exposing (add_cpu_time_env, setMem)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL(..), Z80, env_mem_hl, get_h, get_l, hl_deref_with_z80)
 
@@ -52,7 +52,7 @@ execute_0x7077 ixiyhl rom48k z80 value =
 
         new_env =
             { env_1 | time = mem_target.time }
-                |> set_mem mem_target.value value
+                |> setMem mem_target.value value
                 |> add_cpu_time_env 3
     in
     --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
@@ -174,7 +174,7 @@ execute_0x76_halt rom z80 =
             if n > 0 then
                 -- turns out env.halt(n, r) just returns n...?
                 --{ z80 | interrupts = { interrupts | r = interrupts.r + n } } |> add_cpu_time (4 * n)
-                ( { interrupts | r = interrupts.r + n }, z80.env.time |> add_cpu_time_time (4 * n) )
+                ( { interrupts | r = interrupts.r + n }, z80.env.time |> addCpuTimeTime (4 * n) )
 
             else
                 ( interrupts, z80.env.time )

@@ -5,7 +5,7 @@ import Bytes exposing (Bytes, Endianness(..), width)
 import Bytes.Decode exposing (Decoder, Step(..), loop, map, succeed)
 import Http exposing (Error, Expect, Metadata, Response)
 import Tapfile exposing (Tapfile, parseTapFile)
-import Z80Debug exposing (debug_log)
+import Z80Debug exposing (debugLog)
 
 
 bytesToTap : Response Bytes -> Result Error (List Tapfile)
@@ -34,7 +34,7 @@ bytesToTap httpResponse =
                     body |> width
 
                 y =
-                    debug_log "TAP file size" length Nothing
+                    debugLog "TAP file size" length Nothing
 
                 --z = debug_log "received bytes of size" (body |> width) Nothing
             in

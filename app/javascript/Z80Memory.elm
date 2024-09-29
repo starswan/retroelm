@@ -2,7 +2,7 @@ module Z80Memory exposing (..)
 
 import Dict exposing (Dict)
 import Utils exposing (toHexString)
-import Z80Debug exposing (debug_todo)
+import Z80Debug exposing (debugTodo)
 
 
 type Z80Memory
@@ -23,8 +23,8 @@ ramListToDict list =
     Dict.fromList ramarray
 
 
-getValue : Int -> Z80Memory -> Int
-getValue addr z80mem =
+getMemValue : Int -> Z80Memory -> Int
+getMemValue addr z80mem =
     case z80mem of
         Z80Memory z80dict ->
             case Dict.get addr z80dict of
@@ -32,11 +32,11 @@ getValue addr z80mem =
                     a
 
                 Nothing ->
-                    debug_todo ("Z80Memory:getValue " ++ (addr |> toHexString)) (Dict.size z80dict |> toHexString) -1
+                    debugTodo ("Z80Memory:getValue " ++ (addr |> toHexString)) (Dict.size z80dict |> toHexString) -1
 
 
-set_value : Int -> Int -> Z80Memory -> Z80Memory
-set_value addr value z80mem =
+setMemValue : Int -> Int -> Z80Memory -> Z80Memory
+setMemValue addr value z80mem =
     case z80mem of
         Z80Memory dict ->
             dict |> Dict.insert addr value |> Z80Memory

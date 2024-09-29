@@ -5,7 +5,7 @@ import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Char exposing (toUpper)
 import Dict
 import String exposing (fromChar)
-import Z80Debug exposing (debug_log)
+import Z80Debug exposing (debugLog)
 
 
 type Kempston
@@ -146,7 +146,7 @@ z80_keyboard_input portnum keyboard =
             val =
                 keyboard.kempston |> List.foldl (\kemp total -> Bitwise.or (kempstonMapping kemp) total) 0
         in
-        debug_log "kempston" val val
+        debugLog "kempston" val val
 
     else if Bitwise.and portnum 0x01 == 0 then
         let
@@ -291,7 +291,7 @@ pressed k keyboard mlist =
                     Bitwise.and value (1 |> shiftLeftBy b |> Bitwise.complement)
 
                 Nothing ->
-                    debug_log "pressed" ("v is impossible " ++ String.fromInt a) 0
+                    debugLog "pressed" ("v is impossible " ++ String.fromInt a) 0
 
         n =
             case Array.get b (mlist |> Array.fromList) of
@@ -299,7 +299,7 @@ pressed k keyboard mlist =
                     value
 
                 Nothing ->
-                    debug_log "pressed" ("n is wong mlist size " ++ String.fromInt (mlist |> List.length) ++ " b = " ++ String.fromInt b) 0
+                    debugLog "pressed" ("n is wong mlist size " ++ String.fromInt (mlist |> List.length) ++ " b = " ++ String.fromInt b) 0
 
         keyboard1 =
             (keyboard.keyboard |> List.take a) ++ List.singleton v1 ++ (keyboard.keyboard |> List.reverse |> List.take (7 - a) |> List.reverse)
@@ -316,7 +316,7 @@ pressed k keyboard mlist =
                                 value
 
                             Nothing ->
-                                debug_log "pressed" ("keyboard_n impossible" ++ String.fromInt n) 0
+                                debugLog "pressed" ("keyboard_n impossible" ++ String.fromInt n) 0
                 in
                 Bitwise.or v1 keyboard_n
 
@@ -547,7 +547,7 @@ keyDownEvent character keys =
         newkeys =
             event :: keys
     in
-    debug_log ("key down " ++ (character |> fromChar) ++ " newkeys ") newkeys newkeys
+    debugLog ("key down " ++ (character |> fromChar) ++ " newkeys ") newkeys newkeys
 
 
 keyUpEvent : Char -> List KeyEvent -> List KeyEvent
@@ -559,7 +559,7 @@ keyUpEvent character keys =
         newkeys =
             keys |> List.filter (\item -> keyNotEqual item upperchar)
     in
-    debug_log ("key up " ++ (character |> fromChar) ++ " newkeys ") newkeys newkeys
+    debugLog ("key up " ++ (character |> fromChar) ++ " newkeys ") newkeys newkeys
 
 
 ctrlKeyNotEqual : KeyEvent -> ControlKey -> Bool
@@ -586,7 +586,7 @@ ctrlKeyDownEvent string keys =
                 Nothing ->
                     keys
     in
-    debug_log ("control key down " ++ string ++ " newkeys ") newkeys newkeys
+    debugLog ("control key down " ++ string ++ " newkeys ") newkeys newkeys
 
 
 ctrlKeyUpEvent : String -> List KeyEvent -> List KeyEvent
@@ -603,4 +603,4 @@ ctrlKeyUpEvent string keys =
                 Nothing ->
                     keys
     in
-    debug_log ("control key up " ++ string ++ " newkeys ") newkeys newkeys
+    debugLog ("control key up " ++ string ++ " newkeys ") newkeys newkeys

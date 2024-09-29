@@ -1,6 +1,6 @@
 module Group0x60 exposing (..)
 
-import CpuTimeCTime exposing (add_cpu_time_time)
+import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import Z80Delta exposing (Z80Delta(..), delta_noop)
 import Z80Rom exposing (Z80ROM)
@@ -109,7 +109,7 @@ execute_0x66 ixiyhl rom48k z80 =
             z80.main
     in
     --{ z80 | pc = value.pc, env = value.env } |> set_h_z80 value.value HL |> add_cpu_time 3
-    MainRegsWithPcAndCpuTime (main |> set_h value.value HL) value.pc (value.time |> add_cpu_time_time 3)
+    MainRegsWithPcAndCpuTime (main |> set_h value.value HL) value.pc (value.time |> addCpuTimeTime 3)
 
 
 execute_0x67 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
@@ -171,7 +171,7 @@ execute_0x6E ixiyhl rom48k z80 =
         main =
             z80.main
     in
-    MainRegsWithPcAndCpuTime (main |> set_h value.value HL) value.pc (value.time |> add_cpu_time_time 3)
+    MainRegsWithPcAndCpuTime (main |> set_h value.value HL) value.pc (value.time |> addCpuTimeTime 3)
 
 
 execute_0x6F : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
