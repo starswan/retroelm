@@ -6,10 +6,10 @@
 module Z80Env exposing (..)
 
 import Bitwise exposing (and, or, shiftRightBy)
-import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimePcAndValue, CpuTimeSpAndValue, add_cpu_time_time, c_NOCONT, cont, cont1, cont_port)
+import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimePcAndValue, CpuTimeSpAndValue, addCpuTimeTime, c_NOCONT, cont, cont1, cont_port)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (shiftLeftBy8, shiftRightBy8, toHexString2)
-import Z80Debug exposing (debug_log)
+import Z80Debug exposing (debugLog)
 import Z80Ram exposing (Z80Ram, c_FRSTART, getRamValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
 
@@ -244,7 +244,7 @@ mem16 addr rom48k z80env  =
 
                 z80env_1_time =
                     if addr1 < 0x4000 then
-                        z80env_time |> cont1 0 |> cont1 3 |> add_cpu_time_time 6
+                        z80env_time |> cont1 0 |> cont1 3 |> addCpuTimeTime 6
 
                     else
                         CpuTimeCTime z80env_time.cpu_time c_NOCONT
@@ -324,8 +324,8 @@ mem16 addr rom48k z80env  =
 --}
 
 
-set_ram : Int -> Int -> Z80Env -> Z80Env
-set_ram addr value z80env =
+setRam : Int -> Int -> Z80Env -> Z80Env
+setRam addr value z80env =
     --let
     --ram_value = getValue addr z80env.ram
     --n = if addr == 0x1CB6 || addr == 0x1CB7 then
@@ -336,8 +336,8 @@ set_ram addr value z80env =
     { z80env | ram = z80env.ram |> Z80Ram.setRamValue addr value }
 
 
-set_mem : Int -> Int -> Z80Env -> Z80Env
-set_mem z80_addr value z80env =
+setMem : Int -> Int -> Z80Env -> Z80Env
+setMem z80_addr value z80env =
     let
         n =
             z80env.time.cpu_time - z80env.time.ctime
@@ -372,10 +372,10 @@ set_mem z80_addr value z80env =
                         ( z80env, new_time )
 
                     else
-                        ( z80env |> set_ram addr value, new_time )
+                        ( z80env |> setRam addr value, new_time )
 
             else
-                ( z80env |> set_ram addr value, c_NOCONT )
+                ( z80env |> setRam addr value, c_NOCONT )
     in
     { new_env | time = CpuTimeCTime z80env_time.cpu_time ctime }
 
@@ -403,8 +403,8 @@ set_mem z80_addr value z80env =
 --}
 
 
-set_mem16 : Int -> Int -> Z80Env -> Z80Env
-set_mem16 addr value z80env =
+setMem16 : Int -> Int -> Z80Env -> Z80Env
+setMem16 addr value z80env =
     let
         addr1 =
             addr - 0x3FFF
@@ -429,22 +429,22 @@ set_mem16 addr value z80env =
 
         else if addr1 >= 0x4000 then
             env_1
-                |> set_ram (addr - 1) (Bitwise.and value 0xFF)
-                |> set_ram addr (shiftRightBy8 value)
+                |> setRam (addr1 - 1) (Bitwise.and value 0xFF)
+                |> setRam addr1 (shiftRightBy8 value)
 
         else
             env_1
-                |> set_mem addr (Bitwise.and value 0xFF)
-                |> set_mem (addr + 1) (shiftRightBy8 value)
+                |> setMem addr (Bitwise.and value 0xFF)
+                |> setMem (addr + 1) (shiftRightBy8 value)
 
     else
         z80env
-            |> set_mem addr (Bitwise.and value 0xFF)
-            |> set_mem (addr + 1) (shiftRightBy8 value)
+            |> setMem addr (Bitwise.and value 0xFF)
+            |> setMem (addr + 1) (shiftRightBy8 value)
 
 
-cont_port_env : Int -> Z80Env -> Z80Env
-cont_port_env portn z80env =
+contPortEnv : Int -> Z80Env -> Z80Env
+contPortEnv portn z80env =
     { z80env | time = z80env.time |> cont_port portn }
 
 
@@ -481,7 +481,7 @@ out : Int -> Int -> Z80Env -> Z80Env
 out portnum _ env_in =
     let
         env =
-            env_in |> cont_port_env portnum
+            env_in |> contPortEnv portnum
     in
     env
 
@@ -498,7 +498,7 @@ z80_in portnum env_in =
 
         x =
             if value /= 0xFF then
-                debug_log "keyboard value" ((portnum |> toHexString2) ++ " " ++ (toHexString2 value)) value
+                debugLog "keyboard value" ((portnum |> toHexString2) ++ " " ++ (toHexString2 value)) value
 
             else
                 value
@@ -508,7 +508,7 @@ z80_in portnum env_in =
 
 add_cpu_time_env : Int -> Z80Env -> Z80Env
 add_cpu_time_env value z80env =
-    { z80env | time = z80env.time |> add_cpu_time_time value }
+    { z80env | time = z80env.time |> addCpuTimeTime value }
 
 
 reset_cpu_time : Z80Env -> Z80Env
@@ -540,9 +540,9 @@ z80_push v z80env =
         env_2 =
             z80env
                 |> add_cpu_time_env 1
-                |> set_mem sp_minus_1 (shiftRightBy8 v)
+                |> setMem sp_minus_1 (shiftRightBy8 v)
                 |> add_cpu_time_env 3
-                |> set_mem new_sp (Bitwise.and v 0xFF)
+                |> setMem new_sp (Bitwise.and v 0xFF)
                 |> add_cpu_time_env 3
     in
     { env_2 | sp = new_sp }
@@ -555,7 +555,7 @@ pop z80rom z80_env  =
             z80_env |> mem16 z80_env.sp z80rom
 
         time =
-            v.time |> add_cpu_time_time 6
+            v.time |> addCpuTimeTime 6
     in
     CpuTimeSpAndValue time (Bitwise.and (z80_env.sp + 2) 0xFFFF) v.value
 

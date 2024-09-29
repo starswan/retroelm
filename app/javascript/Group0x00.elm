@@ -1,7 +1,7 @@
 module Group0x00 exposing (..)
 
 import Bitwise
-import CpuTimeCTime exposing (add_cpu_time_time)
+import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import Utils exposing (shiftLeftBy8)
 import Z80Delta exposing (Z80Delta(..), delta_noop)
@@ -178,7 +178,7 @@ execute_0x0A rom48k z80 =
             { z80_flags | a = new_a.value }
     in
     --{ z80 | env = new_a.env, flags = new_flags } |> add_cpu_time 3
-    CpuTimeWithFlags (new_a.time |> add_cpu_time_time 3) new_flags
+    CpuTimeWithFlags (new_a.time |> addCpuTimeTime 3) new_flags
 
 
 execute_0x0B : Z80ROM -> Z80 -> Z80Delta

@@ -9,7 +9,7 @@ import Dict
 import Keyboard exposing (KeyEvent, Keyboard, update_keyboard)
 import Tapfile exposing (Tapfile)
 import Z80 exposing (execute, interrupt)
-import Z80Debug exposing (debug_log)
+import Z80Debug exposing (debugLog)
 import Z80Env exposing (reset_cpu_time)
 import Z80Ram exposing (c_FRSTART, c_FRTIME)
 import Z80Rom exposing (Z80ROM, make_spectrum_rom)
@@ -287,9 +287,9 @@ pause m spectrum =
    let
       w = Bitwise.xor (shiftRightBy 3 (Bitwise.and spectrum.want_pause (complement m))) (Bitwise.and m 7)
       paused = if xor spectrum.paused (w /= 0) then
-                  debug_log "pause" (w /= 0) w /= 0
+                  debugLog "pause" (w /= 0) w /= 0
                else
-                  debug_log "pause" Nothing spectrum.paused
+                  debugLog "pause" Nothing spectrum.paused
    in
       { spectrum | want_pause = w, paused = paused }
 --

@@ -2,7 +2,7 @@ module Z80Memory exposing (..)
 
 import Dict exposing (Dict)
 import Utils exposing (toHexString)
-import Z80Debug exposing (debug_todo)
+import Z80Debug exposing (debugTodo)
 
 
 type Z80Memory
@@ -32,7 +32,7 @@ getMemValue addr z80mem =
                     a
 
                 Nothing ->
-                    debug_todo ("Z80Memory:getValue " ++ (addr |> toHexString)) (Dict.size z80dict |> toHexString) -1
+                    debugTodo ("Z80Memory:getValue " ++ (addr |> toHexString)) (Dict.size z80dict |> toHexString) -1
 
 
 setMemValue : Int -> Int -> Z80Memory -> Z80Memory

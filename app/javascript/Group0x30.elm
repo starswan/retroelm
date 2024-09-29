@@ -1,11 +1,11 @@
 module Group0x30 exposing (..)
 
 import Bitwise
-import CpuTimeCTime exposing (add_cpu_time_time)
+import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import Utils exposing (byte, char)
 import Z80Delta exposing (Z80Delta(..))
-import Z80Env exposing (add_cpu_time_env, mem, set_mem)
+import Z80Env exposing (add_cpu_time_env, mem, setMem)
 import Z80Flags exposing (add16, dec, inc, scf_ccf)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL(..), Z80, env_mem_hl, get_xy, imm16, imm8, jr, set_xy)
@@ -79,7 +79,7 @@ execute_0x32 rom48k z80 =
 
         --new_z80 = { z80 | pc = v.pc }
     in
-    EnvWithPc (z80.env |> set_mem v.value z80.flags.a |> add_cpu_time_env 3) v.pc
+    EnvWithPc (z80.env |> setMem v.value z80.flags.a |> add_cpu_time_env 3) v.pc
 
 
 
@@ -125,7 +125,7 @@ execute_0x34 ixiyhl rom48k z80 =
 
         --z80_1 = { z80 | pc = a.pc } |> add_cpu_time 4
         new_env =
-            { env_2 | time = value.time |> add_cpu_time_time 4 } |> set_mem a.value v.value
+            { env_2 | time = value.time |> addCpuTimeTime 4 } |> setMem a.value v.value
     in
     --{ z80_1 | env = new_env, flags = v.flags } |> add_cpu_time 3
     EnvWithFlagsAndPc (new_env |> add_cpu_time_env 3) v.flags a.pc
@@ -150,7 +150,7 @@ execute_0x35 ixiyhl rom48k z80 =
             z80.flags |> dec value.value
 
         new_env =
-            { env_1 | time = value.time } |> add_cpu_time_env 4 |> set_mem a.value v.value
+            { env_1 | time = value.time } |> add_cpu_time_env 4 |> setMem a.value v.value
 
         env_2 =
             new_env |> add_cpu_time_env 3
@@ -178,7 +178,7 @@ execute_0x36 ixiyhl rom48k z80 =
                     { z80 | env = { env_1 | time = v.time }, pc = v.pc }
 
                 new_env =
-                    set_mem z80.main.hl v.value new_z80.env
+                    setMem z80.main.hl v.value new_z80.env
             in
             --{ new_z80 | env = new_env }
             EnvWithPc new_env v.pc
@@ -208,7 +208,7 @@ execute_0x36 ixiyhl rom48k z80 =
                     z80_1_env |> add_cpu_time_env 5
 
                 x =
-                    set_mem a v.value z80_2
+                    setMem a v.value z80_2
 
                 new_pc =
                     Bitwise.and (z80.pc + 2) 0xFFFF
@@ -275,7 +275,7 @@ execute_0x3A rom48k z80 =
         mem_value =
             z80.env |> mem v.value rom48k
     in
-    CpuTimeWithFlagsAndPc (mem_value.time |> add_cpu_time_time 3) { z80_flags | a = mem_value.value } v.pc
+    CpuTimeWithFlagsAndPc (mem_value.time |> addCpuTimeTime 3) { z80_flags | a = mem_value.value } v.pc
 
 
 execute_0x3B : Z80ROM -> Z80 -> Z80Delta

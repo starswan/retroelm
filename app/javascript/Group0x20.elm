@@ -1,7 +1,7 @@
 module Group0x20 exposing (..)
 
 import Bitwise
-import CpuTimeCTime exposing (CpuTimeAndPc, add_cpu_time_time)
+import CpuTimeCTime exposing (CpuTimeAndPc, addCpuTimeTime)
 import Dict exposing (Dict)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8)
 import Z80Delta exposing (Z80Delta(..))
@@ -108,7 +108,7 @@ execute_0x23 ixiyhl rom48k z80 =
             z80.main |> set_xy (char (xy + 1)) ixiyhl
     in
     --{ z80 | main = main } |> add_cpu_time 2
-    MainRegsWithPcAndCpuTime main z80.pc (z80.env.time |> add_cpu_time_time 2)
+    MainRegsWithPcAndCpuTime main z80.pc (z80.env.time |> addCpuTimeTime 2)
 
 
 execute_0x24 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
@@ -241,7 +241,7 @@ execute_0x2A ixiyhl rom48k z80 =
             z80.main |> set_xy new_xy.value ixiyhl
     in
     --{ z80_2 | main = main } |> add_cpu_time 6
-    MainRegsWithPcAndCpuTime main v.pc (new_xy.time |> add_cpu_time_time 6)
+    MainRegsWithPcAndCpuTime main v.pc (new_xy.time |> addCpuTimeTime 6)
 
 
 execute_0x2B : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
@@ -259,7 +259,7 @@ execute_0x2B ixiyhl rom48k z80 =
             set_xy new_xy ixiyhl z80.main
     in
     --{ z80 | main = new_z80 } |> add_cpu_time 2
-    MainRegsWithPcAndCpuTime new_z80 z80.pc (z80.env.time |> add_cpu_time_time 2)
+    MainRegsWithPcAndCpuTime new_z80 z80.pc (z80.env.time |> addCpuTimeTime 2)
 
 
 execute_0x2C : IXIYHL -> Z80ROM -> Z80 -> Z80Delta

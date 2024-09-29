@@ -1,11 +1,11 @@
 module Group0x10 exposing (..)
 
 import Bitwise
-import CpuTimeCTime exposing (add_cpu_time_time)
+import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import Utils exposing (byte, shiftLeftBy8, shiftRightBy8)
 import Z80Delta exposing (Z80Delta(..))
-import Z80Env exposing (add_cpu_time_env, mem, set_mem)
+import Z80Env exposing (add_cpu_time_env, mem, setMem)
 import Z80Flags exposing (add16, dec, inc, rot)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL, Z80, add_cpu_time, get_de, get_xy, imm16, imm8, set_de_main, set_xy)
@@ -65,14 +65,14 @@ execute_0x10 rom48k z80 =
             z80.env
 
         z80_2 =
-            { z80_1 | env = { env_0 | time = mem_value.time |> add_cpu_time_time 3 } }
+            { z80_1 | env = { env_0 | time = mem_value.time |> addCpuTimeTime 3 } }
 
         b =
             Bitwise.and (z80_2.main.b - 1) 0xFF
 
         ( z80_3, v3 ) =
             if b /= 0 then
-                ( z80_2.env.time |> add_cpu_time_time 5, v + 1 + d )
+                ( z80_2.env.time |> addCpuTimeTime 5, v + 1 + d )
 
             else
                 ( z80_2.env.time, v + 1 )
@@ -221,7 +221,7 @@ execute_0x18 rom48k z80 =
     in
     --z80 |> set_pc dest |> add_cpu_time 8
     --PcAndCpuTime pc_val 8
-    CpuTimeWithPc (mem_value.time |> add_cpu_time_time 8) pc_val
+    CpuTimeWithPc (mem_value.time |> addCpuTimeTime 8) pc_val
 
 
 execute_0x19 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
@@ -262,7 +262,7 @@ execute_0x1A rom48k z80 =
             { main_flags | a = new_a.value }
 
         env_1 =
-            new_a.time |> add_cpu_time_time 3
+            new_a.time |> addCpuTimeTime 3
     in
     --{ z80 | env = new_a.env, flags = new_flags } |> add_cpu_time 3
     CpuTimeWithFlags env_1 new_flags

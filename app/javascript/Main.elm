@@ -30,7 +30,7 @@ import Svg.Attributes exposing (fill, height, rx, stroke, viewBox, width, x1, x2
 import Tapfile exposing (Tapfile)
 import Time exposing (posixToMillis)
 import Utils exposing (speed_in_hz, time_display)
-import Z80Debug exposing (debug_log)
+import Z80Debug exposing (debugLog)
 import Z80Screen exposing (ScreenColourRun, screenLines)
 
 
@@ -185,7 +185,7 @@ update message model =
         LoadTape ->
             let
                 newmodel =
-                    debug_log "load_tape" "into model" model
+                    debugLog "load_tape" "into model" model
 
                 -- here we push the tapfile into Qoap and execute appropriately
             in
@@ -334,7 +334,7 @@ actionToCmd action =
             --               url = String.concat ["http://localhost:3000/", fileName],
             --               expect = Http.expectBytesResponse GotTAP convertResponse
             --          }
-            debug_log "loadTap"
+            debugLog "loadTap"
                 url
                 Http.get
                 { url = url
@@ -347,7 +347,7 @@ actionToCmd action =
             --    Http.get { url = String.concat ["http://localhost:3000/", fileName],
             --               expect = Http.expectBytes GotRom (list_decoder 16384 unsignedInt8)
             --              }
-            debug_log "loadRom"
+            debugLog "loadRom"
                 url
                 Http.get
                 { url = url

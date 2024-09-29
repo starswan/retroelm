@@ -1,10 +1,10 @@
 module Z80Types exposing (..)
 
 import Bitwise
-import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, add_cpu_time_time)
+import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, addCpuTimeTime)
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8)
 import Z80Env exposing (Z80Env, Z80EnvWithPC, add_cpu_time_env, mem, mem16, z80_push)
-import Z80Flags exposing (FlagRegisters, get_flags)
+import Z80Flags exposing (FlagRegisters, flags)
 import Z80Rom exposing (Z80ROM)
 
 
@@ -102,7 +102,7 @@ imm8 rom48k z80 =
             Bitwise.and (z80.pc + 1) 0xFFFF
 
         env_1 =
-            v.time |> add_cpu_time_time 3
+            v.time |> addCpuTimeTime 3
     in
     CpuTimePcAndValue env_1 new_pc v.value
 
@@ -131,7 +131,7 @@ imm16 rom48k z80 =
             Bitwise.and (z80.pc + 2) 0xFFFF
 
         env =
-            v.time |> add_cpu_time_time 6
+            v.time |> addCpuTimeTime 6
     in
     CpuTimePcAndValue env pc v.value
 
@@ -373,14 +373,14 @@ env_mem_hl ixiyhl rom48k z80 =
                 dval =
                     z80.env |> mem z80.pc rom48k
             in
-            CpuTimePcAndValue (dval.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (z80.main.ix + byte dval.value))
+            CpuTimePcAndValue (dval.time |> addCpuTimeTime 8) (char (z80.pc + 1)) (char (z80.main.ix + byte dval.value))
 
         IY ->
             let
                 dval =
                     z80.env |> mem z80.pc rom48k
             in
-            CpuTimePcAndValue (dval.time |> add_cpu_time_time 8) (char (z80.pc + 1)) (char (z80.main.iy + byte dval.value))
+            CpuTimePcAndValue (dval.time |> addCpuTimeTime 8) (char (z80.pc + 1)) (char (z80.main.iy + byte dval.value))
 
 
 get_bc : Z80 -> Int
@@ -455,7 +455,7 @@ jr rom48k z80 =
         --x = Debug.log "jr" ((String.fromInt d.value) ++ " " ++ (String.fromInt (byte d.value)))
     in
     --z80 |> set_env mempc.env |> add_cpu_time 8 |> set_pc (z80.pc + d + 1)
-    CpuTimeAndPc (mempc.time |> add_cpu_time_time 8) (Bitwise.and (z80.pc + d + 1) 0xFFFF)
+    CpuTimeAndPc (mempc.time |> addCpuTimeTime 8) (Bitwise.and (z80.pc + d + 1) 0xFFFF)
 
 
 get_h : IXIYHL -> MainWithIndexRegisters -> Int
@@ -479,4 +479,4 @@ set_iff value z80 =
 --	int af() {return A<<8 | flags();}
 get_af : Z80 -> Int
 get_af z80 =
-    Bitwise.or (shiftLeftBy8 z80.flags.a) (get_flags z80.flags)
+    Bitwise.or (shiftLeftBy8 z80.flags.a) (flags z80.flags)

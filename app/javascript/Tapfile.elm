@@ -2,7 +2,7 @@ module Tapfile exposing (..)
 
 import Bytes exposing (Bytes, Endianness(..), width)
 import Bytes.Decode exposing (Decoder, Step(..), andThen, fail, loop, map, map2, map3, map4, map5, string, succeed, unsignedInt16, unsignedInt8)
-import Z80Debug exposing (debug_log)
+import Z80Debug exposing (debugLog)
 
 parseTapFile : Bytes -> List Tapfile
 parseTapFile bytes =
@@ -102,7 +102,7 @@ decodeTapBody : TapfileHeader -> Decoder Tapfile
 decodeTapBody tapfileheader =
     let
         x =
-            debug_log "filename blocklen" ( tapfileheader.end.filename, tapfileheader.end.block_length ) Nothing
+            debugLog "filename blocklen" ( tapfileheader.end.filename, tapfileheader.end.block_length ) Nothing
 
         block_decoder =
             tapFileBlock tapfileheader.end.block_length
