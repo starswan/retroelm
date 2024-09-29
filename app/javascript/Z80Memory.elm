@@ -40,3 +40,11 @@ set_value addr value z80mem =
     case z80mem of
         Z80Memory dict ->
             dict |> Dict.insert addr value |> Z80Memory
+
+
+-- This delivers the values in the order of the keys
+getDataItems: Z80Memory -> List Int
+getDataItems z80mem =
+    case z80mem of
+        Z80Memory dict ->
+            dict |> Dict.values

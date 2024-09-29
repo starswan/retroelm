@@ -1,9 +1,9 @@
 module Z80Ram exposing (..)
 
 import Bitwise
+import ScreenStorage exposing (Z80Screen, getScreenValue, setScreenValue)
 import Utils exposing (shiftLeftBy8)
 import Z80Memory exposing (Z80Memory, getValue)
-import Z80Screen exposing (Z80Screen, getScreenValue)
 type alias Z80Ram =
     {
         screen: Z80Screen,
@@ -19,7 +19,7 @@ constructor =
     let
        ram = List.repeat (49152 - 6912) 0
     in
-        Z80Ram Z80Screen.constructor (Z80Memory.constructor ram)
+        Z80Ram ScreenStorage.constructor (Z80Memory.constructor ram)
 
 getRamValue: Int -> Z80Ram -> Int
 getRamValue addr z80ram =
@@ -41,11 +41,11 @@ getRam16Value addr z80ram =
          low = if ram_addr >= 0 then
                   z80ram.non_screen |> getValue ram_addr
                else
-                  z80ram.screen.screen |> getValue addr
+                  z80ram.screen |> getScreenValue addr
          high = if (ram_addr1) >= 0 then
                   z80ram.non_screen |> getValue (ram_addr1)
                else
-                  z80ram.screen.screen |> getValue (addr + 1)
+                  z80ram.screen |> getScreenValue (addr + 1)
     in
        (Bitwise.or low (shiftLeftBy8 high))
 
@@ -54,5 +54,5 @@ setRamValue addr value z80ram =
    if addr >= 6912 then
       { z80ram | non_screen = z80ram.non_screen |> Z80Memory.set_value (addr - 6912) value }
    else
-      { z80ram | screen = z80ram.screen |> Z80Screen.setScreenValue addr value }
+      { z80ram | screen = z80ram.screen |> setScreenValue addr value }
 
