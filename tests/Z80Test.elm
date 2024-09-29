@@ -752,9 +752,9 @@ suite =
                let
                   new_env = z80env
                                |> set_mem addr 0x3A
-                               |> set_mem (addr + 1) 0x34
-                               |> set_mem (addr + 2) 0x54
-                               |> set_mem 0x5434 0x87
+                               |> set_mem (addr + 1) 0x20
+                               |> set_mem (addr + 2) 0x70
+                               |> set_mem 0x7020 0x87
                   new_z80 = execute_instruction z80rom { z80 | env = new_env,
                                                         main = { z80main | hl = 0x4334 } }
                in

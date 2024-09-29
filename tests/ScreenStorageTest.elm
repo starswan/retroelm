@@ -1,7 +1,7 @@
-module Z80MemoryTest exposing (..)
+module ScreenStorageTest exposing (..)
 
 import Expect
-import Z80Screen exposing (screenOffsets)
+import ScreenStorage exposing (screenOffsets)
 import Test exposing (Test, describe, test)
 suite : Test
 suite =
