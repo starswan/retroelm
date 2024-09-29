@@ -3,7 +3,7 @@ module ScreenStorage exposing (..)
 -- Convert row index into start row data location
 
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
-import Z80Memory exposing (Z80Memory, getValue)
+import Z80Memory exposing (Z80Memory, getMemValue)
 
 
 range07 =
@@ -128,12 +128,12 @@ setScreenValue addr value z80s =
         z80screen =
             z80s |> refresh_screen
     in
-    { z80screen | screen = z80screen.screen |> Z80Memory.set_value addr value }
+    { z80screen | screen = z80screen.screen |> Z80Memory.setMemValue addr value }
 
 
 getScreenValue : Int -> Z80Screen -> Int
 getScreenValue addr screen =
-    screen.screen |> getValue addr
+    screen.screen |> getMemValue addr
 
 
 rawScreenData : Z80Screen -> List (List RawScreenData)
