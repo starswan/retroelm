@@ -12,9 +12,8 @@
 /db/*.sqlite3-journal
 
 # Ignore all logfiles and tempfiles.
-/log/*
-!/log/.keep
-/tmp
+log
+tmp
 coverage
 .idea
 *.iml
