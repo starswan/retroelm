@@ -105,30 +105,26 @@ execute_0x34 ixiyhl rom48k z80 =
     -- case 0x34: v=inc(env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
     -- case 0x34: {int a; v=inc(env.mem(a=getd(xy))); time+=4; env.mem(a,v); time+=3;} break;
     let
-        z80_flags =
-            z80.flags
-
-        a =
+        cpuTimePcAndValue =
             z80 |> env_mem_hl ixiyhl rom48k
 
         env_1 =
             z80.env
 
         env_2 =
-            { env_1 | time = a.time }
+            { env_1 | time = cpuTimePcAndValue.time }
 
-        value =
-            env_2 |> mem a.value rom48k
+        cpuTimeAndValue =
+            env_2 |> mem cpuTimePcAndValue.value rom48k
 
-        v =
-            z80_flags |> inc value.value
+        valueWithFlags =
+            z80.flags |> inc cpuTimeAndValue.value
 
-        --z80_1 = { z80 | pc = a.pc } |> add_cpu_time 4
         new_env =
-            { env_2 | time = value.time |> addCpuTimeTime 4 } |> setMem a.value v.value
+            { env_2 | time = cpuTimeAndValue.time |> addCpuTimeTime 4 } |> setMem cpuTimePcAndValue.value valueWithFlags.value
     in
     --{ z80_1 | env = new_env, flags = v.flags } |> add_cpu_time 3
-    EnvWithFlagsAndPc (new_env |> add_cpu_time_env 3) v.flags a.pc
+    EnvWithFlagsAndPc (new_env |> add_cpu_time_env 3) valueWithFlags.flags cpuTimePcAndValue.pc
 
 
 execute_0x35 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta

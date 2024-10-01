@@ -279,5 +279,4 @@ execute_0x7E ixiyhl rom48k z80 =
             z80.flags
     in
     --{ z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_a value.value
-    --EnvWithFlagsAndPc { env_1 | time = value.time } { flags | a = value.value } value.pc
     FlagsWithPcAndTime { flags | a = value.value } value.pc value.time

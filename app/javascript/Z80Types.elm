@@ -1,7 +1,7 @@
 module Z80Types exposing (..)
 
 import Bitwise exposing (complement)
-import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, addCpuTimeTime)
+import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimeIncrement(..), CpuTimePcAndValue, addCpuTimeTime)
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8)
 import Z80Env exposing (Z80Env, Z80EnvWithPC, add_cpu_time_env, mem, mem16, setMem, z80_push)
 import Z80Flags exposing (FlagRegisters, flags)
