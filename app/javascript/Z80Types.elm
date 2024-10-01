@@ -1,9 +1,9 @@
 module Z80Types exposing (..)
 
-import Bitwise
+import Bitwise exposing (complement)
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, addCpuTimeTime)
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8)
-import Z80Env exposing (Z80Env, Z80EnvWithPC, add_cpu_time_env, mem, mem16, z80_push)
+import Z80Env exposing (Z80Env, Z80EnvWithPC, add_cpu_time_env, mem, mem16, setMem, z80_push)
 import Z80Flags exposing (FlagRegisters, flags)
 import Z80Rom exposing (Z80ROM)
 
@@ -467,16 +467,96 @@ get_l : IXIYHL -> MainWithIndexRegisters -> Int
 get_l ixiyhl z80 =
     Bitwise.and (get_xy ixiyhl z80) 0xFF
 
+
+
 --	void iff(int v) {IFF = v;}
-set_iff: Int -> Z80 -> InterruptRegisters
+
+
+set_iff : Int -> Z80 -> InterruptRegisters
 set_iff value z80 =
-   let
-      --y = debug_log "set_iff" value Nothing
-      interrupts = z80.interrupts
-   in
-      { interrupts | iff = value }
+    let
+        --y = debug_log "set_iff" value Nothing
+        interrupts =
+            z80.interrupts
+    in
+    { interrupts | iff = value }
+
+
 
 --	int af() {return A<<8 | flags();}
+
+
 get_af : Z80 -> Int
 get_af z80 =
     Bitwise.or (shiftLeftBy8 z80.flags.a) (flags z80.flags)
+
+
+set408bit : Int -> Int -> IXIYHL -> Z80 -> Z80
+set408bit c value ixiyhl z80 =
+    case Bitwise.and c 0x07 of
+        0 ->
+            let
+                z80_main =
+                    z80.main
+            in
+            { z80 | main = { z80_main | b = value } }
+
+        1 ->
+            let
+                z80_main =
+                    z80.main
+            in
+            { z80 | main = { z80_main | c = value } }
+
+        2 ->
+            let
+                z80_main =
+                    z80.main
+            in
+            { z80 | main = { z80_main | d = value } }
+
+        3 ->
+            let
+                z80_main =
+                    z80.main
+            in
+            { z80 | main = { z80_main | e = value } }
+
+        4 ->
+            let
+                main =
+                    z80.main |> set_h value ixiyhl
+            in
+            { z80 | main = main }
+
+        5 ->
+            let
+                main =
+                    z80.main |> set_l value ixiyhl
+            in
+            { z80 | main = main }
+
+        6 ->
+            { z80 | env = setMem z80.main.hl value z80.env }
+
+        _ ->
+            let
+                z80_flags =
+                    z80.flags
+            in
+            { z80 | flags = { z80_flags | a = value } }
+
+
+f_szh0n0p : Int -> FlagRegisters -> FlagRegisters
+f_szh0n0p r flags =
+    let
+        fr =
+            r
+
+        ff =
+            Bitwise.or (Bitwise.and flags.ff (complement 0xFF)) fr
+
+        fa =
+            Bitwise.or r 0x0100
+    in
+    { flags | fr = fr, ff = ff, fa = fa, fb = 0 }
