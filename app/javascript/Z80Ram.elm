@@ -3,7 +3,7 @@ module Z80Ram exposing (..)
 import Bitwise
 import ScreenStorage exposing (Z80Screen, getScreenValue, setScreenValue)
 import Utils exposing (shiftLeftBy8)
-import Z80Memory exposing (Z80Memory, getMemValue)
+import Z80Memory exposing (Z80Memory, getMemValue, setMemValue)
 type alias Z80Ram =
     {
         screen: Z80Screen,
@@ -52,7 +52,7 @@ getRam16Value addr z80ram =
 setRamValue: Int -> Int -> Z80Ram-> Z80Ram
 setRamValue addr value z80ram =
    if addr >= 6912 then
-      { z80ram | non_screen = z80ram.non_screen |> Z80Memory.setMemValue (addr - 6912) value }
+      { z80ram | non_screen = z80ram.non_screen |> setMemValue (addr - 6912) value }
    else
       { z80ram | screen = z80ram.screen |> setScreenValue addr value }
 

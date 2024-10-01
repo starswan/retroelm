@@ -38,7 +38,6 @@ import Z80Screen exposing (ScreenColourRun, screenLines)
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
 -- 20th Jul 2024 Chromium                                live 37.9ms (28.5 Hz)
-
 -- 12th Jul 2024 Firefox  debug        (12.4 Hz)         live        (17.9 Hz)
 --
 -- 23rd Jun 2024 Chromium debug 70.5ms (14.2 Hz) 106 sec live 36.3ms (27.6 Hz) 163 sec
@@ -112,7 +111,7 @@ lineToSvg y_index linedata =
 
 lineListToSvg : Int -> List ScreenColourRun -> List (Svg Message)
 lineListToSvg y_index linelist =
-    List.map (lineToSvg y_index) linelist
+    linelist |> List.map (lineToSvg y_index)
 
 
 view : Model -> Html Message
@@ -121,11 +120,10 @@ view model =
         screen =
             model.qaop.spectrum.cpu.env.ram.screen
 
-        lines =
-            screen |> screenLines
-
         screen_data =
-            Dict.map lineListToSvg lines |> values
+            screen
+                |> screenLines
+                |> List.indexedMap lineListToSvg
 
         -- border colour is never bright
         border_colour =

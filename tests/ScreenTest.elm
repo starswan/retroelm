@@ -2,7 +2,7 @@ module ScreenTest exposing (..)
 
 import Expect exposing (Expectation)
 import ScreenStorage exposing (getScreenValue, setScreenValue)
-import Z80Screen exposing (foldUp, runCounts)
+import Z80Screen exposing (foldUp, foldRunCounts)
 import Test exposing (..)
 
 suite : Test
@@ -35,7 +35,7 @@ suite =
                   {start=0,count=1,value=True},
                   {start=1,count=13,value=False},
                   {start=14,count=2,value=True}]
-                  (a |> List.foldl runCounts [] |> List.reverse)
+                  (a |> List.foldl foldRunCounts [] |> List.reverse)
          --,test "simple" <|
          --   \_ ->
          --      let
