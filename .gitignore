@@ -30,6 +30,3 @@ yarn-debug.log*
 index.html
 /public/z80test/
 /public/*.tap
-
-/app/assets/builds/*
-!/app/assets/builds/.keep
