@@ -131,8 +131,6 @@ GEM
       concurrent-ruby (~> 1.0)
     jbuilder (2.11.2)
       activesupport (>= 5.0.0)
-    jsbundling-rails (1.3.0)
-      railties (>= 6.0.0)
     json (2.6.2)
     listen (3.4.1)
       rb-fsevent (~> 0.10, >= 0.10.3)
@@ -188,6 +186,8 @@ GEM
       nio4r (~> 2.0)
     racc (1.8.0)
     rack (2.2.9)
+    rack-proxy (0.7.7)
+      rack
     rack-test (2.1.0)
       rack (>= 1.3)
     rails (6.1.7.8)
@@ -267,6 +267,7 @@ GEM
       rexml (~> 3.2, >= 3.2.5)
       rubyzip (>= 1.2.2, < 3.0)
       websocket (~> 1.0)
+    semantic_range (3.0.0)
     shellany (0.0.1)
     simplecov (0.17.0)
       docile (~> 1.1)
@@ -293,6 +294,11 @@ GEM
       activemodel (>= 6.0.0)
       bindex (>= 0.4.0)
       railties (>= 6.0.0)
+    webpacker (5.4.4)
+      activesupport (>= 5.2)
+      rack-proxy (>= 0.6.1)
+      railties (>= 5.2)
+      semantic_range (>= 2.3.0)
     websocket (1.2.10)
     websocket-driver (0.7.6)
       websocket-extensions (>= 0.1.0)
@@ -318,7 +324,6 @@ DEPENDENCIES
   guard-bundler
   guard-rspec
   jbuilder (~> 2.7)
-  jsbundling-rails (~> 1.3)
   listen (~> 3.2)
   matrix
   mysql2
@@ -338,6 +343,7 @@ DEPENDENCIES
   sqlite3 (~> 1.4)
   tzinfo-data
   web-console (>= 3.3.0)
+  webpacker (~> 5.0, < 6)
 
 BUNDLED WITH
    2.3.27
