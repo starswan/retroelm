@@ -53,9 +53,15 @@ namespace :deploy do
       run "ln -nfs #{shared_path}/#{f} #{release_path}/#{f}"
     end
   end
+
+  desc "Copy Undebug module"
+  task :undebug, roles: :app do
+    run "cd #{release_path}/app/javascript && cp Undebug.elm Z80Debug.elm"
+  end
 end
 
 after "deploy:update_code", "deploy:symlink_shared"
+after "bundler:install", "deploy:undebug"
 
 namespace :bundler do
   desc "Symlink bundled gems on each release"

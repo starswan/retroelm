@@ -49,7 +49,7 @@ import Z80Screen exposing (ScreenColourRun, screenLines)
 
 
 c_TICKTIME =
-    25
+    20
 
 
 
