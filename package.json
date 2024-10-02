@@ -4,15 +4,16 @@
   "dependencies": {
     "@rails/activestorage": "6.1.7",
     "@rails/ujs": "6.1.7",
-    "@rails/webpacker": "5.4.4",
-    "elm": "^0.19.1",
-    "elm-webpack-loader": "^7.0.1"
+    "elm": "^0.19.1-6",
+    "esbuild": "^0.20.1"
   },
   "version": "0.1.0",
   "devDependencies": {
     "elm-format": "^0.8.7",
-    "elm-hot-webpack-loader": "^1.1.8",
     "elm-test": "0.19.1-revision9",
-    "webpack-dev-server": "^4.11.0"
+    "esbuild-plugin-elm": "^0.0.12"
+  },
+  "scripts": {
+    "build": "node ./esbuild.config.js"
   }
 }

@@ -6,7 +6,9 @@
     <%= csp_meta_tag %>
 
     <%= stylesheet_link_tag 'application', media: 'all' %>
-    <%= javascript_pack_tag "hello_elm" %>
+    <%#= javascript_pack_tag "hello_elm" %>
+    <%#= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
+    <%= javascript_include_tag "hello_elm", type: "module" %>
   </head>
 
   <body>
