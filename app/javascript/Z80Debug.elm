@@ -1,9 +1,21 @@
 module Z80Debug exposing (..)
 
+
+debugEnabled =
+    False
+
+
 debugLog msg thingToLog thingToReturn =
-   Debug.log msg thingToLog |> (\_ -> thingToReturn)
-   --thingToReturn
+    if debugEnabled then
+        Debug.log msg thingToLog |> (\_ -> thingToReturn)
+
+    else
+        thingToReturn
+
 
 debugTodo msg thingToLog thingToReturn =
-   Debug.todo (msg ++ " " ++ thingToLog) |> (\_ -> thingToReturn)
-   --thingToReturn
+    if debugEnabled then
+        Debug.todo (msg ++ " " ++ thingToLog) |> (\_ -> thingToReturn)
+
+    else
+        thingToReturn
