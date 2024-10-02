@@ -67,6 +67,9 @@ spectrumUnsigned16Bit =
 
 tapfile_list_decoder : Int -> Decoder Tapfile -> Decoder (List Tapfile)
 tapfile_list_decoder len decoder =
+    let
+        y = debugLog "TAP file size" len Nothing
+    in
     loop ( len, [] ) (tapfile_step_decoder decoder)
 
 
@@ -116,7 +119,10 @@ grabWholeThing tapfileheader tapfile_body =
 
 
 headerTypeFromInt : Int -> Decoder HeaderType
-headerTypeFromInt header_int =
+headerTypeFromInt headerType =
+    let
+        header_int = debugLog "Header Type" headerType headerType
+    in
     case header_int of
         0 ->
             succeed PROGRAM

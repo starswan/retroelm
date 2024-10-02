@@ -182,6 +182,11 @@ update message model =
     case message of
         LoadTape ->
             let
+                --first = case model.qaop.spectrum.tape of
+                --            Just a_tape ->
+                --        False
+                --
+                --    Nothing -> Nothing
                 newmodel =
                     debugLog "load_tape" "into model" model
 
@@ -425,6 +430,12 @@ run qaop =
 
     else
         ( { qaop | spectrum = qaop.spectrum |> frames qaop.keys }, Cmd.none )
+    --else
+    --    case qaop.spectrum.tape of
+    --        Just tape ->
+    --            let
+    --                newenv = qaop.spectrum.cpu.env
+    --        Nothing -> ( { qaop | spectrum = qaop.spectrum |> frames qaop.keys }, Cmd.none )
 
 
 main : Program String Model Message

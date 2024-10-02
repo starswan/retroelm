@@ -1,6 +1,8 @@
 --
 -- $Id$
 --
+
+
 module Spectrum exposing (..)
 
 import Array exposing (Array)
@@ -16,107 +18,126 @@ import Z80Rom exposing (Z80ROM, make_spectrum_rom)
 import Z80Tape exposing (Z80Tape)
 import Z80Types exposing (Z80)
 
+
 type alias Audio =
-    {
-    }
+    {}
+
 
 type alias Tape =
-    {
-        stop_loading: Bool,
-        -- tried to convert this to a List Char, but blew up the stack whilst doing so
-        tape: List Int,
-        tape_blk: Int,
-        tape_pos: Int,
-        tape_changed: Bool,
-        tape_ready: Bool
+    { stop_loading : Bool
+    , -- tried to convert this to a List Char, but blew up the stack whilst doing so
+      tape : List Int
+    , tape_blk : Int
+    , tape_pos : Int
+    , tape_changed : Bool
+    , tape_ready : Bool
     }
+
+
+
 --	private static final int REFRESH_END = 99999;
 --	final int scrchg[] = new int[24];	// where the picture changed
 --	private int refrs_t, refrs_a, refrs_b, refrs_s;
+
+
 type alias ScreenRefresh =
-    {
-        scrchg: List Int,
-        refrs_t: Int,
-        refrs_a: Int,
-        refrs_b: Int,
-        refrs_s: Int
+    { scrchg : List Int
+    , refrs_t : Int
+    , refrs_a : Int
+    , refrs_b : Int
+    , refrs_s : Int
     }
+
 
 type alias BorderRefresh =
-   {
-      bordchg: Int,
-      refrb_t: Int,
-      refrb_x: Int,
-      refrb_y: Int
+    { bordchg : Int
+    , refrb_t : Int
+    , refrb_x : Int
+    , refrb_y : Int
     }
 
-new_screen_refresh: ScreenRefresh
+
+new_screen_refresh : ScreenRefresh
 new_screen_refresh =
     let
-        scrchg = List.repeat 24 0
+        scrchg =
+            List.repeat 24 0
     in
-        ScreenRefresh scrchg 0 0 0 0
+    ScreenRefresh scrchg 0 0 0 0
 
-new_border_refresh: BorderRefresh
+
+new_border_refresh : BorderRefresh
 new_border_refresh =
     BorderRefresh 0 0 0 0
 
-new_tape: List Tapfile -> Spectrum -> Spectrum
-new_tape tapfile_list spectrum =
+
+new_tape : List Tapfile -> Spectrum -> Spectrum
+new_tape tapfileList spectrum =
     let
         --x = debug_log "new_tape list" (tapfile_list |> List.length) Nothing
-        map = tapfile_list |> List.indexedMap (\index tap -> (index, tap))
+        tapedict =
+            tapfileList |> List.indexedMap (\index tap -> ( index, tap )) |> Dict.fromList |> Z80Tape
     in
-      --  w/o this change, the code crashes with a recursion error
-      --{ spectrum | tape = Just (Z80Tape False tape_string 0 0 True True) }
-      -- spectrum
-      -- This is weird - it only works if the tape is a dict (rather than list or Array)
-      -- otherwise we just an infinite recursion error
-       { spectrum | tape = Just (Z80Tape (Dict.fromList map)) }
-  -- let
-  --    z80 = spectrum.cpu
-  -- in
-  --    { spectrum | cpu = { z80 | env = z80.env |> Z80Env.set_tape tape_string } }
+    --  w/o this change, the code crashes with a recursion error
+    --{ spectrum | tape = Just (Z80Tape False tape_string 0 0 True True) }
+    -- spectrum
+    -- This is weird - it only works if the tape is a dict (rather than list or Array)
+    -- otherwise we just an infinite recursion error
+    { spectrum | tape = Just tapedict }
 
-set_rom: Array Int -> Spectrum -> Spectrum
+
+
+-- let
+--    z80 = spectrum.cpu
+-- in
+--    { spectrum | cpu = { z80 | env = z80.env |> Z80Env.set_tape tape_string } }
+
+
+set_rom : Array Int -> Spectrum -> Spectrum
 set_rom romdata spectrum =
-   let
-      z80 = spectrum.cpu
-      rommy =
-                  make_spectrum_rom romdata
-   in
-      --{ spectrum | cpu = { z80 | env = z80.env |> Z80Env.set_rom romdata } }
-      { spectrum | rom48k = rommy }
+    let
+        z80 =
+            spectrum.cpu
+
+        rommy =
+            make_spectrum_rom romdata
+    in
+    --{ spectrum | cpu = { z80 | env = z80.env |> Z80Env.set_rom romdata } }
+    { spectrum | rom48k = rommy }
+
+
 
 --c_Mh = 6 -- margin
 --c_Mv = 5
 --c_W = 256 + 8*c_Mh*2 -- 352
 --c_H = 192 + 8*c_Mv*2 -- 272
-
 --c_REFRESH_END = 99999
 --c_BORDER_START = -224*8*c_Mv - 4*c_Mh + 4
-
 --c_CHANNEL_VOLUME = 26000
 --c_SPEAKER_VOLUME = 49000
-
 -- Spectrum only contained a reference to Qaop
 -- so that it could call new_pixels() on it in 2 places
+
+
 type alias Spectrum =
-    {
-        cpu: Z80,
-        rom48k : Z80ROM,
-        paused: Bool,
-        want_pause: Int,
-        tape: Maybe Z80Tape,
-        --audio: Audio,
-        screen_refresh: ScreenRefresh,
-        border_refresh: BorderRefresh
+    { cpu : Z80
+    , rom48k : Z80ROM
+    , paused : Bool
+    , want_pause : Int
+    , tape : Maybe Z80Tape
+    , --audio: Audio,
+      screen_refresh : ScreenRefresh
+    , border_refresh : BorderRefresh
     }
 
-constructor: Spectrum
+
+constructor : Spectrum
 constructor =
     --Spectrum Z80.constructor True 1 Nothing Audio new_screen_refresh new_border_refresh
     Spectrum Z80.constructor Z80Rom.constructor True 1 Nothing new_screen_refresh new_border_refresh
+
+
+
 --
 --	public void run()
 --	{
@@ -227,45 +248,56 @@ constructor =
 --			}
 --		} while(!interrupted());
 --	}
-frames: List KeyEvent -> Spectrum -> Spectrum
-frames keys speccy =
-  let
-    --tap = 0
-    --tend = False
-    sz80 = speccy.cpu
-    env = sz80.env |> reset_cpu_time
-    cpu = { sz80 | time_limit = c_FRSTART + c_FRTIME,
-                   env = { env | keyboard = keys |> update_keyboard } } |> interrupt 0xFF speccy.rom48k |> execute speccy.rom48k
-  in
-    { speccy | cpu = cpu }
-      --x = if spectrum.paused then
-      --       1
-      --   else
-      --       1
-      --(scr, bord) = refresh_new spectrum.screen_refresh spectrum.border_refresh
-      --z80 = if spectrum.paused then
-      --           spectrum.cpu
-      --         else
-      --           case spectrum.tape of
-      --               Just a ->
-      --                   let
-      --                       loaded = do_load tap tend spectrum.cpu
-      --                   in
-      --                       loaded
-      --               Nothing ->
-      --                   execute spectrum.cpu
 
+
+frames : List KeyEvent -> Spectrum -> Spectrum
+frames keys speccy =
+    let
+        --tap = 0
+        --tend = False
+        sz80 =
+            speccy.cpu
+
+        env =
+            sz80.env |> reset_cpu_time
+
+        cpu =
+            { sz80
+                | time_limit = c_FRSTART + c_FRTIME
+                , env = { env | keyboard = keys |> update_keyboard }
+            }
+                |> interrupt 0xFF speccy.rom48k
+                |> execute speccy.rom48k
+    in
+    { speccy | cpu = cpu }
+
+
+
+--x = if spectrum.paused then
+--       1
+--   else
+--       1
+--(scr, bord) = refresh_new spectrum.screen_refresh spectrum.border_refresh
+--z80 = if spectrum.paused then
+--           spectrum.cpu
+--         else
+--           case spectrum.tape of
+--               Just a ->
+--                   let
+--                       loaded = do_load tap tend spectrum.cpu
+--                   in
+--                       loaded
+--               Nothing ->
+--                   execute spectrum.cpu
 --do_load: number -> Bool -> Z80 -> Z80
 --do_load thing flag z80  =
 --    z80
-
 --refresh_new: ScreenRefresh -> BorderRefresh -> (ScreenRefresh, BorderRefresh)
 --refresh_new screen_refresh border_refresh =
 --    let
 --        new_border = { border_refresh | refrb_x = -c_Mh, refrb_y = -8*c_Mv, refrb_t = c_BORDER_START }
 --    in
 --        ({ screen_refresh | refrs_t = 0, refrs_b = 0, refrs_s = c_Mv*c_W + c_Mh, refrs_a = 0x1800}, new_border)
-
 --
 --	boolean paused = true;
 --	int want_pause = 1;
@@ -277,21 +309,30 @@ frames keys speccy =
 --		while(!paused);
 --		return want_pause;
 --	}
-      --w = want_pause;
-      --if((w!=0) ^ paused) {
-      --   paused = w!=0;
-      --   notifyAll();
-      --}
-pause: Int -> Spectrum -> Spectrum
+--w = want_pause;
+--if((w!=0) ^ paused) {
+--   paused = w!=0;
+--   notifyAll();
+--}
+
+
+pause : Int -> Spectrum -> Spectrum
 pause m spectrum =
-   let
-      w = Bitwise.xor (shiftRightBy 3 (Bitwise.and spectrum.want_pause (complement m))) (Bitwise.and m 7)
-      paused = if xor spectrum.paused (w /= 0) then
-                  debugLog "pause" (w /= 0) w /= 0
-               else
-                  debugLog "pause" Nothing spectrum.paused
-   in
-      { spectrum | want_pause = w, paused = paused }
+    let
+        w =
+            Bitwise.xor (shiftRightBy 3 (Bitwise.and spectrum.want_pause (complement m))) (Bitwise.and m 7)
+
+        paused =
+            if xor spectrum.paused (w /= 0) then
+                debugLog "pause" (w /= 0) w /= 0
+
+            else
+                debugLog "pause" Nothing spectrum.paused
+    in
+    { spectrum | want_pause = w, paused = paused }
+
+
+
 --
 --	public synchronized void reset()
 --	{
