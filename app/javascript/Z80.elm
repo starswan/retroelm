@@ -25,7 +25,7 @@ import Loop
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString)
 import Z80Debug exposing (debugTodo)
 import Z80Delta exposing (DeltaWithChanges, Z80Delta(..), apply_delta, jp_delta, rst_delta)
-import Z80Env exposing (Z80Env, add_cpu_time_env, m1, mem16, out, pop, z80_in, z80_push, z80env_constructor)
+import Z80Env exposing (Z80Env, addCpuTimeEnv, m1, mem16, out, pop, z80_in, z80_push, z80env_constructor)
 import Z80Flags exposing (FlagRegisters, IntWithFlags, c_FC, c_FS, cp, set_af, z80_or, z80_sub)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (Z80ROM)
@@ -450,7 +450,7 @@ execute_0xD3 rom48k z80 =
     env_1 = z80.env
     env_2 = { env_1 | time = value.time }
     v = Bitwise.or value.value (shiftLeftBy8 z80.flags.a)
-    env = out v z80.flags.a env_2 |> add_cpu_time_env 4
+    env = out v z80.flags.a env_2 |> addCpuTimeEnv 4
   in
     EnvWithPc env value.pc
 
@@ -607,7 +607,7 @@ execute_0xF9 _ z80 =
    let
        env = z80.env
    in
-   { z80 | env = { env | sp = z80.main.hl } |> add_cpu_time_env 2 }
+   { z80 | env = { env | sp = z80.main.hl } |> addCpuTimeEnv 2 }
 
 execute_0xFA: Z80ROM -> Z80 -> Z80
 execute_0xFA rom48k z80 =
@@ -859,7 +859,7 @@ interrupt bus rom48k z80 =
             new_ints = { ints | iff = 0, halted = False }
             z80_1 = { z80 | interrupts = new_ints }
             pushed = z80_1.env |> z80_push z80_1.pc
-            new_z80 = { z80_1 | env = pushed |> add_cpu_time_env 6 }
+            new_z80 = { z80_1 | env = pushed |> addCpuTimeEnv 6 }
         in
             case ints.iM of
                 0 -> new_z80 |> im0 bus
@@ -871,7 +871,7 @@ interrupt bus rom48k z80 =
                         env_and_pc = z80.env |> mem16 addr rom48k
                         env = z80.env
                       in
-                        { new_z80 | env = { env | time = env_and_pc.time } |> add_cpu_time_env 6, pc = env_and_pc.value }
+                        { new_z80 | env = { env | time = env_and_pc.time } |> addCpuTimeEnv 6, pc = env_and_pc.value }
                 _ -> new_z80
 
 --set_env: Z80Env -> Z80 -> Z80

@@ -1,7 +1,7 @@
 module Z80Delta exposing (..)
 
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, addCpuTimeTime)
-import Z80Env exposing (Z80Env, add_cpu_time_env, setMem, setMem16, z80_push)
+import Z80Env exposing (Z80Env, addCpuTimeEnv, setMem, setMem16, z80_push)
 import Z80Flags exposing (FlagRegisters)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL(..), InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, f_szh0n0p, imm16, rst, set408bit, set_flag_regs)
@@ -156,13 +156,13 @@ apply_delta z80 z80delta =
             { z80 | pc = pc, env = { z80_env | time = time } |> z80_push value, interrupts = z80delta.interrupts }
 
         SetMem8WithTime addr value time ->
-            { z80 | pc = z80delta.pc, env = z80.env |> setMem addr value |> add_cpu_time_env time, interrupts = z80delta.interrupts }
+            { z80 | pc = z80delta.pc, env = z80.env |> setMem addr value |> addCpuTimeEnv time, interrupts = z80delta.interrupts }
 
         SetMem16WithTimeAndPc addr value time pc ->
-            { z80 | pc = pc, env = z80.env |> setMem16 addr value |> add_cpu_time_env time, interrupts = z80delta.interrupts }
+            { z80 | pc = pc, env = z80.env |> setMem16 addr value |> addCpuTimeEnv time, interrupts = z80delta.interrupts }
 
         SetMem8WithCpuTimeIncrementAndPc addr value cpuTimeCTime time pc ->
-            { z80 | pc = pc, env = { z80_env | time = cpuTimeCTime } |> setMem addr value |> add_cpu_time_env time, interrupts = z80delta.interrupts }
+            { z80 | pc = pc, env = { z80_env | time = cpuTimeCTime } |> setMem addr value |> addCpuTimeEnv time, interrupts = z80delta.interrupts }
 
         PcTimeFlagsSet408Bit pc cpuTimeCTime flagRegisters caseval value ->
             { z80 | pc = pc, env = { z80_env | time = cpuTimeCTime } } |> set_flag_regs flagRegisters |> set408bit caseval value HL

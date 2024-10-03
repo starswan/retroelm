@@ -4,7 +4,7 @@ import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import GroupCB exposing (group_cb, group_xy_cb)
 import Z80Delta exposing (Z80Delta(..), jp, jp_delta, rst_delta)
-import Z80Env exposing (add_cpu_time_env, pop)
+import Z80Env exposing (addCpuTimeEnv, pop)
 import Z80Flags exposing (adc, z80_add)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIY(..), IXIYHL(..), Z80, call_if, get_bc, imm16, imm8, set_bc_main)
@@ -43,7 +43,7 @@ execute_0xC0 rom48k z80 =
     -- case 0xC0: time++; if(Fr!=0) MP=PC=pop(); break;
     let
         env =
-            z80.env |> add_cpu_time_env 1
+            z80.env |> addCpuTimeEnv 1
     in
     if z80.flags.fr /= 0 then
         let

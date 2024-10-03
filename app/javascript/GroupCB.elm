@@ -6,7 +6,7 @@ import Dict exposing (Dict)
 import Utils exposing (byte, char, toHexString)
 import Z80Debug exposing (debugTodo)
 import Z80Delta exposing (Z80Delta(..))
-import Z80Env exposing (add_cpu_time_env, m1, mem, setMem)
+import Z80Env exposing (addCpuTimeEnv, m1, mem, setMem)
 import Z80Flags exposing (IntWithFlags, bit, c_F53, shifter, shifter0)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIY, IXIYHL(..), IntWithFlagsTimeAndPC, Z80, a_with_z80, add_cpu_time, b_with_z80, c_with_z80, d_with_z80, e_with_z80, get_ixiy_xy, h_with_z80, hl_deref_with_z80, inc_pc, inc_pc2, l_with_z80, set408bit, set_h, set_l)
@@ -387,7 +387,7 @@ group_xy_cb ixiyhl rom48k z80 =
                 z80_3.env
 
             else
-                setMem a v2.value z80_3.env
+                z80_3.env |> setMem a v2.value |> addCpuTimeEnv 3
 
         --y = debug_log "xy_cb2" ((z80.pc |> toHexString) ++ " c " ++ (c.value |> toHexString2) ++
         --                                                   " set " ++ (a |> toHexString) ++
@@ -396,7 +396,7 @@ group_xy_cb ixiyhl rom48k z80 =
         --		env.mem(a, v);
         --		time += 3;
         z80_4 =
-            { z80_3 | flags = v2.flags, env = new_env |> add_cpu_time_env 3 }
+            { z80_3 | flags = v2.flags, env = new_env }
 
         --		switch(c&0x07) {
         --			case 0: B = v; break;
@@ -410,7 +410,7 @@ group_xy_cb ixiyhl rom48k z80 =
         caseval =
             Bitwise.and c.value 0x07
     in
-    if caseval /= 6 then
+    if (caseval /= 6) && (cAndC0 /= 0x40) then
         z80_4 |> set408bit caseval v2.value HL |> Whole
 
     else

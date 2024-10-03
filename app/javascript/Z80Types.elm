@@ -1,9 +1,9 @@
 module Z80Types exposing (..)
 
 import Bitwise exposing (complement)
-import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimeIncrement(..), CpuTimePcAndValue, addCpuTimeTime)
+import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, addCpuTimeTime)
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8)
-import Z80Env exposing (Z80Env, Z80EnvWithPC, add_cpu_time_env, mem, mem16, setMem, z80_push)
+import Z80Env exposing (Z80Env, Z80EnvWithPC, addCpuTimeEnv, mem, mem16, setMem, z80_push)
 import Z80Flags exposing (FlagRegisters, flags)
 import Z80Rom exposing (Z80ROM)
 
@@ -229,7 +229,7 @@ add_cpu_time : Int -> Z80 -> Z80
 add_cpu_time value z80 =
     let
         env =
-            z80.env |> add_cpu_time_env value
+            z80.env |> addCpuTimeEnv value
     in
     { z80 | env = env }
 

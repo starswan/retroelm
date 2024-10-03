@@ -3,7 +3,7 @@ module Group0xE0 exposing (..)
 import Dict exposing (Dict)
 import GroupED exposing (group_ed)
 import Z80Delta exposing (Z80Delta(..), rst_delta)
-import Z80Env exposing (add_cpu_time_env, pop, z80_push)
+import Z80Env exposing (addCpuTimeEnv, pop, z80_push)
 import Z80Flags exposing (z80_and, z80_xor)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL(..), Z80, get_de, get_xy, imm8, set_de_main)
@@ -70,7 +70,7 @@ execute_0xE3 ixiyhl rom48k z80 =
             { z80 | env = { env | time = hl.time, sp = hl.sp } }
 
         pushed =
-            z80_1.env |> z80_push (z80_1.main |> get_xy ixiyhl) |> add_cpu_time_env 2
+            z80_1.env |> z80_push (z80_1.main |> get_xy ixiyhl) |> addCpuTimeEnv 2
 
         --z80_2 = { z80_1 | env = pushed }
         main =
