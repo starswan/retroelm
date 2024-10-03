@@ -23,7 +23,7 @@ import Loader exposing (LoadAction(..), trimActionList)
 import MessageHandler exposing (array_decoder, bytesToTap)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Qaop, pause)
-import Spectrum exposing (frames, new_tape, set_rom)
+import Spectrum exposing (Spectrum, frames, loadTapfile, new_tape, set_rom)
 import SpectrumColour exposing (colourToString, spectrumColour)
 import Svg exposing (Svg, line, rect, svg)
 import Svg.Attributes exposing (fill, height, rx, stroke, viewBox, width, x1, x2, y1, y2)
@@ -176,18 +176,24 @@ view model =
         --,svg [style "height" "192px", style "width" "256px"] (List.indexedMap lineListToSvg lines |> List.concat)
         ]
 
-
 update : Message -> Model -> ( Model, Cmd Message )
 update message model =
     case message of
         LoadTape ->
             let
-                newmodel =
-                    debugLog "load_tape" "into model" model
-
+                (first, rest) = case model.qaop.spectrum.tape of
+                                  Just a_tape -> (a_tape.tapfiles |> Dict.get 0, a_tape.tapfiles |> Dict.remove 0)
+                                  Nothing -> (Nothing, Dict.empty)
                 -- here we push the tapfile into Qoap and execute appropriately
+                speccy = case first of
+                    Just tapfile -> model.qaop.spectrum |> loadTapfile tapfile
+                    Nothing -> model.qaop.spectrum
+
+                qaop =
+                    debugLog "load_tape" "into model" model.qaop
+
             in
-            ( newmodel, Cmd.none )
+            ( {model | qaop = { qaop | spectrum = speccy }}, Cmd.none )
 
         GotRom result ->
             let
@@ -425,6 +431,12 @@ run qaop =
 
     else
         ( { qaop | spectrum = qaop.spectrum |> frames qaop.keys }, Cmd.none )
+    --else
+    --    case qaop.spectrum.tape of
+    --        Just tape ->
+    --            let
+    --                newenv = qaop.spectrum.cpu.env
+    --        Nothing -> ( { qaop | spectrum = qaop.spectrum |> frames qaop.keys }, Cmd.none )
 
 
 main : Program String Model Message
