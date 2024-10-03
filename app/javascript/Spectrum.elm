@@ -9,7 +9,7 @@ import Array exposing (Array)
 import Bitwise exposing (complement, shiftRightBy)
 import Dict
 import Keyboard exposing (KeyEvent, Keyboard, update_keyboard)
-import Tapfile exposing (Tapfile)
+import Tapfile exposing (HeaderType(..), Tapfile)
 import Z80 exposing (execute, interrupt)
 import Z80Debug exposing (debugLog)
 import Z80Env exposing (reset_cpu_time)
@@ -104,6 +104,23 @@ set_rom romdata spectrum =
     in
     --{ spectrum | cpu = { z80 | env = z80.env |> Z80Env.set_rom romdata } }
     { spectrum | rom48k = rommy }
+
+
+loadTapfile: Tapfile -> Spectrum -> Spectrum
+loadTapfile tapFile spectrum =
+    let
+        cpu = spectrum.cpu
+        env  = case tapFile.header.start.headerType of
+            PROGRAM ->
+                let
+                    y = tapFile.block.data
+                in
+                cpu.env
+            NUMBER_ARRAY -> cpu.env
+            Tapfile.CHAR_ARRAY -> cpu.env
+            Tapfile.CODE -> cpu.env
+    in
+    { spectrum | cpu = { cpu | env = env } }
 
 
 

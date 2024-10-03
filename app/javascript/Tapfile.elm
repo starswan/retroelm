@@ -26,9 +26,9 @@ type HeaderType
 
 
 type alias TapeHeaderStart =
-    { header_length : Int
-    , flag_byte : Int
-    , header_type : HeaderType
+    { headerLength : Int
+    , headerFlagByte : Int
+    , headerType : HeaderType
     }
 
 
@@ -48,8 +48,8 @@ type alias TapfileHeader =
 
 
 type alias TapfileBlock =
-    { data_length : Int
-    , flag_byte : Int
+    { dataLength : Int
+    , blockFlagByte : Int
     , data : List Int
     , checksum : Int
     }
@@ -57,7 +57,7 @@ type alias TapfileBlock =
 
 type alias Tapfile =
     { header : TapfileHeader
-    , data : TapfileBlock
+    , block : TapfileBlock
     }
 
 
@@ -79,7 +79,7 @@ tapfile_step_decoder decoder ( n, xs ) =
         succeed (Done xs)
 
     else
-        map (\x -> Loop ( n - x.header.start.header_length - 2 - (x.data.data |> List.length) - 4, x :: xs )) decoder
+        map (\x -> Loop ( n - x.header.start.headerLength - 2 - (x.block.data |> List.length) - 4, x :: xs )) decoder
 
 
 list_with_length_decoder : Int -> Decoder a -> Decoder (List a)
