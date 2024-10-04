@@ -5,7 +5,7 @@ import Z80ChangeData exposing (Z80ChangeData)
 import Z80Env exposing (Z80Env, addCpuTimeEnv, setMem, setMem16, z80_push)
 import Z80Flags exposing (FlagRegisters)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIYHL(..), InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, f_szh0n0p, imm16, rst, set408bit, set_flag_regs)
+import Z80Types exposing (IXIYHL(..), InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, f_szh0n0p, imm16, set408bit, set_flag_regs)
 
 
 type Z80Delta
@@ -224,12 +224,22 @@ jp y rom48k z80 =
     else
         CpuTimeAndPc a.time a.pc
 
+--rst : Int -> Z80 -> (Int, Int)
+--rst c z80 =
+    --z80 |> push z80.pc |> set_pc (c - 199)
+    --let
+    --    pushed =
+    --        z80.env |> z80_push z80.pc
+    --in
+    --(z80.pc, (c - 199))
 
 rst_delta : Int -> Z80 -> Z80Delta
 rst_delta value z80 =
     --z80 |> rst_z80 0xC7
     let
-        result =
-            z80 |> rst value
+        --result =
+        --    z80 |> rst value
+        result = (z80.pc, (value - 199))
     in
-    EnvWithPc result.env result.pc
+    --EnvWithPc result.env result.pc
+    PushWithPc (result |> Tuple.first) (result |> Tuple.second)
