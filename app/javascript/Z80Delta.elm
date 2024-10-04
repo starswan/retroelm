@@ -37,9 +37,11 @@ type Z80Delta
     | MainRegsWithSpPcAndTime MainWithIndexRegisters Int Int CpuTimeCTime
     | OnlyTime CpuTimeCTime
     | MainRegsWithAltRegs MainWithIndexRegisters MainRegisters
-    | MainRegsWithEnvAndPc MainWithIndexRegisters Z80Env Int
     | OnlyPush Int
+    | PushWithPc Int Int
     | PushWithCpuTimeAndPc Int CpuTimeCTime Int
+    | PushWithMainSpCpuTimeAndPc Int MainWithIndexRegisters Int CpuTimeCTime Int
+    | PushWithMainSpCpuTime Int MainWithIndexRegisters Int CpuTimeCTime
     | SetMem8WithTime Int Int Int
     | SetMem16WithTimeAndPc Int Int Int Int
     | SetMem8WithCpuTimeIncrementAndPc Int Int CpuTimeCTime Int Int
@@ -140,9 +142,6 @@ applyDeltaWithChanges z80delta z80  =
         MainRegsWithEnv mainRegisters z80Env ->
             { z80 | env = z80Env, pc = z80delta.pc, main = mainRegisters, interrupts = z80delta.interrupts }
 
-        MainRegsWithEnvAndPc mainWithIndexRegisters z80Env pc ->
-            { z80 | env = z80Env, pc = pc, main = mainWithIndexRegisters, interrupts = z80delta.interrupts }
-
         FlagsWithPCMainAndCpuTime flagRegisters pc mainWithIndexRegisters time ->
             { z80 | flags = flagRegisters, pc = pc, env = { z80_env | time = time }, main = mainWithIndexRegisters, interrupts = z80delta.interrupts }
 
@@ -151,6 +150,13 @@ applyDeltaWithChanges z80delta z80  =
 
         OnlyPush value ->
             { z80 | pc = z80delta.pc, env = { z80_env | time = z80delta.time } |> z80_push value, interrupts = z80delta.interrupts }
+
+        PushWithPc value pc ->
+            let
+                env =
+                    z80.env
+            in
+            { z80 | pc = pc, env = { env | time = z80delta.time } |> z80_push value, interrupts = z80delta.interrupts }
 
         PushWithCpuTimeAndPc value time pc ->
             { z80 | pc = pc, env = { z80_env | time = time } |> z80_push value, interrupts = z80delta.interrupts }
@@ -176,6 +182,20 @@ applyDeltaWithChanges z80delta z80  =
                     z80 |> set408bit caseval result HL
             in
             { z80_1 | flags = z80_1.flags |> f_szh0n0p result } |> add_cpu_time timeDelta
+
+        PushWithMainSpCpuTimeAndPc value mainWithIndexRegisters sp time pc ->
+            let
+                env =
+                    z80.env
+            in
+            { z80 | main = mainWithIndexRegisters, pc = pc, env = { env | time = time, sp = sp } |> z80_push value, interrupts = z80delta.interrupts }
+
+        PushWithMainSpCpuTime value mainWithIndexRegisters sp time ->
+            let
+                env =
+                    z80.env
+            in
+            { z80 | main = mainWithIndexRegisters, pc = z80delta.pc, env = { env | time = time, sp = sp } |> z80_push value, interrupts = z80delta.interrupts }
 
 
 delta_noop : Z80ROM -> Z80 -> Z80Delta

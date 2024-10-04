@@ -65,6 +65,11 @@ type alias IntWithFlagsTimeAndPC =
     , pc : Int
     }
 
+type alias Z80PushValue =
+    {
+    value: Int
+    }
+
 
 
 -- Think this could be a useful parameter to execute_lt40 to avoid the duplication

@@ -1,9 +1,10 @@
 module Group0xE0 exposing (..)
 
+import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import GroupED exposing (group_ed)
 import Z80Delta exposing (Z80Delta(..), rst_delta)
-import Z80Env exposing (addCpuTimeEnv, pop, z80_push)
+import Z80Env exposing (pop)
 import Z80Flags exposing (z80_and, z80_xor)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL(..), Z80, get_de, get_xy, imm8, set_de_main)
@@ -69,8 +70,12 @@ execute_0xE3 ixiyhl rom48k z80 =
         z80_1 =
             { z80 | env = { env | time = hl.time, sp = hl.sp } }
 
-        pushed =
-            z80_1.env |> z80_push (z80_1.main |> get_xy ixiyhl) |> addCpuTimeEnv 2
+        toBePushed = (z80_1.main |> get_xy ixiyhl)
+
+        --pushed =
+        --    z80_1.env |> z80_push toBePushed |> addCpuTimeEnv 2
+
+        hl_time = hl.time |> addCpuTimeTime 2
 
         --z80_2 = { z80_1 | env = pushed }
         main =
@@ -81,13 +86,15 @@ execute_0xE3 ixiyhl rom48k z80 =
         --IY -> { z80_2 | main = { main | iy = v.value } }
         --HL -> { z80_2 | main = { main | hl = v.value } }
         IX ->
-            MainRegsWithEnvAndPc { main | ix = hl.value } pushed z80.pc
-
+            --MainRegsWithEnvAndPc { main | ix = hl.value } pushed z80.pc
+            PushWithMainSpCpuTimeAndPc toBePushed { main | ix = hl.value } hl.sp hl_time z80.pc
         IY ->
-            MainRegsWithEnvAndPc { main | iy = hl.value } pushed z80.pc
+            --MainRegsWithEnvAndPc { main | iy = hl.value } pushed z80.pc
+            PushWithMainSpCpuTimeAndPc toBePushed { main | iy = hl.value } hl.sp hl_time z80.pc
 
         HL ->
-            MainRegsWithEnv { main | hl = hl.value } pushed
+            --MainRegsWithEnv { main | hl = hl.value } pushed
+            PushWithMainSpCpuTime toBePushed { main | hl = hl.value } hl.sp hl_time
 
 
 execute_0xE5 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
@@ -95,11 +102,13 @@ execute_0xE5 ixiyhl _ z80 =
     -- case 0xE5: push(HL); break;
     -- case 0xE5: push(xy); break;
     let
-        pushed =
-            z80.env |> z80_push (z80.main |> get_xy ixiyhl)
+        toBePushed = (z80.main |> get_xy ixiyhl)
+        --pushed =
+        --    z80.env |> z80_push toBePushed
     in
     --{ z80 | env = pushed }
-    EnvWithPc pushed z80.pc
+    --EnvWithPc pushed z80.pc
+    PushWithPc toBePushed z80.pc
 
 
 execute_0xE6 : Z80ROM -> Z80 -> Z80Delta
