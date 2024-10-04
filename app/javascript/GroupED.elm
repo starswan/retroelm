@@ -9,14 +9,13 @@ module GroupED exposing (..)
 import Bitwise exposing (complement, shiftLeftBy, shiftRightBy)
 import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
-import GroupCB exposing (set408bit)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString2)
 import Z80Debug exposing (debugLog, debugTodo)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (add_cpu_time_env, m1, mem, mem16, setMem, setMem16, z80_in)
 import Z80Flags exposing (FlagRegisters, c_F3, c_F5, c_F53, c_FC, z80_sub)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, dec_pc2, get_bc, get_de, imm16, inc_pc, set_bc, set_bc_main, set_de, set_de_main)
+import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, dec_pc2, f_szh0n0p, get_bc, get_de, imm16, inc_pc, set408bit, set_bc, set_bc_main, set_de, set_de_main)
 
 
 execute_ED40 : Z80ROM -> Z80 -> Z80Delta
@@ -186,7 +185,7 @@ execute_ED73 rom48k z80 =
 
 
 execute_ED78 : Z80ROM -> Z80 -> Z80Delta
-execute_ED78 rom48k z80 =
+execute_ED78 _ z80 =
     --  case 0x78: MP=(v=B<<8|C)+1; f_szh0n0p(A=env.in(v)); time+=4; break;
     let
         v =
@@ -297,32 +296,32 @@ execute_ED464E565E666E767E value z80 =
 
 
 execute_ED56 : Z80ROM -> Z80 -> Z80Delta
-execute_ED56 rom48k z80 =
+execute_ED56 _ z80 =
     z80 |> execute_ED464E565E666E767E 0x56
 
 
 execute_ED5E : Z80ROM -> Z80 -> Z80Delta
-execute_ED5E rom48k z80 =
+execute_ED5E _ z80 =
     z80 |> execute_ED464E565E666E767E 0x5E
 
 
 execute_ED66 : Z80ROM -> Z80 -> Z80Delta
-execute_ED66 rom48k z80 =
+execute_ED66 _ z80 =
     z80 |> execute_ED464E565E666E767E 0x66
 
 
 execute_ED6E : Z80ROM -> Z80 -> Z80Delta
-execute_ED6E rom48k z80 =
+execute_ED6E _ z80 =
     z80 |> execute_ED464E565E666E767E 0x6E
 
 
 execute_ED76 : Z80ROM -> Z80 -> Z80Delta
-execute_ED76 rom48k z80 =
+execute_ED76 _ z80 =
     z80 |> execute_ED464E565E666E767E 0x76
 
 
 execute_ED7E : Z80ROM -> Z80 -> Z80Delta
-execute_ED7E rom48k z80 =
+execute_ED7E _ z80 =
     z80 |> execute_ED464E565E666E767E 0x7E
 
 
@@ -338,36 +337,37 @@ execute_ED40485058606870 value z80 =
         z80_1 =
             z80 |> set408bit (shiftRightBy 3 (value - 0x40)) inval.value HL
     in
-    { z80_1 | flags = z80_1.flags |> f_szh0n0p inval.value } |> add_cpu_time 4 |> Whole
+    --{ z80_1 | flags = z80_1.flags |> f_szh0n0p inval.value } |> add_cpu_time 4 |> Whole
+    Fszh0n0pTimeDeltaSet408Bit 4 (shiftRightBy 3 (value - 0x40)) inval.value
 
 
 execute_ED48 : Z80ROM -> Z80 -> Z80Delta
-execute_ED48 rom48k z80 =
+execute_ED48 _ z80 =
     z80 |> execute_ED40485058606870 0x48
 
 
 execute_ED50 : Z80ROM -> Z80 -> Z80Delta
-execute_ED50 rom48k z80 =
+execute_ED50 _ z80 =
     z80 |> execute_ED40485058606870 0x50
 
 
 execute_ED58 : Z80ROM -> Z80 -> Z80Delta
-execute_ED58 rom48k z80 =
+execute_ED58 _ z80 =
     z80 |> execute_ED40485058606870 0x58
 
 
 execute_ED60 : Z80ROM -> Z80 -> Z80Delta
-execute_ED60 rom48k z80 =
+execute_ED60 _ z80 =
     z80 |> execute_ED40485058606870 0x60
 
 
 execute_ED68 : Z80ROM -> Z80 -> Z80Delta
-execute_ED68 rom48k z80 =
+execute_ED68 _ z80 =
     z80 |> execute_ED40485058606870 0x68
 
 
 execute_ED70 : Z80ROM -> Z80 -> Z80Delta
-execute_ED70 rom48k z80 =
+execute_ED70 _ z80 =
     z80 |> execute_ED40485058606870 0x70
 
 
@@ -465,24 +465,6 @@ group_ed rom48k z80_0 =
 --		}
 --	}
 --
-
-
-f_szh0n0p : Int -> FlagRegisters -> FlagRegisters
-f_szh0n0p r flags =
-    let
-        fr =
-            r
-
-        ff =
-            Bitwise.or (Bitwise.and flags.ff (complement 0xFF)) fr
-
-        fa =
-            Bitwise.or r 0x0100
-    in
-    { flags | fr = fr, ff = ff, fa = fa, fb = 0 }
-
-
-
 --	private void rld()
 --	{
 --		int v = env.mem(HL)<<4 | A&0x0F;

@@ -36,6 +36,8 @@ type alias CpuTimeAndPc =
         pc: Int
    }
 
+type CpuTimeIncrement = CpuTimeIncrement Int
+
 --	private final void cont1(int t) {
 --		t += cpu.time;
 --		if(t<0 || t>=SCRENDT) return;
