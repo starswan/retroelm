@@ -37,6 +37,8 @@ import Z80Screen exposing (ScreenColourRun, screenLines)
 
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
+--  4th Oct 2024 Chromium debug 61.9ms (16.1 Hz) 174 sec live 31.7ms (31.5 Hz)
+--  4th Oct 2024 Firefox  debug 81.0ms (12.3 Hz) 105 sec live 56.8ms (17.6 Hz)
 -- 20th Jul 2024 Chromium                                live 37.9ms (28.5 Hz)
 -- 12th Jul 2024 Firefox  debug        (12.4 Hz)         live        (17.9 Hz)
 --
