@@ -77,6 +77,10 @@ toHexString2 : Int -> String
 toHexString2 value =
     "0x" ++ (Hex.toString value |> String.toUpper |> String.padLeft 2 '0')
 
+toPlainHexString2 : Int -> String
+toPlainHexString2 value =
+    (Hex.toString value |> String.toUpper |> String.padLeft 2 '0')
+
 
 
 --https://stackoverflow.com/questions/40599512/how-to-achieve-behavior-of-settimeout-in-elm
