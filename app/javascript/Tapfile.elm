@@ -108,6 +108,7 @@ listStep : Decoder a -> ( Int, List a ) -> Decoder (Step ( Int, List a ) (List a
 listStep decoder ( n, xs ) =
     if n <= 0 then
         succeed (Done (xs |> List.reverse))
+
     else
         map (\x -> Loop ( n - 1, x :: xs )) decoder
 
@@ -177,20 +178,11 @@ tapfileDataDecoder headerType =
             fail
 
 
-decodeTapBody : TapfileHeader -> Decoder Tapfile
-decodeTapBody tapfileheader =
-    let
-        x =
-            debugLog "filename blocklen" ( tapfileheader.data |> tapFilename, tapfileheader.data |> tapBlockLength ) Nothing
-
-        block_decoder =
-            tapFileBlockDecoder (tapfileheader.data |> tapBlockLength)
-    in
-    block_decoder |> andThen (grabWholeThingDecoder tapfileheader)
-
 
 -- programs are <line num> <length> <data of length length>
 -- which might be better done using a decoder?
+
+
 debugProgram : List Int -> String
 debugProgram list =
     list
@@ -206,15 +198,34 @@ debugProgram list =
             ""
 
 
+decodeTapBody : TapfileHeader -> Decoder Tapfile
+decodeTapBody tapfileheader =
+    let
+        x =
+            debugLog "filename blocklen" ( tapfileheader.data |> tapFilename, tapfileheader.data |> tapBlockLength ) Nothing
+
+        block_decoder =
+            tapFileBlockDecoder (tapfileheader.data |> tapBlockLength)
+    in
+    block_decoder |> andThen (grabWholeThingDecoder tapfileheader)
+
+
 grabWholeThingDecoder : TapfileHeader -> TapfileBlock -> Decoder Tapfile
 grabWholeThingDecoder tapfileheader tapfile_body =
     let
-        x = case tapfileheader.data of
-            Program _ ->
-                debugLog "Program " (tapfile_body.data |> debugProgram) Nothing
-            NumberArray _ -> Nothing
-            CharArray _ -> Nothing
-            Code _ -> Nothing
+        x =
+            case tapfileheader.data of
+                Program _ ->
+                    debugLog "Program " (tapfile_body.data |> debugProgram) Nothing
+
+                NumberArray _ ->
+                    Nothing
+
+                CharArray _ ->
+                    Nothing
+
+                Code _ ->
+                    Nothing
     in
     succeed (Tapfile tapfileheader.length tapfileheader.flagByte tapfileheader.data tapfile_body)
 
