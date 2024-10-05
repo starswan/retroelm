@@ -12,7 +12,7 @@ import Dict exposing (Dict)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString2)
 import Z80Debug exposing (debugLog, debugTodo)
 import Z80Delta exposing (Z80Delta(..))
-import Z80Env exposing (add_cpu_time_env, m1, mem, mem16, setMem, setMem16, z80_in)
+import Z80Env exposing (addCpuTimeEnv, m1, mem, mem16, setMem, setMem16, z80_in)
 import Z80Flags exposing (FlagRegisters, c_F3, c_F5, c_F53, c_FC, z80_sub)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, dec_pc2, f_szh0n0p, get_bc, get_de, imm16, inc_pc, set408bit, set_bc, set_bc_main, set_de, set_de_main)
@@ -137,7 +137,7 @@ execute_ED53 rom48k z80 =
             z80_1.env |> setMem16 v.value (Bitwise.or (shiftLeftBy8 z80.main.d) z80.main.e)
     in
     --{ z80_1 | env = env } |> add_cpu_time 6 |> Whole
-    EnvWithPc (env |> add_cpu_time_env 6) v.pc
+    EnvWithPc (env |> addCpuTimeEnv 6) v.pc
 
 
 execute_ED5B : Z80ROM -> Z80 -> Z80Delta
@@ -181,7 +181,7 @@ execute_ED73 rom48k z80 =
             { env | time = v.time } |> setMem16 v.value z80_1.env.sp
     in
     --{ z80 | env = env2 } |> add_cpu_time 6 |> Whole
-    EnvWithPc (env2 |> add_cpu_time_env 6) v.pc
+    EnvWithPc (env2 |> addCpuTimeEnv 6) v.pc
 
 
 execute_ED78 : Z80ROM -> Z80 -> Z80Delta

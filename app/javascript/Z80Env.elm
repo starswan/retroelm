@@ -506,8 +506,8 @@ z80_in portnum env_in =
     CpuTimeAndValue env x
 
 
-add_cpu_time_env : Int -> Z80Env -> Z80Env
-add_cpu_time_env value z80env =
+addCpuTimeEnv : Int -> Z80Env -> Z80Env
+addCpuTimeEnv value z80env =
     { z80env | time = z80env.time |> addCpuTimeTime value }
 
 
@@ -539,11 +539,11 @@ z80_push v z80env =
 
         env_2 =
             z80env
-                |> add_cpu_time_env 1
+                |> addCpuTimeEnv 1
                 |> setMem sp_minus_1 (shiftRightBy8 v)
-                |> add_cpu_time_env 3
+                |> addCpuTimeEnv 3
                 |> setMem new_sp (Bitwise.and v 0xFF)
-                |> add_cpu_time_env 3
+                |> addCpuTimeEnv 3
     in
     { env_2 | sp = new_sp }
 

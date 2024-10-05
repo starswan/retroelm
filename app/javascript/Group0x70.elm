@@ -4,7 +4,7 @@ import Bitwise exposing (shiftRightBy)
 import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import Z80Delta exposing (Z80Delta(..), delta_noop)
-import Z80Env exposing (add_cpu_time_env, setMem)
+import Z80Env exposing (addCpuTimeEnv, setMem)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL(..), Z80, env_mem_hl, get_h, get_l, hl_deref_with_z80)
 
@@ -53,7 +53,7 @@ execute_0x7077 ixiyhl rom48k z80 value =
         new_env =
             { env_1 | time = mem_target.time }
                 |> setMem mem_target.value value
-                |> add_cpu_time_env 3
+                |> addCpuTimeEnv 3
     in
     --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
     --EnvWithPc new_env mem_target.pc
