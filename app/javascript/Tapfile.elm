@@ -99,18 +99,17 @@ tapfileStepDecoder decoder ( n, xs ) =
         map (\x -> Loop ( n - x.length - 2 - (x.block.data |> List.length) - 4, x :: xs )) decoder
 
 
-listWithLengthDecoder : Int -> Decoder Int -> Decoder (List Int)
+listWithLengthDecoder : Int -> Decoder a -> Decoder (List a)
 listWithLengthDecoder len decoder =
     loop ( len, [] ) (listStep decoder)
 
 
-listStep : Decoder Int -> ( Int, List Int ) -> Decoder (Step ( Int, List Int ) (List Int))
+listStep : Decoder a -> ( Int, List a ) -> Decoder (Step ( Int, List a ) (List a))
 listStep decoder ( n, xs ) =
     if n <= 0 then
         succeed (Done (xs |> List.reverse))
     else
         map (\x -> Loop ( n - 1, x :: xs )) decoder
-
 
 tapFilename : TapfileData -> String
 tapFilename tapFileHeader =
