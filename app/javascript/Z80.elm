@@ -671,12 +671,12 @@ execute_delta rom48k tmp_z80 =
    --switch(c) {
    let
      interrupts = tmp_z80.interrupts
-     c = tmp_z80.env |> m1 tmp_z80.pc (or interrupts.ir (and interrupts.r 0x7F)) rom48k
+     c = tmp_z80.env |> m1 tmp_z80.pc (Bitwise.or interrupts.ir (Bitwise.and interrupts.r 0x7F)) rom48k
      env = tmp_z80.env
      old_z80 = { tmp_z80 | env = { env | time = c.time }, interrupts = { interrupts | r = interrupts.r + 1 } }
      new_pc = Bitwise.and (old_z80.pc + 1) 0xFFFF
-     new_time = old_z80.env.time |> addCpuTimeTime 4
      z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
+     new_time = z80.env.time
    in
      case z80 |> execute_ltC0 c.value HL rom48k of
        Just a_z80 -> DeltaWithChanges a_z80 interrupts new_pc new_time
