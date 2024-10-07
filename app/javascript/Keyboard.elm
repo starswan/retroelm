@@ -5,6 +5,7 @@ import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Char exposing (toUpper)
 import Dict
 import String exposing (fromChar)
+import Vector5 exposing (Vector5)
 import Vector8 exposing (Vector8)
 import Z80Debug exposing (debugLog, debugTodo)
 
@@ -212,7 +213,7 @@ z80_keyboard_input portnum keyboard =
 --	}
 --
 -- 01000 (octal) === 0x0200 (hex)
-m_initial = List.repeat 5 -1
+m_initial = Vector5.repeat -1
 initial_keyboard = Keyboard (Vector8.repeat 0xFF) []
 -- Java Keyboard routines use octal - convert here to avoid transcribing mistakes
 c_0300 = 0xC0
@@ -277,7 +278,7 @@ update_keyboard keys =
 --	}
 
 
-pressed : Int -> Keyboard -> List Int -> ( Keyboard, List Int )
+pressed : Int -> Keyboard -> Vector5 Int -> ( Keyboard, Vector5 Int )
 pressed k keyboard mlist =
     let
         -- as we are anding with 0x07 here, the Maybe.withDefault can never happen
@@ -288,6 +289,9 @@ pressed k keyboard mlist =
 
         b =
             Bitwise.and (k |> shiftRightBy 3) 7
+        vec_b = case b |> Vector5.intToIndex of
+            Just index -> index
+            Nothing -> (debugTodo "pressed" ("Error: b = " ++ String.fromInt b) Vector5.Index0)
 
         --v1 =
         --    case Array.get a (keyboard.keyboard |> Array.fromList) of
@@ -298,20 +302,22 @@ pressed k keyboard mlist =
         --            debugLog "pressed" ("v is impossible " ++ String.fromInt a) 0
         v1 = Bitwise.and (keyboard.keyboard |> Vector8.get vec_a) (1 |> shiftLeftBy b |> Bitwise.complement)
 
-        n =
-            case Array.get b (mlist |> Array.fromList) of
-                Just value ->
-                    value
-
-                Nothing ->
-                    debugTodo "pressed" ("n is wrong mlist size " ++ String.fromInt (mlist |> List.length) ++ " b = " ++ String.fromInt b) 0
+        --n =
+        --    case Array.get b (mlist |> Array.fromList) of
+        --        Just value ->
+        --            value
+        --
+        --        Nothing ->
+        --            debugTodo "pressed" ("n is wrong mlist size " ++ String.fromInt (mlist |> List.length) ++ " b = " ++ String.fromInt b) 0
+        n = mlist |> Vector5.get vec_b
 
         --keyboard1 =
         --    (keyboard.keyboard |> Vector8.toList |> List.take a) ++ List.singleton v1 ++ (keyboard.keyboard |> Vector8.toList |> List.reverse |> List.take (7 - a) |> List.reverse)
         keyboard1 = keyboard.keyboard |> Vector8.set vec_a v1
 
-        new_mlist =
-            (mlist |> List.take b) ++ List.singleton a ++ (mlist |> List.reverse |> List.take (4 - b) |> List.reverse)
+        --new_mlist =
+        --    (mlist |> List.take b) ++ List.singleton a ++ (mlist |> List.reverse |> List.take (4 - b) |> List.reverse)
+        new_mlist = mlist |> Vector5.set vec_b a
 
         new_v =
             if n >= 0 then
