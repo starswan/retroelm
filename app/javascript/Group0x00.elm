@@ -128,20 +128,20 @@ execute_0x06 rom48k z80 =
 
 
 execute_0x07 : Z80ROM -> Z80 -> Z80Delta
-execute_0x07 rom48k z80 =
+execute_0x07 _ z80 =
     -- case 0x07: rot(A*0x101>>>7); break;
     --{ z80 | flags = z80.flags |> rot (Bitwise.shiftRightBy 7 (z80.flags.a * 0x101)) }
     FlagRegs (z80.flags |> rot (Bitwise.shiftRightBy 7 (z80.flags.a * 0x0101)))
 
 
 ex_af : Z80ROM -> Z80 -> Z80Delta
-ex_af rom48k z80 =
+ex_af _ z80 =
     --{ z80 | flags = z80.alt_flags, alt_flags = z80.flags }
     FlagsAndAlt z80.alt_flags z80.flags
 
 
 execute_0x09 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0x09 ixiyhl rom48k z80 =
+execute_0x09 ixiyhl _ z80 =
     --case 0x09: HL=add16(HL,B<<8|C); break;
     --case 0x09: xy=add16(xy,B<<8|C); break;
     let
@@ -182,7 +182,7 @@ execute_0x0A rom48k z80 =
 
 
 execute_0x0B : Z80ROM -> Z80 -> Z80Delta
-execute_0x0B z80rom z80 =
+execute_0x0B _ z80 =
     -- case 0x0B: if(--C<0) B=B-1&(C=0xFF); time+=2; break;
     let
         z80_main =
@@ -203,7 +203,7 @@ execute_0x0B z80rom z80 =
 
 
 execute_0x0C : Z80ROM -> Z80 -> Z80Delta
-execute_0x0C z80rom z80 =
+execute_0x0C _ z80 =
     -- case 0x0C: C=inc(C); break;
     let
         new_c =
@@ -217,7 +217,7 @@ execute_0x0C z80rom z80 =
 
 
 execute_0x0D : Z80ROM -> Z80 -> Z80Delta
-execute_0x0D z80rom z80 =
+execute_0x0D _ z80 =
     -- case 0x0D: C=dec(C); break;
     let
         new_c =
@@ -245,7 +245,7 @@ execute_0x0E rom48k z80 =
 
 
 execute_0x0F : Z80ROM -> Z80 -> Z80Delta
-execute_0x0F rom48k z80 =
+execute_0x0F _ z80 =
     -- case 0x0F: rot(A*0x80800000>>24); break;
     --{ z80 | flags = z80.flags |> rot (Bitwise.shiftRightBy 24 (z80.flags.a * 0x80800000)) }
     FlagRegs (z80.flags |> rot (Bitwise.shiftRightBy 24 (z80.flags.a * 0x80800000)))

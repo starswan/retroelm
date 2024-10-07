@@ -388,9 +388,9 @@ get_bc z80 =
     z80.main.b |> shiftLeftBy8 |> Bitwise.or z80.main.c
 
 
-get_de : Z80 -> Int
+get_de : MainWithIndexRegisters -> Int
 get_de z80 =
-    z80.main.d |> shiftLeftBy8 |> Bitwise.or z80.main.e
+    z80.d |> shiftLeftBy8 |> Bitwise.or z80.e
 
 
 dec_pc2 : Z80 -> Z80

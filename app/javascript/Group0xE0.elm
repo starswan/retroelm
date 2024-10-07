@@ -152,7 +152,7 @@ execute_0xEB _ z80 =
             z80.main.hl
 
         de =
-            z80 |> get_de
+            z80.main |> get_de
 
         --x = debug_log "EX DE,HL" ("DE " ++ (v |> toHexString) ++ " HL " ++ (de |> toHexString)) Nothing
         main =

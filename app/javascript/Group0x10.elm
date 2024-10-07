@@ -233,7 +233,7 @@ execute_0x19 ixiyhl rom48k z80 =
             get_xy ixiyhl z80.main
 
         new_xy =
-            add16 xy (get_de z80) z80.flags
+            add16 xy (get_de z80.main) z80.flags
 
         new_z80 =
             set_xy new_xy.value ixiyhl z80.main
