@@ -5,7 +5,8 @@ import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Char exposing (toUpper)
 import Dict
 import String exposing (fromChar)
-import Z80Debug exposing (debugLog)
+import Vector8 exposing (Vector8)
+import Z80Debug exposing (debugLog, debugTodo)
 
 
 type Kempston
@@ -58,7 +59,7 @@ c_CONTROL_KEY_MAP =
 
 
 type alias Keyboard =
-    { keyboard : List Int
+    { keyboard : Vector8 Int
     , kempston : List Kempston
     }
 
@@ -70,7 +71,7 @@ type KeyEvent
 
 constructor : Keyboard
 constructor =
-    Keyboard (List.repeat 8 0xFF) []
+    Keyboard (Vector8.repeat 0xFF) []
 
 
 
@@ -151,7 +152,7 @@ z80_keyboard_input portnum keyboard =
     else if Bitwise.and portnum 0x01 == 0 then
         let
             list1 =
-                keyboard.keyboard |> List.indexedMap Tuple.pair
+                keyboard.keyboard |> Vector8.toList |> List.indexedMap Tuple.pair
 
             --debug_flag = (keyboard.keyboard |> List.sum) /= 255 * 8
             --x = if debug_flag then
@@ -212,7 +213,7 @@ z80_keyboard_input portnum keyboard =
 --
 -- 01000 (octal) === 0x0200 (hex)
 m_initial = List.repeat 5 -1
-initial_keyboard = Keyboard (List.repeat 8 0xFF) []
+initial_keyboard = Keyboard (Vector8.repeat 0xFF) []
 -- Java Keyboard routines use octal - convert here to avoid transcribing mistakes
 c_0300 = 0xC0
 c_01000 = 0x200
@@ -279,19 +280,23 @@ update_keyboard keys =
 pressed : Int -> Keyboard -> List Int -> ( Keyboard, List Int )
 pressed k keyboard mlist =
     let
+        -- as we are anding with 0x07 here, the Maybe.withDefault can never happen
         a =
             Bitwise.and k 7
+        vec_a =
+            a |> Vector8.intToIndex |> Maybe.withDefault Vector8.Index0
 
         b =
             Bitwise.and (k |> shiftRightBy 3) 7
 
-        v1 =
-            case Array.get a (keyboard.keyboard |> Array.fromList) of
-                Just value ->
-                    Bitwise.and value (1 |> shiftLeftBy b |> Bitwise.complement)
-
-                Nothing ->
-                    debugLog "pressed" ("v is impossible " ++ String.fromInt a) 0
+        --v1 =
+        --    case Array.get a (keyboard.keyboard |> Array.fromList) of
+        --        Just value ->
+        --            Bitwise.and value (1 |> shiftLeftBy b |> Bitwise.complement)
+        --
+        --        Nothing ->
+        --            debugLog "pressed" ("v is impossible " ++ String.fromInt a) 0
+        v1 = Bitwise.and (keyboard.keyboard |> Vector8.get vec_a) (1 |> shiftLeftBy b |> Bitwise.complement)
 
         n =
             case Array.get b (mlist |> Array.fromList) of
@@ -299,10 +304,11 @@ pressed k keyboard mlist =
                     value
 
                 Nothing ->
-                    debugLog "pressed" ("n is wong mlist size " ++ String.fromInt (mlist |> List.length) ++ " b = " ++ String.fromInt b) 0
+                    debugTodo "pressed" ("n is wrong mlist size " ++ String.fromInt (mlist |> List.length) ++ " b = " ++ String.fromInt b) 0
 
-        keyboard1 =
-            (keyboard.keyboard |> List.take a) ++ List.singleton v1 ++ (keyboard.keyboard |> List.reverse |> List.take (7 - a) |> List.reverse)
+        --keyboard1 =
+        --    (keyboard.keyboard |> Vector8.toList |> List.take a) ++ List.singleton v1 ++ (keyboard.keyboard |> Vector8.toList |> List.reverse |> List.take (7 - a) |> List.reverse)
+        keyboard1 = keyboard.keyboard |> Vector8.set vec_a v1
 
         new_mlist =
             (mlist |> List.take b) ++ List.singleton a ++ (mlist |> List.reverse |> List.take (4 - b) |> List.reverse)
@@ -311,7 +317,7 @@ pressed k keyboard mlist =
             if n >= 0 then
                 let
                     keyboard_n =
-                        case Array.get n (keyboard.keyboard |> Array.fromList) of
+                        case Array.get n (keyboard.keyboard |> Vector8.toList |> Array.fromList) of
                             Just value ->
                                 value
 
@@ -325,7 +331,7 @@ pressed k keyboard mlist =
 
         keyboard2 =
             keyboard1
-                |> List.map
+                |> Vector8.map
                     (\kb ->
                         if Bitwise.or kb new_v /= 0xFF then
                             new_v
