@@ -69,9 +69,9 @@ constructor =
 --    in
 --        if v == 0 then v else v - 1
 --	boolean ei() {return (IFF&1)!=0;}
---get_ei: Z80 -> Bool
---get_ei z80 =
---    (Bitwise.and z80.interrupts.iff 1) /= 0  -- slightly odd != operator in Elm
+get_ei: Z80 -> Bool
+get_ei z80 =
+    (Bitwise.and z80.interrupts.iff 1) /= 0  -- slightly odd != operator in Elm
 --	void f(int v) {flags(v);}
 --set_f: Int -> Int -> FlagRegisters
 --set_f v a =
@@ -459,7 +459,7 @@ execute_0xD5 _ z80 =
   -- case 0xD5: push(D<<8|E); break;
   --z80 |> push (z80 |> get_de)
   let
-    de = z80 |> get_de
+    de = z80.main |> get_de
     --pushed = z80.env |> z80_push de
   in
     --{ z80 | env = pushed }

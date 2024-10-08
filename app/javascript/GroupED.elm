@@ -601,7 +601,7 @@ ldir i r rom48k z80 =
             { z80 | env = { env_0 | time = v1.time }, main = { main | hl = char (a1 + i) } } |> add_cpu_time 3
 
         a2 =
-            z80_1 |> get_de
+            z80_1.main |> get_de
 
         env_1 =
             z80_1.env |> setMem a2 v1.value
