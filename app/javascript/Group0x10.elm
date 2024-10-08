@@ -10,26 +10,24 @@ import Z80Flags exposing (add16, dec, inc, rot)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL, Z80, add_cpu_time, get_de, get_xy, imm16, imm8, set_de_main, set_xy)
 
+
 delta_dict_10 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_10 =
     Dict.fromList
-        [
-          (0x19, execute_0x19)
+        [ ( 0x19, execute_0x19 )
         ]
 
 
 delta_dict_lite_10 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_10 =
     Dict.fromList
-        [
-          (0x10, execute_0x10),
-          (0x11, execute_0x11),
-          (0x12, execute_0x12),
-          (0x16, execute_0x16),
-          (0x18, execute_0x18),
-          (0x1A, execute_0x1A),
-          (0x1E, execute_0x1E),
-          (0x1F, execute_0x1F)
+        [ ( 0x10, execute_0x10 )
+        , ( 0x11, execute_0x11 )
+        , ( 0x12, execute_0x12 )
+        , ( 0x16, execute_0x16 )
+        , ( 0x18, execute_0x18 )
+        , ( 0x1A, execute_0x1A )
+        , ( 0x1E, execute_0x1E )
         ]
 
 
@@ -79,7 +77,7 @@ execute_0x11 rom48k z80 =
     --case 0x11: v=imm16(); D=v>>>8; E=v&0xFF; break;
     let
         v =
-           z80 |> imm16 rom48k
+            z80 |> imm16 rom48k
 
         main_regs =
             z80.main |> set_de_main v.value
@@ -203,15 +201,3 @@ execute_0x1E rom48k z80 =
     in
     --{ z80 | env = new_e.env, pc = new_e.pc, main = main_1 }
     MainRegsWithPcAndCpuTime main_1 new_e.pc new_e.time
-
-
-execute_0x1F : Z80ROM -> Z80 -> Z80Delta
-execute_0x1F rom48k z80 =
-    -- case 0x1F: rot((A*0x201|Ff&0x100)>>>1); break;
-    --{ z80 | flags = z80.flags |> rot (Bitwise.shiftRightBy 1 (Bitwise.or (z80.flags.a * 0x201)
-    --                                                                           (Bitwise.and z80.flags.ff 0x100))) }
-    let
-        flags =
-            z80.flags |> rot (Bitwise.shiftRightBy 1 (Bitwise.or (z80.flags.a * 0x0201) (Bitwise.and z80.flags.ff 0x0100)))
-    in
-    FlagRegs flags

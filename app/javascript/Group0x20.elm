@@ -33,9 +33,7 @@ delta_dict_lite_20 =
     Dict.fromList
         [ ( 0x20, execute_0x20 )
         , ( 0x22, execute_0x22 )
-        , ( 0x27, execute_0x27 )
         , ( 0x28, execute_0x28 )
-        , ( 0x2F, execute_0x2F )
         ]
 
 
@@ -177,13 +175,6 @@ execute_0x26 ixiyhl rom48k z80 =
     in
     --{ new_z80 | main = main }
     MainRegsWithPcAndCpuTime main value.pc value.time
-
-
-execute_0x27 : Z80ROM -> Z80 -> Z80Delta
-execute_0x27 rom48k z80 =
-    -- case 0x27: daa(); break;
-    --{ z80 | flags = daa z80.flags }
-    z80.flags |> daa |> FlagRegs
 
 
 execute_0x28 : Z80ROM -> Z80 -> Z80Delta
@@ -341,10 +332,3 @@ execute_0x2E ixiyhl rom48k z80 =
     in
     --{ new_z80 | main = main }
     MainRegsWithPcAndCpuTime main l.pc l.time
-
-
-execute_0x2F : Z80ROM -> Z80 -> Z80Delta
-execute_0x2F rom48k z80 =
-    -- case 0x2F: cpl(); break;
-    --{ z80 | flags = cpl z80.flags }
-    z80.flags |> cpl |> FlagRegs
