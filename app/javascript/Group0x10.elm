@@ -25,16 +25,9 @@ delta_dict_lite_10 =
           (0x10, execute_0x10),
           (0x11, execute_0x11),
           (0x12, execute_0x12),
-          (0x13, execute_0x13),
-          (0x14, execute_0x14),
-          (0x15, execute_0x15),
           (0x16, execute_0x16),
-          (0x17, execute_0x17),
           (0x18, execute_0x18),
           (0x1A, execute_0x1A),
-          (0x1B, execute_0x1B),
-          (0x1C, execute_0x1C),
-          (0x1D, execute_0x1D),
           (0x1E, execute_0x1E),
           (0x1F, execute_0x1F)
         ]
@@ -105,67 +98,6 @@ execute_0x12 rom48k z80 =
     SetMem8WithTime addr z80.flags.a 3
 
 
-execute_0x13 : Z80ROM -> Z80 -> Z80Delta
-execute_0x13 rom48k z80 =
-    -- case 0x13: if(++E==256) {D=D+1&0xFF;E=0;} time+=2; break;
-    let
-        z80_main =
-            z80.main
-
-        tmp_e =
-            z80_main.e + 1
-
-        ( reg_d, reg_e ) =
-            if tmp_e == 256 then
-                ( Bitwise.and (z80_main.d + 1) 0xFF, 0 )
-
-            else
-                ( z80_main.d, tmp_e )
-
-        env_1 =
-            z80.env |> addCpuTimeEnv 2
-
-        main_1 =
-            { z80_main | d = reg_d, e = reg_e }
-    in
-    --{ z80 | env = env_1, main = main_1 }
-    MainRegsWithEnv main_1 env_1
-
-
-execute_0x14 : Z80ROM -> Z80 -> Z80Delta
-execute_0x14 rom48k z80 =
-    -- case 0x14: D=inc(D); break;
-    let
-        new_d =
-            inc z80.main.d z80.flags
-
-        z80_main =
-            z80.main
-
-        main_1 =
-            { z80_main | d = new_d.value }
-    in
-    --{ z80 | flags = new_d.flags, main = { z80_main | d = new_d.value } }
-    FlagsWithMain new_d.flags main_1
-
-
-execute_0x15 : Z80ROM -> Z80 -> Z80Delta
-execute_0x15 rom48k z80 =
-    -- case 0x15: D=dec(D); break;
-    let
-        new_d =
-            dec z80.main.d z80.flags
-
-        z80_main =
-            z80.main
-
-        main_1 =
-            { z80_main | d = new_d.value }
-    in
-    --{ z80 | flags = new_d.flags, main = main_1 }
-    FlagsWithMain new_d.flags main_1
-
-
 execute_0x16 : Z80ROM -> Z80 -> Z80Delta
 execute_0x16 rom48k z80 =
     -- case 0x16: D=imm8(); break;
@@ -181,18 +113,6 @@ execute_0x16 rom48k z80 =
     in
     --{ z80 | pc = new_d.pc, env = new_d.env, main = main_1 }
     MainRegsWithPcAndCpuTime main_1 new_d.pc new_d.time
-
-
-execute_0x17 : Z80ROM -> Z80 -> Z80Delta
-execute_0x17 rom48k z80 =
-    -- case 0x17: rot(A<<1|Ff>>>8&1); break;
-    -- { z80 | flags = z80.flags |> rot (Bitwise.or (Bitwise.shiftLeftBy 1 z80.flags.a)
-    --                                                                           (Bitwise.and (shiftRightBy8 z80.flags.ff) 1)) }
-    let
-        flags =
-            z80.flags |> rot (Bitwise.or (Bitwise.shiftLeftBy 1 z80.flags.a) (Bitwise.and (shiftRightBy8 z80.flags.ff) 1))
-    in
-    FlagRegs flags
 
 
 execute_0x18 : Z80ROM -> Z80 -> Z80Delta
@@ -266,64 +186,6 @@ execute_0x1A rom48k z80 =
     in
     --{ z80 | env = new_a.env, flags = new_flags } |> add_cpu_time 3
     CpuTimeWithFlags env_1 new_flags
-
-
-execute_0x1B : Z80ROM -> Z80 -> Z80Delta
-execute_0x1B rom48k z80 =
-    -- case 0x1B: if(--E<0) D=D-1&(E=0xFF); time+=2; break;
-    let
-        z80_main =
-            z80.main
-
-        tmp_e =
-            z80_main.e - 1
-
-        ( reg_d, reg_e ) =
-            if tmp_e < 0 then
-                ( Bitwise.and (z80_main.d - 1) 0xFF, 0xFF )
-
-            else
-                ( z80_main.d, tmp_e )
-
-        main_1 =
-            { z80_main | d = reg_d, e = reg_e }
-    in
-    --{ z80 | main = main_1 } |> add_cpu_time 2
-    MainRegsAndCpuTime main_1 2
-
-
-execute_0x1C : Z80ROM -> Z80 -> Z80Delta
-execute_0x1C rom48k z80 =
-    -- case 0x1C: E=inc(E); break;
-    let
-        z80_main =
-            z80.main
-
-        new_e =
-            inc z80.main.e z80.flags
-
-        main_1 =
-            { z80_main | e = new_e.value }
-    in
-    --{ z80 | flags = new_e.flags, main = { z80_main | e = new_e.value } }
-    FlagsWithMain new_e.flags main_1
-
-
-execute_0x1D : Z80ROM -> Z80 -> Z80Delta
-execute_0x1D rom48k z80 =
-    -- case 0x1D: E=dec(E); break;
-    let
-        z80_main =
-            z80.main
-
-        new_e =
-            dec z80.main.c z80.flags
-
-        main_1 =
-            { z80_main | e = new_e.value }
-    in
-    --{ z80 | flags = new_e.flags, main = main_1 }
-    FlagsWithMain new_e.flags main_1
 
 
 execute_0x1E : Z80ROM -> Z80 -> Z80Delta
