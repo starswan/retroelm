@@ -90,6 +90,10 @@ execute_0x22 rom48k z80 =
     SetMem16WithTimeAndPc v.value z80.main.hl 6 v.pc
 
 
+
+-- The HL version of this is now in SimpleSingleByte
+
+
 execute_0x23 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
 execute_0x23 ixiyhl rom48k z80 =
     -- case 0x23: HL=(char)(HL+1); time+=2; break;
@@ -107,6 +111,10 @@ execute_0x23 ixiyhl rom48k z80 =
     in
     --{ z80 | main = main } |> add_cpu_time 2
     MainRegsWithPcAndCpuTime main z80.pc (z80.env.time |> addCpuTimeTime 2)
+
+
+
+-- The HL version of this is now in SimpleSingleByte
 
 
 execute_0x24 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
@@ -129,6 +137,10 @@ execute_0x24 ixiyhl rom48k z80 =
     in
     --{ z80_1 | main = main }
     FlagsWithPCMainAndTime value.flags z80.pc main 0
+
+
+
+-- The HL version of this is now in SimpleSingleByte
 
 
 execute_0x25 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta

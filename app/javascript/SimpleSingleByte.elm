@@ -2,11 +2,11 @@ module SimpleSingleByte exposing (..)
 
 import Bitwise
 import Dict exposing (Dict)
-import Utils exposing (shiftRightBy8)
+import Utils exposing (char, shiftLeftBy8, shiftRightBy8)
 import Z80Change exposing (Z80Change(..))
 import Z80ChangeData exposing (Z80ChangeData)
 import Z80Flags exposing (FlagRegisters, cpl, daa, dec, inc, rot, scf_ccf)
-import Z80Types exposing (MainRegisters, MainWithIndexRegisters, Z80)
+import Z80Types exposing (IXIYHL(..), MainRegisters, MainWithIndexRegisters, Z80, get_xy)
 
 
 singleByteMainAndFlagRegisters : Dict Int (MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData)
@@ -24,6 +24,9 @@ singleByteMainAndFlagRegisters =
         , ( 0x1B, dec_de )
         , ( 0x1C, inc_e )
         , ( 0x1D, dec_e )
+        , ( 0x23, inc_hl )
+        , ( 0x24, inc_h )
+        , ( 0x25, dec_h )
         ]
 
 
@@ -226,7 +229,6 @@ dec_de z80_main _ =
     { changes = changes, cpu_time = 2, pc_change = 1 }
 
 
-
 inc_e : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
 inc_e z80_main z80_flags =
     -- case 0x1C: E=inc(E); break;
@@ -306,3 +308,40 @@ ccf : FlagRegisters -> FlagRegisters
 ccf z80_flags =
     -- case 0x3F: scf_ccf(Ff&0x100); break;
     z80_flags |> scf_ccf (Bitwise.and z80_flags.ff 0x0100)
+
+
+inc_hl : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
+inc_hl z80_main _ =
+    -- case 0x23: HL=(char)(HL+1); time+=2; break;
+    -- case 0x23: xy=(char)(xy+1); time+=2; break;
+    -- This can be done with XY as well, but no need to slow it down if we know its just HL
+    { changes = HLRegister (char (z80_main.hl + 1)), cpu_time = 2, pc_change = 1 }
+
+
+inc_h : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
+inc_h z80_main z80_flags =
+    -- case 0x24: HL=HL&0xFF|inc(HL>>>8)<<8; break;
+    -- case 0x24: xy=xy&0xFF|inc(xy>>>8)<<8; break;
+    let
+        value =
+            inc (shiftRightBy8 z80_main.hl) z80_flags
+
+        new_xy =
+            Bitwise.or (Bitwise.and z80_main.hl 0xFF) (shiftLeftBy8 value.value)
+    in
+    --{ z80_1 | main = main }
+    { changes = FlagsWithHLRegister value.flags new_xy, cpu_time = 0, pc_change = 1 }
+
+
+dec_h : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
+dec_h z80_main z80_flags =
+    -- case 0x25: HL=HL&0xFF|dec(HL>>>8)<<8; break;
+    -- case 0x25: xy=xy&0xFF|dec(xy>>>8)<<8; break;
+    let
+        value =
+            dec (shiftRightBy8 z80_main.hl) z80_flags
+
+        new_xy =
+            Bitwise.or (Bitwise.and z80_main.hl 0xFF) (shiftLeftBy8 value.value)
+    in
+    { changes = FlagsWithHLRegister value.flags new_xy, cpu_time = 0, pc_change = 1 }
