@@ -9,32 +9,40 @@ import Z80Flags exposing (FlagRegisters, cpl, daa, dec, inc, rot, scf_ccf)
 import Z80Types exposing (MainRegisters, MainWithIndexRegisters, Z80)
 
 
-singleByteMainRegisters : Dict Int (MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData)
-singleByteMainRegisters =
+singleByteMainAndFlagRegisters : Dict Int (MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData)
+singleByteMainAndFlagRegisters =
     Dict.fromList
         [ ( 0x03, inc_bc )
         , ( 0x04, inc_b )
         , ( 0x05, dec_b )
-        , ( 0x07, rlca )
         , ( 0x0B, dec_bc )
         , ( 0x0C, inc_c )
         , ( 0x0D, dec_c )
-        , ( 0x0F, rrca )
         , ( 0x13, inc_de )
         , ( 0x14, inc_d )
         , ( 0x15, dec_d )
-        , ( 0x17, rla )
         , ( 0x1B, dec_de )
         , ( 0x1C, inc_e )
         , ( 0x1D, dec_e )
+        ]
+
+singleByteFlags : Dict Int (FlagRegisters -> FlagRegisters)
+singleByteFlags =  Dict.fromList
+    [
+         ( 0x07, rlca )
+        , ( 0x0F, rrca )
+        , ( 0x17, rla )
         , ( 0x1F, rra )
-        , ( 0x27, z80_daa )
-        , ( 0x2F, z80_cpl )
+        , ( 0x27, daa )
+        , ( 0x2F, cpl )
         , ( 0x37, scf )
         , ( 0x3C, inc_a )
         , ( 0x3D, dec_a )
         , ( 0x3F, ccf )
-        ]
+    ]
+
+singleByteMainRegs : Dict Int (MainWithIndexRegisters -> Z80ChangeData)
+singleByteMainRegs = Dict.empty
 
 
 inc_bc : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
@@ -86,16 +94,11 @@ dec_b z80_main z80_flags =
     { changes = changes, cpu_time = 0, pc_change = 1 }
 
 
-rlca : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
-rlca _ z80_flags =
+rlca : FlagRegisters -> FlagRegisters
+rlca z80_flags =
     -- case 0x07: rot(A*0x101>>>7); break;
     --{ z80 | flags = z80.flags |> rot (Bitwise.shiftRightBy 7 (z80.flags.a * 0x101)) }
-    --FlagRegs (z80_flags |> rot (Bitwise.shiftRightBy 7 (z80_flags.a * 0x0101)))
-    let
-        changes =
-            OnlyFlags (z80_flags |> rot (Bitwise.shiftRightBy 7 (z80_flags.a * 0x0101)))
-    in
-    { changes = changes, cpu_time = 0, pc_change = 1 }
+    z80_flags |> rot (Bitwise.shiftRightBy 7 (z80_flags.a * 0x0101))
 
 
 dec_bc : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
@@ -147,16 +150,11 @@ dec_c z80_main z80_flags =
     { changes = changes, cpu_time = 0, pc_change = 1 }
 
 
-rrca : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
-rrca _ z80_flags =
+rrca : FlagRegisters -> FlagRegisters
+rrca z80_flags =
     -- case 0x0F: rot(A*0x80800000>>24); break;
     --{ z80 | flags = z80.flags |> rot (Bitwise.shiftRightBy 24 (z80.flags.a * 0x80800000)) }
-    --FlagRegs (z80_flags |> rot (Bitwise.shiftRightBy 24 (z80_flags.a * 0x80800000)))
-    let
-        changes =
-            OnlyFlags (z80_flags |> rot (Bitwise.shiftRightBy 24 (z80_flags.a * 0x80800000)))
-    in
-    { changes = changes, cpu_time = 0, pc_change = 1 }
+    z80_flags |> rot (Bitwise.shiftRightBy 24 (z80_flags.a * 0x80800000))
 
 
 inc_de : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
@@ -221,20 +219,16 @@ dec_d z80_main z80_flags =
     { changes = changes, cpu_time = 0, pc_change = 1 }
 
 
-rla : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
-rla _ z80_flags =
+rla : FlagRegisters -> FlagRegisters
+rla z80_flags =
     -- case 0x17: rot(A<<1|Ff>>>8&1); break;
     -- { z80 | flags = z80.flags |> rot (Bitwise.or (Bitwise.shiftLeftBy 1 z80.flags.a)
     --                                                                           (Bitwise.and (shiftRightBy8 z80.flags.ff) 1)) }
-    let
-        flags =
-            z80_flags |> rot (Bitwise.or (Bitwise.shiftLeftBy 1 z80_flags.a) (Bitwise.and (shiftRightBy8 z80_flags.ff) 1))
-    in
-    { changes = OnlyFlags flags, cpu_time = 0, pc_change = 1 }
+    z80_flags |> rot (Bitwise.or (Bitwise.shiftLeftBy 1 z80_flags.a) (Bitwise.and (shiftRightBy8 z80_flags.ff) 1))
 
 
 dec_de : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
-dec_de z80_main z80_flags =
+dec_de z80_main _ =
     -- case 0x1B: if(--E<0) D=D-1&(E=0xFF); time+=2; break;
     let
         tmp_e =
@@ -277,54 +271,35 @@ dec_e z80_main z80_flags =
     { changes = FlagsWithERegister new_e.flags new_e.value, cpu_time = 0, pc_change = 1 }
 
 
-rra : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
-rra _ z80_flags =
+rra : FlagRegisters -> FlagRegisters
+rra z80_flags =
     -- case 0x1F: rot((A*0x201|Ff&0x100)>>>1); break;
     --{ z80 | flags = z80.flags |> rot (Bitwise.shiftRightBy 1 (Bitwise.or (z80.flags.a * 0x201)
     --                                                                           (Bitwise.and z80.flags.ff 0x100))) }
-    let
-        flags =
-            z80_flags |> rot (Bitwise.shiftRightBy 1 (Bitwise.or (z80_flags.a * 0x0201) (Bitwise.and z80_flags.ff 0x0100)))
-    in
-    --FlagRegs flags
-    { changes = OnlyFlags flags, cpu_time = 0, pc_change = 1 }
+    z80_flags |> rot (Bitwise.shiftRightBy 1 (Bitwise.or (z80_flags.a * 0x0201) (Bitwise.and z80_flags.ff 0x0100)))
 
 
-z80_daa : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
-z80_daa _ z80_flags =
-    -- case 0x27: daa(); break;
-    --{ z80 | flags = daa z80.flags }
-    let
-        flags =
-            z80_flags |> daa
-    in
-    { changes = OnlyFlags flags, cpu_time = 0, pc_change = 1 }
+--z80_daa : FlagRegisters -> FlagRegisters
+--z80_daa z80_flags =
+--    -- case 0x27: daa(); break;
+--    --{ z80 | flags = daa z80.flags }
+--    z80_flags |> daa
+--
+--
+--z80_cpl : FlagRegisters -> FlagRegisters
+--z80_cpl z80_flags =
+--            z80_flags |> cpl
 
 
-z80_cpl : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
-z80_cpl _ z80_flags =
-    -- case 0x2F: cpl(); break;
-    --{ z80 | flags = cpl z80.flags }
-    let
-        flags =
-            z80_flags |> cpl
-    in
-    { changes = OnlyFlags flags, cpu_time = 0, pc_change = 1 }
-
-
-scf : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
-scf z80_main z80_flags =
+scf : FlagRegisters -> FlagRegisters
+scf z80_flags =
     -- case 0x37: scf_ccf(0); break;
     --{ z80 | flags = z80.flags |> scf_ccf 0 }
-    let
-        flags =
-            z80_flags |> scf_ccf 0
-    in
-    { changes = OnlyFlags flags, cpu_time = 0, pc_change = 1 }
+    z80_flags |> scf_ccf 0
 
 
-inc_a : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
-inc_a z80_main z80_flags =
+inc_a : FlagRegisters -> FlagRegisters
+inc_a z80_flags =
     -- case 0x3C: A=inc(A); break;
     let
         v =
@@ -333,12 +308,11 @@ inc_a z80_main z80_flags =
         new_flags =
             v.flags
     in
-    --{ z80 | flags = { new_flags | a = v.value } }
-    { changes = OnlyFlags { new_flags | a = v.value }, cpu_time = 0, pc_change = 1 }
+    { new_flags | a = v.value }
 
 
-dec_a : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
-dec_a z80_main z80_flags =
+dec_a : FlagRegisters -> FlagRegisters
+dec_a z80_flags =
     -- case 0x3D: A=dec(A); break;
     let
         v =
@@ -347,16 +321,10 @@ dec_a z80_main z80_flags =
         new_flags =
             v.flags
     in
-    --{ z80 | flags = { new_flags | a = v.value } }
-    { changes = OnlyFlags { new_flags | a = v.value }, cpu_time = 0, pc_change = 1 }
+    { new_flags | a = v.value }
 
 
-ccf : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
-ccf z80_main z80_flags =
+ccf : FlagRegisters -> FlagRegisters
+ccf z80_flags =
     -- case 0x3F: scf_ccf(Ff&0x100); break;
-    --{ z80 | flags = z80.flags |> scf_ccf (and z80.flags.ff 0x100) }
-    let
-        flags =
-            z80_flags |> scf_ccf (Bitwise.and z80_flags.ff 0x0100)
-    in
-    { changes = OnlyFlags flags, cpu_time = 0, pc_change = 1 }
+    z80_flags |> scf_ccf (Bitwise.and z80_flags.ff 0x100)
