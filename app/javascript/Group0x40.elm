@@ -23,9 +23,6 @@ delta_dict_lite_40 =
     Dict.fromList
         [ -- case 0x40: break;
           ( 0x40, delta_noop )
-        , ( 0x41, execute_0x41 )
-        , ( 0x42, execute_0x42 )
-        , ( 0x43, execute_0x43 )
         , ( 0x47, execute_0x47 )
         , ( 0x48, execute_0x48 )
         , -- case 0x49: break;
@@ -36,44 +33,12 @@ delta_dict_lite_40 =
         ]
 
 
-execute_0x41 : Z80ROM -> Z80 -> Z80Delta
-execute_0x41 rom z80 =
-    -- case 0x41: B=C; break;
-    --z80 |> set_b z80.main.c
-    let
-        main =
-            z80.main
-    in
-    { main | b = main.c } |> MainRegs
-
-
-execute_0x42 : Z80ROM -> Z80 -> Z80Delta
-execute_0x42 rom z80 =
-    -- case 0x42: B=D; break;
-    --z80 |> set_b z80.main.d
-    let
-        main =
-            z80.main
-    in
-    { main | b = main.d } |> MainRegs
-
-
-execute_0x43 : Z80ROM -> Z80 -> Z80Delta
-execute_0x43 rom z80 =
-    -- case 0x43: B=E; break;
-    --z80 |> set_b z80.main.e
-    let
-        main =
-            z80.main
-    in
-    { main | b = main.e } |> MainRegs
-
-
 execute_0x44 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
 execute_0x44 ixiyhl rom z80 =
     -- case 0x44: B=HL>>>8; break;
     -- case 0x44: B=xy>>>8; break;
     --z80 |> set_b (get_h ixiyhl z80.main)
+    -- The HL version of this is now in SimpleSingleByte
     let
         main =
             z80.main
@@ -86,6 +51,7 @@ execute_0x45 ixiyhl rom z80 =
     -- case 0x45: B=HL&0xFF; break;
     -- case 0x45: B=xy&0xFF; break;
     --  z80 |> set_b (get_l ixiyhl z80.main)
+    -- The HL version of this is now in SimpleSingleByte
     let
         main =
             z80.main

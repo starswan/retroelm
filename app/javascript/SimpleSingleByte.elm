@@ -30,6 +30,11 @@ singleByteMainAndFlagRegisters =
         , ( 0x2B, dec_hl )
         , ( 0x2C, inc_l )
         , ( 0x2D, dec_l )
+        , ( 0x41, ld_b_c )
+        , ( 0x42, ld_b_d )
+        , ( 0x43, ld_b_e )
+        , ( 0x44, ld_b_h )
+        , ( 0x45, ld_b_l )
         ]
 
 
@@ -349,6 +354,7 @@ dec_h z80_main z80_flags =
     in
     { changes = FlagsWithHLRegister value.flags new_xy, cpu_time = 0, pc_change = 1 }
 
+
 dec_hl : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
 dec_hl z80_main z80_flags =
     -- case 0x2B: HL=(char)(HL-1); time+=2; break;
@@ -356,7 +362,6 @@ dec_hl z80_main z80_flags =
     let
         new_xy =
             Bitwise.and (z80_main.hl - 1) 0xFFFF
-
     in
     { changes = HLRegister new_xy, cpu_time = 2, pc_change = 1 }
 
@@ -397,3 +402,40 @@ dec_l z80_main z80_flags =
     in
     --{ new_z80 | main = main }
     { changes = HLRegister new_xy, cpu_time = 0, pc_change = 1 }
+
+
+ld_b_c : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
+ld_b_c z80_main z80_flags =
+    -- case 0x41: B=C; break;
+    --z80 |> set_b z80.main.c
+    { changes = BRegister z80_main.c, cpu_time = 0, pc_change = 1 }
+
+
+ld_b_d : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
+ld_b_d z80_main z80_flags =
+    -- case 0x42: B=D; break;
+    --z80 |> set_b z80.main.d
+    { changes = BRegister z80_main.d, cpu_time = 0, pc_change = 1 }
+
+
+ld_b_e : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
+ld_b_e z80_main z80_flags =
+    -- case 0x43: B=E; break;
+    --z80 |> set_b z80.main.e
+    { changes = BRegister z80_main.e, cpu_time = 0, pc_change = 1 }
+
+
+ld_b_h : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
+ld_b_h z80_main z80_flags =
+    -- case 0x44: B=HL>>>8; break;
+    -- case 0x44: B=xy>>>8; break;
+    --z80 |> set_b (get_h ixiyhl z80.main)
+    { changes = BRegister (shiftRightBy8 z80_main.hl), cpu_time = 0, pc_change = 1 }
+
+
+ld_b_l : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
+ld_b_l z80_main z80_flags =
+    -- case 0x45: B=HL&0xFF; break;
+    -- case 0x45: B=xy&0xFF; break;
+    --  z80 |> set_b (get_l ixiyhl z80.main)
+    { changes = BRegister (Bitwise.and z80_main.hl 0xFF), cpu_time = 0, pc_change = 1 }

@@ -6,10 +6,11 @@ import Z80Types exposing (Z80)
 
 type Z80Change
     = CRegister Int
-      --| BRegister Int
     | OnlyFlags FlagRegisters
     | BCRegister Int Int
+    | BRegister Int
     | DERegister Int Int
+    --| DRegister Int
     | ERegister Int
     | FlagsWithBRegister FlagRegisters Int
     | FlagsWithCRegister FlagRegisters Int
@@ -94,3 +95,11 @@ applyZ80Change change z80 =
                     z80.main
             in
             { z80 | flags = flagRegisters, main = { main | hl = int } }
+
+        BRegister int ->
+            let
+                main =
+                    z80.main
+            in
+            { z80 | main = { main | b = int } }
+
