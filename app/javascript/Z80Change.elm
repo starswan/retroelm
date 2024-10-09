@@ -5,13 +5,7 @@ import Z80Types exposing (Z80)
 
 
 type Z80Change
-    = CRegister Int
-    | OnlyFlags FlagRegisters
-    | BCRegister Int Int
-    | BRegister Int
-    | DERegister Int Int
-    --| DRegister Int
-    | ERegister Int
+    = OnlyFlags FlagRegisters
     | FlagsWithBRegister FlagRegisters Int
     | FlagsWithCRegister FlagRegisters Int
     | FlagsWithDRegister FlagRegisters Int
@@ -23,22 +17,8 @@ type Z80Change
 applyZ80Change : Z80Change -> Z80 -> Z80
 applyZ80Change change z80 =
     case change of
-        CRegister int ->
-            let
-                main =
-                    z80.main
-            in
-            { z80 | main = { main | c = int } }
-
         OnlyFlags flagRegisters ->
             { z80 | flags = flagRegisters }
-
-        BCRegister b_value c_value ->
-            let
-                main =
-                    z80.main
-            in
-            { z80 | main = { main | b = b_value, c = c_value } }
 
         FlagsWithBRegister flagRegisters int ->
             let
@@ -53,20 +33,6 @@ applyZ80Change change z80 =
                     z80.main
             in
             { z80 | flags = flagRegisters, main = { main | c = int } }
-
-        DERegister d_value e_value ->
-            let
-                main =
-                    z80.main
-            in
-            { z80 | main = { main | d = d_value, e = e_value } }
-
-        ERegister int ->
-            let
-                main =
-                    z80.main
-            in
-            { z80 | main = { main | e = int } }
 
         FlagsWithDRegister flagRegisters int ->
             let
@@ -96,10 +62,4 @@ applyZ80Change change z80 =
             in
             { z80 | flags = flagRegisters, main = { main | hl = int } }
 
-        BRegister int ->
-            let
-                main =
-                    z80.main
-            in
-            { z80 | main = { main | b = int } }
 
