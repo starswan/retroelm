@@ -26,10 +26,11 @@ singleByteMainAndFlagRegisters =
         , ( 0x1D, dec_e )
         ]
 
+
 singleByteFlags : Dict Int (FlagRegisters -> FlagRegisters)
-singleByteFlags =  Dict.fromList
-    [
-         ( 0x07, rlca )
+singleByteFlags =
+    Dict.fromList
+        [ ( 0x07, rlca )
         , ( 0x0F, rrca )
         , ( 0x17, rla )
         , ( 0x1F, rra )
@@ -39,28 +40,26 @@ singleByteFlags =  Dict.fromList
         , ( 0x3C, inc_a )
         , ( 0x3D, dec_a )
         , ( 0x3F, ccf )
-    ]
+        ]
+
 
 singleByteMainRegs : Dict Int (MainWithIndexRegisters -> Z80ChangeData)
-singleByteMainRegs = Dict.empty
+singleByteMainRegs =
+    Dict.empty
 
 
 inc_bc : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
 inc_bc z80_main _ =
     -- case 0x03: if(++C==256) {B=B+1&0xFF;C=0;} time+=2; break;
     let
-        tmp_c =
-            z80_main.c + 1
-
         changes =
-            if tmp_c == 256 then
+            if z80_main.c == 0xFF then
                 BCRegister (Bitwise.and (z80_main.b + 1) 0xFF) 0
 
             else
-                CRegister tmp_c
+                CRegister (z80_main.c + 1)
     in
     --{ z80 | main = { z80_main | b = reg_b, c = reg_c } } |> add_cpu_time 2
-    --MainRegsAndCpuTime { z80_main | b = reg_b, c = reg_c } 2
     { changes = changes, cpu_time = 2, pc_change = 1 }
 
 
@@ -116,7 +115,6 @@ dec_bc z80_main _ =
                 CRegister tmp_c
     in
     --{ z80 | main = { z80_main | b = reg_b, c = reg_c }} |> add_cpu_time 2
-    --MainRegsAndCpuTime { z80_main | b = reg_b, c = reg_c } 2
     { changes = changes, cpu_time = 2, pc_change = 1 }
 
 
@@ -131,7 +129,6 @@ inc_c z80_main z80_flags =
             FlagsWithCRegister new_c.flags new_c.value
     in
     --z80 |> set_flag_regs new_c.flags |> set_c new_c.value
-    --FlagsWithMain new_c.flags { z80_main | c = new_c.value }
     { changes = changes, cpu_time = 0, pc_change = 1 }
 
 
@@ -146,7 +143,6 @@ dec_c z80_main z80_flags =
             FlagsWithCRegister new_c.flags new_c.value
     in
     --z80 |> set_flag_regs new_c.flags |> set_c new_c.value
-    --FlagsWithMain new_c.flags { z80_main | c = new_c.value }
     { changes = changes, cpu_time = 0, pc_change = 1 }
 
 
@@ -190,16 +186,8 @@ inc_d z80_main z80_flags =
 
         changes =
             FlagsWithDRegister new_d.flags new_d.value
-
-        --main_1 =
-        --    { z80_main | d = new_d.value }
     in
     { changes = changes, cpu_time = 0, pc_change = 1 }
-
-
-
---{ z80 | flags = new_d.flags, main = { z80_main | d = new_d.value } }
---FlagsWithMain new_d.flags main_1
 
 
 dec_d : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
@@ -208,15 +196,9 @@ dec_d z80_main z80_flags =
     let
         new_d =
             dec z80_main.d z80_flags
-
-        --main_1 =
-        --    { z80_main | d = new_d.value }
-        changes =
-            FlagsWithDRegister new_d.flags new_d.value
     in
     --{ z80 | flags = new_d.flags, main = main_1 }
-    --FlagsWithMain new_d.flags main_1
-    { changes = changes, cpu_time = 0, pc_change = 1 }
+    { changes = FlagsWithDRegister new_d.flags new_d.value, cpu_time = 0, pc_change = 1 }
 
 
 rla : FlagRegisters -> FlagRegisters
@@ -245,10 +227,6 @@ dec_de z80_main _ =
 
 
 
---{ z80 | main = main_1 } |> add_cpu_time 2
---MainRegsAndCpuTime main_1 2
-
-
 inc_e : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
 inc_e z80_main z80_flags =
     -- case 0x1C: E=inc(E); break;
@@ -257,7 +235,6 @@ inc_e z80_main z80_flags =
             inc z80_main.e z80_flags
     in
     --{ z80 | flags = new_e.flags, main = { z80_main | e = new_e.value } }
-    --FlagsWithMain new_e.flags main_1
     { changes = FlagsWithERegister new_e.flags new_e.value, cpu_time = 0, pc_change = 1 }
 
 
@@ -277,6 +254,7 @@ rra z80_flags =
     --{ z80 | flags = z80.flags |> rot (Bitwise.shiftRightBy 1 (Bitwise.or (z80.flags.a * 0x201)
     --                                                                           (Bitwise.and z80.flags.ff 0x100))) }
     z80_flags |> rot (Bitwise.shiftRightBy 1 (Bitwise.or (z80_flags.a * 0x0201) (Bitwise.and z80_flags.ff 0x0100)))
+
 
 
 --z80_daa : FlagRegisters -> FlagRegisters
@@ -327,4 +305,4 @@ dec_a z80_flags =
 ccf : FlagRegisters -> FlagRegisters
 ccf z80_flags =
     -- case 0x3F: scf_ccf(Ff&0x100); break;
-    z80_flags |> scf_ccf (Bitwise.and z80_flags.ff 0x100)
+    z80_flags |> scf_ccf (Bitwise.and z80_flags.ff 0x0100)
