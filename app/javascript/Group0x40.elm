@@ -3,15 +3,20 @@ module Group0x40 exposing (..)
 import Dict exposing (Dict)
 import Z80Delta exposing (Z80Delta(..), delta_noop)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIYHL, Z80, get_h, get_l, hl_deref_with_z80)
+import Z80Types exposing (IXIY, IXIYHL, Z80, get_h, get_h_ixiy, get_l, get_l_ixiy, hl_deref_with_z80)
 
+
+miniDict40 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
+miniDict40 =
+    Dict.fromList
+        [ ( 0x44, execute_0x44 )
+        , ( 0x45, execute_0x45 )
+        ]
 
 delta_dict_40 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_40 =
     Dict.fromList
-        [ ( 0x44, execute_0x44 )
-        , ( 0x45, execute_0x45 )
-        , ( 0x46, execute_0x46 )
+        [ ( 0x46, execute_0x46 )
         , ( 0x4C, execute_0x4C )
         , ( 0x4D, execute_0x4D )
         , ( 0x4E, execute_0x4E )
@@ -33,30 +38,28 @@ delta_dict_lite_40 =
         ]
 
 
-execute_0x44 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+execute_0x44 : IXIY -> Z80ROM -> Z80 -> Z80Delta
 execute_0x44 ixiyhl rom z80 =
     -- case 0x44: B=HL>>>8; break;
     -- case 0x44: B=xy>>>8; break;
     --z80 |> set_b (get_h ixiyhl z80.main)
-    -- The HL version of this is now in SimpleSingleByte
     let
         main =
             z80.main
     in
-    MainRegsWithPc { main | b = get_h ixiyhl z80.main } z80.pc
+    MainRegsWithPc { main | b = get_h_ixiy ixiyhl z80.main } z80.pc
 
 
-execute_0x45 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+execute_0x45 : IXIY -> Z80ROM -> Z80 -> Z80Delta
 execute_0x45 ixiyhl rom z80 =
     -- case 0x45: B=HL&0xFF; break;
     -- case 0x45: B=xy&0xFF; break;
     --  z80 |> set_b (get_l ixiyhl z80.main)
-    -- The HL version of this is now in SimpleSingleByte
     let
         main =
             z80.main
     in
-    MainRegsWithPc { main | b = get_l ixiyhl z80.main } z80.pc
+    MainRegsWithPc { main | b = get_l_ixiy ixiyhl z80.main } z80.pc
 
 
 execute_0x46 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta

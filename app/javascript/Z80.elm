@@ -9,9 +9,9 @@ import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, add
 import Dict exposing (Dict)
 import Group0x00 exposing (delta_dict_00, delta_dict_lite_00)
 import Group0x10 exposing (delta_dict_10, delta_dict_lite_10)
-import Group0x20 exposing (delta_dict_20, delta_dict_lite_20)
+import Group0x20 exposing (delta_dict_20, delta_dict_lite_20, miniDict20)
 import Group0x30 exposing (delta_dict_30, delta_dict_lite_30)
-import Group0x40 exposing (delta_dict_40, delta_dict_lite_40)
+import Group0x40 exposing (delta_dict_40, delta_dict_lite_40, miniDict40)
 import Group0x50 exposing (delta_dict_50, delta_dict_lite_50)
 import Group0x60 exposing (delta_dict_60, delta_dict_lite_60)
 import Group0x70 exposing (delta_dict_70, delta_dict_lite_70)
@@ -265,6 +265,23 @@ execute_ltC0 c ixiyhl rom48k z80 =
             Just f_without_ixiyhl -> Just (z80 |> f_without_ixiyhl rom48k)
             Nothing -> Nothing
 
+execute_ltC0_xy: Int -> IXIY -> Z80ROM -> Z80 -> Maybe Z80Delta
+execute_ltC0_xy c ixoriy rom48k z80 =
+    case xYDict |> Dict.get c of
+        Just xyFunc -> Just (z80 |> xyFunc ixoriy rom48k)
+        Nothing ->
+            let
+                only_ixiy = case ixoriy of
+                            IXIY_IX -> IX
+                            IXIY_IY -> IY
+            in
+               case lt40_array |> Array.get c |> Maybe.withDefault Nothing of
+                  Just f -> Just (z80 |> f only_ixiy rom48k)
+                  Nothing ->
+                     case lt40_array_lite |> Array.get c |> Maybe.withDefault Nothing of
+                        Just f_without_ixiyhl -> Just (z80 |> f_without_ixiyhl rom48k)
+                        Nothing -> Nothing
+
 
 
 z80_halt: Z80 -> Z80
@@ -388,6 +405,10 @@ lt40_dict_lite = Dict.fromList
 execute_0xFF: Z80ROM -> Z80 -> Z80
 execute_0xFF _ z80 =
     z80 |> rst_z80 0xFF
+
+xYDict: Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
+xYDict = miniDict40
+    |> Dict.union miniDict20
 
 lt40_delta_dict: Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 lt40_delta_dict = delta_dict_00
@@ -767,9 +788,7 @@ group_xy ixiy rom48k old_z80 =
     new_pc = z80_1 |> inc_pc
     z80 = { z80_1 | pc = new_pc } |> add_cpu_time 4
 
-    ltc0 = case ixiy of
-      IXIY_IX -> z80 |> execute_ltC0 c.value IX rom48k
-      IXIY_IY -> z80 |> execute_ltC0 c.value IY rom48k
+    ltc0 = z80 |> execute_ltC0_xy c.value ixiy rom48k
    in
      case ltc0 of
        Just z_z80 -> z_z80
