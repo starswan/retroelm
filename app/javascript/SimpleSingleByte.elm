@@ -26,8 +26,6 @@ singleByteMainAndFlagRegisters =
         , ( 0x29, add_hl_hl )
         , ( 0x2C, inc_l )
         , ( 0x2D, dec_l )
-        , ( 0x47, ld_b_a )
-        , ( 0x4F, ld_c_a )
         ]
 
 
@@ -218,24 +216,10 @@ dec_e z80_main z80_flags =
     { changes = FlagsWithERegister new_e.flags new_e.value, cpu_time = 0, pc_change = 1 }
 
 
-
---z80_daa : FlagRegisters -> FlagRegisters
---z80_daa z80_flags =
---    -- case 0x27: daa(); break;
---    --{ z80 | flags = daa z80.flags }
---    z80_flags |> daa
---
---
---z80_cpl : FlagRegisters -> FlagRegisters
---z80_cpl z80_flags =
---            z80_flags |> cpl
-
-
 inc_hl : MainWithIndexRegisters -> RegisterChangeData
 inc_hl z80_main =
     -- case 0x23: HL=(char)(HL+1); time+=2; break;
     -- case 0x23: xy=(char)(xy+1); time+=2; break;
-    -- This can be done with XY as well, but no need to slow it down if we know its just HL
     { changes = ChangeRegisterHL (char (z80_main.hl + 1)), cpu_time = 2, pc_change = 1 }
 
 
@@ -354,13 +338,6 @@ ld_b_l z80_main =
     { changes = ChangeRegisterB (Bitwise.and z80_main.hl 0xFF), cpu_time = 0, pc_change = 1 }
 
 
-ld_b_a : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
-ld_b_a z80_main z80_flags =
-    -- case 0x47: B=A; break;
-    --z80 |> set_b z80.flags.a
-    { changes = Z80RegisterB z80_flags.a, cpu_time = 0, pc_change = 1 }
-
-
 ld_c_b : MainWithIndexRegisters -> RegisterChangeData
 ld_c_b z80_main =
     -- case 0x48: C=B; break;
@@ -386,11 +363,13 @@ add_hl_hl z80_main z80_flags =
     --{ z80 | main = new_z80, flags = new_xy.flags } |> add_cpu_time new_xy.time
     { changes = FlagsWithHLRegister new_xy.flags new_xy.value, cpu_time = new_xy.time, pc_change = 1 }
 
+
 ld_c_e : MainWithIndexRegisters -> RegisterChangeData
 ld_c_e z80_main =
     -- case 0x4B: C=E; break;
     --z80 |> set_c z80.main.e
     { changes = ChangeRegisterC z80_main.e, cpu_time = 0, pc_change = 1 }
+
 
 ld_c_h : MainWithIndexRegisters -> RegisterChangeData
 ld_c_h z80_main =
@@ -404,10 +383,3 @@ ld_c_l z80_main =
     -- case 0x4D: C=HL&0xFF; break;
     --z80 |> set_c (get_l ixiyhl z80.main)
     { changes = ChangeRegisterC (Bitwise.and z80_main.hl 0xFF), cpu_time = 0, pc_change = 1 }
-
-
-ld_c_a : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
-ld_c_a z80_main z80_flags =
-    -- case 0x4F: C=A; break;
-    --z80 |> set_c z80.flags.a
-    { changes = Z80RegisterC z80_flags.a, cpu_time = 0, pc_change = 1 }

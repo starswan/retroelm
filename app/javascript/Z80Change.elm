@@ -5,8 +5,7 @@ import Z80Types exposing (Z80)
 
 
 type Z80Change
-    = OnlyFlags FlagRegisters
-    | FlagsWithBRegister FlagRegisters Int
+    = FlagsWithBRegister FlagRegisters Int
     | FlagsWithCRegister FlagRegisters Int
     | FlagsWithDRegister FlagRegisters Int
     | FlagsWithERegister FlagRegisters Int
@@ -16,12 +15,15 @@ type Z80Change
     | Z80RegisterC Int
 
 
+type FlagChange
+    = OnlyFlags FlagRegisters
+    | FlagChangeB Int
+    | FlagChangeC Int
+
+
 applyZ80Change : Z80Change -> Z80 -> Z80
 applyZ80Change change z80 =
     case change of
-        OnlyFlags flagRegisters ->
-            { z80 | flags = flagRegisters }
-
         FlagsWithBRegister flagRegisters int ->
             let
                 main =
@@ -77,7 +79,3 @@ applyZ80Change change z80 =
                     z80.main
             in
             { z80 | main = { main | c = int } }
-
-
-
-

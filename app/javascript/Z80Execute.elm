@@ -3,7 +3,7 @@ module Z80Execute exposing (..)
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeCTime, addCpuTimeTime)
 import RegisterChange exposing (RegisterChange, applyRegisterChange)
-import Z80Change exposing (applyZ80Change)
+import Z80Change exposing (FlagChange(..), applyZ80Change)
 import Z80ChangeData exposing (RegisterChangeData, Z80ChangeData)
 import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..), applyDeltaWithChanges)
 import Z80Env
@@ -14,7 +14,7 @@ import Z80Types exposing (IXIYHL(..), Z80)
 type DeltaWithChanges
     = OldDeltaWithChanges DeltaWithChangesData
     | PureDelta CpuTimeCTime Z80ChangeData
-    | FlagDelta CpuTimeCTime FlagRegisters
+    | FlagDelta CpuTimeCTime FlagChange
     | RegisterChangeDelta CpuTimeCTime RegisterChangeData
 
 
@@ -34,7 +34,7 @@ apply_delta z80 z80delta =
             z80 |> applyRegisterDelta cpuTimeCTime registerChange
 
 
-applyFlagDelta : CpuTimeCTime -> FlagRegisters -> Z80 -> Z80
+applyFlagDelta : CpuTimeCTime -> FlagChange -> Z80 -> Z80
 applyFlagDelta cpu_time z80_flags tmp_z80 =
     let
         interrupts =
@@ -43,13 +43,30 @@ applyFlagDelta cpu_time z80_flags tmp_z80 =
         env =
             tmp_z80.env
 
-        z80 =
-            { tmp_z80 | env = { env | time = cpu_time |> addCpuTimeTime 4 }, interrupts = { interrupts | r = interrupts.r + 1 } }
-
         new_pc =
-            Bitwise.and (z80.pc + 1) 0xFFFF
+            Bitwise.and (tmp_z80.pc + 1) 0xFFFF
+
+        z80 =
+            { tmp_z80 | pc = new_pc, env = { env | time = cpu_time |> addCpuTimeTime 4 }, interrupts = { interrupts | r = interrupts.r + 1 } }
+
     in
-    { z80 | pc = new_pc, flags = z80_flags }
+    case z80_flags of
+        OnlyFlags flagRegisters ->
+            { z80 | flags = flagRegisters }
+
+        FlagChangeB int ->
+            let
+                main =
+                    z80.main
+            in
+            { z80 | main = { main | b = int } }
+
+        FlagChangeC int ->
+            let
+                main =
+                    z80.main
+            in
+            { z80 | main = { main | c = int } }
 
 
 applyPureDelta : CpuTimeCTime -> Z80ChangeData -> Z80 -> Z80
