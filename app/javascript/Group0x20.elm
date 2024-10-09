@@ -90,12 +90,9 @@ execute_0x22 rom48k z80 =
     SetMem16WithTimeAndPc v.value z80.main.hl 6 v.pc
 
 
-
--- The HL version of this is now in SimpleSingleByte
-
-
 execute_0x23 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
 execute_0x23 ixiyhl rom48k z80 =
+    -- The HL version of this is now in SimpleSingleByte
     -- case 0x23: HL=(char)(HL+1); time+=2; break;
     -- case 0x23: xy=(char)(xy+1); time+=2; break;
     let
@@ -113,12 +110,9 @@ execute_0x23 ixiyhl rom48k z80 =
     MainRegsWithPcAndCpuTime main z80.pc (z80.env.time |> addCpuTimeTime 2)
 
 
-
--- The HL version of this is now in SimpleSingleByte
-
-
 execute_0x24 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
 execute_0x24 ixiyhl rom48k z80 =
+    -- The HL version of this is now in SimpleSingleByte
     -- case 0x24: HL=HL&0xFF|inc(HL>>>8)<<8; break;
     -- case 0x24: xy=xy&0xFF|inc(xy>>>8)<<8; break;
     let
@@ -139,14 +133,11 @@ execute_0x24 ixiyhl rom48k z80 =
     FlagsWithPCMainAndTime value.flags z80.pc main 0
 
 
-
--- The HL version of this is now in SimpleSingleByte
-
-
 execute_0x25 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
 execute_0x25 ixiyhl rom48k z80 =
     -- case 0x25: HL=HL&0xFF|dec(HL>>>8)<<8; break;
     -- case 0x25: xy=xy&0xFF|dec(xy>>>8)<<8; break;
+    -- The HL version of this is now in SimpleSingleByte
     let
         xy =
             get_xy ixiyhl z80.main
@@ -251,6 +242,7 @@ execute_0x2B : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
 execute_0x2B ixiyhl rom48k z80 =
     -- case 0x2B: HL=(char)(HL-1); time+=2; break;
     -- case 0x2B: xy=(char)(xy-1); time+=2; break;
+    -- The HL version of this is now in SimpleSingleByte
     let
         xy =
             get_xy ixiyhl z80.main
@@ -269,6 +261,7 @@ execute_0x2C : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
 execute_0x2C ixiyhl rom48k z80 =
     -- case 0x2C: HL=HL&0xFF00|inc(HL&0xFF); break;
     -- case 0x2C: xy=xy&0xFF00|inc(xy&0xFF); break;
+    -- The HL version of this is now in SimpleSingleByte
     let
         z80_flags =
             z80.flags
@@ -297,6 +290,7 @@ execute_0x2D : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
 execute_0x2D ixiyhl rom48k z80 =
     -- case 0x2D: HL=HL&0xFF00|dec(HL&0xFF); break;
     -- case 0x2D: xy=xy&0xFF00|dec(xy&0xFF); break;
+    -- The HL version of this is now in SimpleSingleByte
     let
         z80_flags =
             z80.flags

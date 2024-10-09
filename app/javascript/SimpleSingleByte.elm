@@ -27,6 +27,9 @@ singleByteMainAndFlagRegisters =
         , ( 0x23, inc_hl )
         , ( 0x24, inc_h )
         , ( 0x25, dec_h )
+        , ( 0x2B, dec_hl )
+        , ( 0x2C, inc_l )
+        , ( 0x2D, dec_l )
         ]
 
 
@@ -345,3 +348,52 @@ dec_h z80_main z80_flags =
             Bitwise.or (Bitwise.and z80_main.hl 0xFF) (shiftLeftBy8 value.value)
     in
     { changes = FlagsWithHLRegister value.flags new_xy, cpu_time = 0, pc_change = 1 }
+
+dec_hl : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
+dec_hl z80_main z80_flags =
+    -- case 0x2B: HL=(char)(HL-1); time+=2; break;
+    -- case 0x2B: xy=(char)(xy-1); time+=2; break;
+    let
+        new_xy =
+            Bitwise.and (z80_main.hl - 1) 0xFFFF
+
+    in
+    { changes = HLRegister new_xy, cpu_time = 2, pc_change = 1 }
+
+
+inc_l : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
+inc_l z80_main z80_flags =
+    -- case 0x2C: HL=HL&0xFF00|inc(HL&0xFF); break;
+    -- case 0x2C: xy=xy&0xFF00|inc(xy&0xFF); break;
+    let
+        h =
+            Bitwise.and z80_main.hl 0xFF00
+
+        l =
+            inc (Bitwise.and z80_main.hl 0xFF) z80_flags
+
+        --z80_1 = { z80 | flags = l.flags }
+        new_xy =
+            Bitwise.or h l.value
+    in
+    --{ z80_1 | main = main }
+    { changes = HLRegister new_xy, cpu_time = 0, pc_change = 1 }
+
+
+dec_l : MainWithIndexRegisters -> FlagRegisters -> Z80ChangeData
+dec_l z80_main z80_flags =
+    -- case 0x2D: HL=HL&0xFF00|dec(HL&0xFF); break;
+    -- case 0x2D: xy=xy&0xFF00|dec(xy&0xFF); break;
+    let
+        h =
+            Bitwise.and z80_main.hl 0xFF00
+
+        l =
+            dec (Bitwise.and z80_main.hl 0xFF) z80_flags
+
+        --new_z80 = { z80 | flags = l.flags }
+        new_xy =
+            Bitwise.or h l.value
+    in
+    --{ new_z80 | main = main }
+    { changes = HLRegister new_xy, cpu_time = 0, pc_change = 1 }
