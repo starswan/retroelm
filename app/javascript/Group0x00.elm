@@ -61,7 +61,7 @@ ld_b_n rom48k z80 =
     -- case 0x06: B=imm8(); break;
     let
         new_b =
-            z80 |> imm8 rom48k
+            z80.env |> imm8 rom48k z80.pc
 
         z80main =
             z80.main
@@ -125,7 +125,7 @@ execute_0x0E rom48k z80 =
             z80.main
 
         new_c =
-            z80 |> imm8 rom48k
+            z80.env |> imm8 rom48k z80.pc
     in
     --{ z80 | env = new_c.env, pc = new_c.pc, main = { z80_main | c = new_c.value } }
     MainRegsWithPcAndCpuTime { z80main | c = new_c.value } new_c.pc new_c.time

@@ -104,7 +104,7 @@ execute_0x16 rom48k z80 =
             z80.main
 
         new_d =
-            z80 |> imm8 rom48k
+            z80.env |> imm8 rom48k z80.pc
 
         main_1 =
             { z80_main | d = new_d.value }
@@ -194,7 +194,7 @@ execute_0x1E rom48k z80 =
             z80.main
 
         new_e =
-            z80 |> imm8 rom48k
+            z80.env |> imm8 rom48k z80.pc
 
         main_1 =
             { z80_main | e = new_e.value }

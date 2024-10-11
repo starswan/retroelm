@@ -92,14 +92,14 @@ type IXIY
 --	}
 
 
-imm8 : Z80ROM -> Z80 -> CpuTimePcAndValue
-imm8 rom48k z80 =
+imm8 : Z80ROM -> Int -> Z80Env -> CpuTimePcAndValue
+imm8 rom48k pc env =
     let
         v =
-            z80.env |> mem z80.pc rom48k
+            env |> mem pc rom48k
 
         new_pc =
-            Bitwise.and (z80.pc + 1) 0xFFFF
+            Bitwise.and (pc + 1) 0xFFFF
 
         env_1 =
             v.time |> addCpuTimeTime 3
