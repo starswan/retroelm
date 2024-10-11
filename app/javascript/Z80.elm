@@ -5,7 +5,7 @@ module Z80 exposing (..)
 
 import Array exposing (Array)
 import Bitwise exposing (and, or, shiftRightBy)
-import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, addCpuTimeTime)
+import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeAndValue, CpuTimeCTime, CpuTimePcAndValue, addCpuTimeTime)
 import Dict exposing (Dict)
 import Group0x00 exposing (delta_dict_00, delta_dict_lite_00)
 import Group0x10 exposing (delta_dict_10, delta_dict_lite_10)
@@ -688,16 +688,28 @@ execute_0xFE rom48k z80 =
 --      --           {z80 | pc = v.pc, env = v.env, flags = flags }
 --      _ -> debug_todo "execute" (c |> toHexString) z80  |> Whole
 
+--maybeMainRegister: CpuTimeAndValue -> Z80 -> Maybe DeltaWithChanges
+--maybeMainRegister c_value z80 =
+--    singleByteMainRegs |> Dict.get c_value.value |> Maybe.map (\mainRegFunc -> RegisterChangeDelta c_value.time (mainRegFunc z80.main))
+--
+--maybeFlagRegister: CpuTimeAndValue -> Z80 -> Maybe DeltaWithChanges
+--maybeFlagRegister c_value z80 =
+--    singleByteFlags |> Dict.get c_value.value |> Maybe.map (\f -> FlagDelta c_value.time (f z80.flags))
+--
+--maybeMainWithFlagsRegister: CpuTimeAndValue -> Z80 -> Maybe DeltaWithChanges
+--maybeMainWithFlagsRegister c_value z80 =
+--    singleByteMainAndFlagRegisters |> Dict.get c_value.value |> Maybe.map (\f -> PureDelta c_value.time (f z80.main z80.flags))
+
 execute_delta: Z80ROM -> Z80 -> DeltaWithChanges
 execute_delta rom48k tmp_z80 =
    --int v, c = env.m1(PC, IR|R++&0x7F);
    --PC = (char)(PC+1); time += 4;
    --switch(c) {
    let
-     interrupts = tmp_z80.interrupts
-     c = tmp_z80.env |> m1 tmp_z80.pc (Bitwise.or interrupts.ir (Bitwise.and interrupts.r 0x7F)) rom48k
+      interrupts = tmp_z80.interrupts
+      c = tmp_z80.env |> m1 tmp_z80.pc (Bitwise.or interrupts.ir (Bitwise.and interrupts.r 0x7F)) rom48k
    in
-    case singleByteMainRegs |> Dict.get c.value of
+   case singleByteMainRegs  |> Dict.get c.value of
         Just mainRegFunc ->  RegisterChangeDelta c.time (mainRegFunc tmp_z80.main)
         Nothing ->
             case singleByteFlags |> Dict.get c.value of
