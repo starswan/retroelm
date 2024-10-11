@@ -320,7 +320,7 @@ group_xy_cb ixiyhl rom48k z80 =
             get_ixiy_xy ixiyhl z80.main
 
         offset =
-            z80.env |> mem z80.pc rom48k
+            mem z80.pc z80.env.time rom48k z80.env.ram
 
         a =
             char (xy + byte offset.value)
@@ -328,29 +328,17 @@ group_xy_cb ixiyhl rom48k z80 =
         env_1 =
             z80.env
 
-        z80_1 =
-            { z80 | env = { env_1 | time = offset.time |> addCpuTimeTime 3 } }
-
         c =
-            z80_1.env |> mem (char (z80.pc + 1)) rom48k
+            mem (char (z80.pc + 1)) (offset.time |> addCpuTimeTime 3) rom48k z80.env.ram
 
         new_pc =
-            z80_1 |> inc_pc2
-
-        env_2 =
-            z80_1.env
-
-        z80_2 =
-            { z80_1 | env = { env_2 | time = c.time |> addCpuTimeTime 5 }, pc = new_pc }
+            z80 |> inc_pc2
 
         v1 =
-            z80_2.env |> mem a rom48k
-
-        env_3 =
-            z80_2.env
+            mem a (c.time |> addCpuTimeTime 5) rom48k z80.env.ram
 
         z80_3 =
-            { z80_2 | env = { env_3 | time = v1.time |> addCpuTimeTime 4 } }
+            { z80 | pc = new_pc, env = { env_1 | time = v1.time |> addCpuTimeTime 4 } }
 
         o =
             Bitwise.and (shiftRightBy 3 c.value) 7

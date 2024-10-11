@@ -142,18 +142,18 @@ m1 tmp_addr ir rom48k z80env =
 --}
 
 
-mem : Int -> Z80ROM -> Z80Env -> CpuTimeAndValue
-mem base_addr rom48k z80env =
+mem : Int -> CpuTimeCTime -> Z80ROM -> Z80Ram -> CpuTimeAndValue
+mem base_addr time rom48k ram =
     let
         n =
-            z80env.time.cpu_time - z80env.time.ctime
+            time.cpu_time - time.ctime
 
         z80env_time =
             if n > 0 then
-                z80env.time |> cont n
+                time |> cont n
 
             else
-                z80env.time
+                time
 
         addr =
             base_addr - 0x4000
@@ -165,10 +165,10 @@ mem base_addr rom48k z80env =
                         new_z80 =
                             z80env_time |> cont1 0
                     in
-                    ( new_z80, new_z80.cpu_time + 3, z80env.ram |> getRamValue addr )
+                    ( new_z80, new_z80.cpu_time + 3, ram |> getRamValue addr )
 
                 else
-                    ( z80env_time, c_NOCONT, z80env.ram |> getRamValue addr )
+                    ( z80env_time, c_NOCONT, ram |> getRamValue addr )
 
             else
                 ( z80env_time, c_NOCONT, rom48k |> getROMValue base_addr )

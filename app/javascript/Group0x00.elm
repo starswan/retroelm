@@ -108,7 +108,7 @@ execute_0x0A rom48k z80 =
             Bitwise.or (shiftLeftBy8 z80_main.b) z80_main.c
 
         new_a =
-            z80.env |> mem v rom48k
+            mem v z80.env.time rom48k z80.env.ram
 
         new_flags =
             { z80_flags | a = new_a.value }

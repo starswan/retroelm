@@ -480,7 +480,7 @@ rld : Z80ROM -> Z80 -> Z80Delta
 rld rom48k z80 =
     let
         v_lhs_1 =
-            z80.env |> mem z80.main.hl rom48k
+            mem z80.main.hl z80.env.time rom48k z80.env.ram
 
         v_rhs =
             Bitwise.and z80.flags.a 0x0F
@@ -592,7 +592,7 @@ ldir i r rom48k z80 =
             z80.main.hl
 
         v1 =
-            z80.env |> mem z80.main.hl rom48k
+            mem z80.main.hl z80.env.time rom48k z80.env.ram
 
         env_0 =
             z80.env

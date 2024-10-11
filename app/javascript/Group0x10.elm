@@ -47,7 +47,7 @@ execute_0x10 rom48k z80 =
             z80_1.pc
 
         mem_value =
-            z80_1.env |> mem v rom48k
+             mem v z80_1.env.time rom48k z80_1.env.ram
 
         d =
             byte mem_value.value
@@ -119,7 +119,7 @@ execute_0x18 rom48k z80 =
     -- This is just an inlined jr() call
     let
         mem_value =
-            z80.env |> mem z80.pc rom48k
+            mem z80.pc z80.env.time rom48k z80.env.ram
 
         pc_val =
             z80.pc + 1 + byte mem_value.value
@@ -171,7 +171,7 @@ execute_0x1A rom48k z80 =
             Bitwise.or (shiftLeftBy8 z80_main.d) z80_main.e
 
         new_a =
-            z80.env |> mem addr rom48k
+            mem addr z80.env.time rom48k z80.env.ram
 
         main_flags =
             z80.flags

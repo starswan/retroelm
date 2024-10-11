@@ -96,7 +96,7 @@ imm8 : Z80ROM -> Int -> Z80Env -> CpuTimePcAndValue
 imm8 rom48k pc env =
     let
         v =
-            env |> mem pc rom48k
+            mem pc env.time rom48k env.ram
 
         new_pc =
             Bitwise.and (pc + 1) 0xFFFF
@@ -276,7 +276,7 @@ hl_deref_with_z80 ixiyhl rom48k z80 =
             z80 |> env_mem_hl ixiyhl rom48k
 
         new_b =
-            z80.env |> mem a.value rom48k
+            mem a.value z80.env.time rom48k z80.env.ram
     in
     CpuTimePcAndValue new_b.time a.pc new_b.value
 
@@ -389,14 +389,14 @@ env_mem_hl ixiyhl rom48k z80 =
         IX ->
             let
                 dval =
-                    z80.env |> mem z80.pc rom48k
+                     mem z80.pc z80.env.time rom48k z80.env.ram
             in
             CpuTimePcAndValue (dval.time |> addCpuTimeTime 8) (char (z80.pc + 1)) (char (z80.main.ix + byte dval.value))
 
         IY ->
             let
                 dval =
-                    z80.env |> mem z80.pc rom48k
+                     mem z80.pc z80.env.time rom48k z80.env.ram
             in
             CpuTimePcAndValue (dval.time |> addCpuTimeTime 8) (char (z80.pc + 1)) (char (z80.main.iy + byte dval.value))
 
@@ -465,7 +465,7 @@ jr : Z80ROM -> Z80 -> CpuTimeAndPc
 jr rom48k z80 =
     let
         mempc =
-            z80.env |> mem z80.pc rom48k
+             mem z80.pc z80.env.time rom48k z80.env.ram
 
         d =
             byte mempc.value

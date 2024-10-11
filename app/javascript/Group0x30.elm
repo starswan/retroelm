@@ -107,17 +107,14 @@ execute_0x34 ixiyhl rom48k z80 =
         env_1 =
             z80.env
 
-        env_2 =
-            { env_1 | time = cpuTimePcAndValue.time }
-
         cpuTimeAndValue =
-            env_2 |> mem cpuTimePcAndValue.value rom48k
+            mem cpuTimePcAndValue.value cpuTimePcAndValue.time rom48k env_1.ram
 
         valueWithFlags =
             z80.flags |> inc cpuTimeAndValue.value
 
         new_env =
-            { env_2 | time = cpuTimeAndValue.time |> addCpuTimeTime 4 } |> setMem cpuTimePcAndValue.value valueWithFlags.value
+            { env_1 | time = cpuTimeAndValue.time |> addCpuTimeTime 4 } |> setMem cpuTimePcAndValue.value valueWithFlags.value
     in
     --{ z80_1 | env = new_env, flags = v.flags } |> add_cpu_time 3
     EnvWithFlagsAndPc (new_env |> addCpuTimeEnv 3) valueWithFlags.flags cpuTimePcAndValue.pc
@@ -133,7 +130,7 @@ execute_0x35 ixiyhl rom48k z80 =
 
         --z80_1 = { z80 | pc = a.pc }
         value =
-            z80.env |> mem a.value rom48k
+            mem a.value z80.env.time rom48k z80.env.ram
 
         env_1 =
             z80.env
@@ -181,7 +178,7 @@ execute_0x36 ixiyhl rom48k z80 =
                     get_xy ixiyhl z80.main
 
                 mempc =
-                    z80.env |> mem z80.pc rom48k
+                    mem z80.pc z80.env.time rom48k z80.env.ram
 
                 env_1 =
                     z80.env
@@ -190,14 +187,14 @@ execute_0x36 ixiyhl rom48k z80 =
                     char (xy + byte mempc.value)
 
                 --z80_1 = { z80 | env = mempc.env } |> add_cpu_time 3
-                z80_1_env =
-                    { env_1 | time = mempc.time } |> addCpuTimeEnv 3
+                --z80_1_env =
+                --    { env_1 | time = mempc.time } |> addCpuTimeEnv 3
 
                 v =
-                    z80_1_env |> mem (char (z80.pc + 1)) rom48k
+                    mem (char (z80.pc + 1)) (mempc.time |> addCpuTimeTime 3) rom48k env_1.ram
 
                 z80_2 =
-                    z80_1_env |> addCpuTimeEnv 5
+                    { env_1 | time = (v.time |> addCpuTimeTime 5) }
 
                 x =
                     setMem a v.value z80_2
@@ -258,7 +255,7 @@ execute_0x3A rom48k z80 =
             z80 |> imm16 rom48k
 
         mem_value =
-            z80.env |> mem v.value rom48k
+            mem v.value z80.env.time rom48k z80.env.ram
     in
     CpuTimeWithFlagsAndPc (mem_value.time |> addCpuTimeTime 3) { z80_flags | a = mem_value.value } v.pc
 
