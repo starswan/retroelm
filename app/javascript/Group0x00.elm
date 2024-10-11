@@ -24,7 +24,7 @@ delta_dict_lite_00 =
         [ ( 0x00, delta_noop )
         , ( 0x01, execute_0x01 )
         , ( 0x02, execute_0x02 )
-        , ( 0x06, execute_0x06 )
+        , ( 0x06, ld_b_n )
         , ( 0x08, ex_af )
         , ( 0x0A, execute_0x0A )
         , ( 0x0E, execute_0x0E )
@@ -56,8 +56,8 @@ execute_0x02 rom48k z80 =
     SetMem8WithTime addr z80.flags.a 3
 
 
-execute_0x06 : Z80ROM -> Z80 -> Z80Delta
-execute_0x06 rom48k z80 =
+ld_b_n : Z80ROM -> Z80 -> Z80Delta
+ld_b_n rom48k z80 =
     -- case 0x06: B=imm8(); break;
     let
         new_b =

@@ -257,10 +257,10 @@ adc_hl b z80 =
 --      IY -> "IY"
 --      HL -> "HL"
 
-execute_ltC0: Int -> IXIYHL -> Z80ROM -> Z80 -> Maybe Z80Delta
-execute_ltC0 c ixiyhl rom48k z80 =
+execute_ltC0: Int -> Z80ROM -> Z80 -> Maybe Z80Delta
+execute_ltC0 c rom48k z80 =
    case lt40_array |> Array.get c |> Maybe.withDefault Nothing of
-      Just f -> Just (z80 |> f ixiyhl rom48k)
+      Just f -> Just (z80 |> f HL rom48k)
       Nothing ->
          case lt40_array_lite |> Array.get c |> Maybe.withDefault Nothing of
             Just f_without_ixiyhl -> Just (z80 |> f_without_ixiyhl rom48k)
@@ -725,7 +725,7 @@ execute_delta rom48k tmp_z80 =
                              z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
                              new_time = z80.env.time
                           in
-                         case z80 |> execute_ltC0 c.value HL rom48k of
+                         case z80 |> execute_ltC0 c.value rom48k of
                            Just z80delta -> OldDeltaWithChanges (DeltaWithChangesData z80delta interrupts new_pc new_time)
                            Nothing ->
                                 --case c.value of
