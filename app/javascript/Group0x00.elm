@@ -24,7 +24,6 @@ delta_dict_lite_00 =
         [ ( 0x00, delta_noop )
         , ( 0x01, execute_0x01 )
         , ( 0x02, execute_0x02 )
-        , ( 0x06, ld_b_n )
         , ( 0x08, ex_af )
         , ( 0x0A, execute_0x0A )
         , ( 0x0E, execute_0x0E )
@@ -54,20 +53,6 @@ execute_0x02 rom48k z80 =
     --{ z80 | env = z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3 }
     --OnlyEnv (z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3)
     SetMem8WithTime addr z80.flags.a 3
-
-
-ld_b_n : Z80ROM -> Z80 -> Z80Delta
-ld_b_n rom48k z80 =
-    -- case 0x06: B=imm8(); break;
-    let
-        new_b =
-            imm8 z80.pc z80.env.time rom48k z80.env.ram
-
-        z80main =
-            z80.main
-    in
-    --{ z80 | env = new_b.env, pc = new_b.pc }|> set_b new_b.value
-    MainRegsWithPcAndCpuTime { z80main | b = new_b.value } new_b.pc new_b.time
 
 
 ex_af : Z80ROM -> Z80 -> Z80Delta
@@ -129,5 +114,3 @@ execute_0x0E rom48k z80 =
     in
     --{ z80 | env = new_c.env, pc = new_c.pc, main = { z80_main | c = new_c.value } }
     MainRegsWithPcAndCpuTime { z80main | c = new_c.value } new_c.pc new_c.time
-
-

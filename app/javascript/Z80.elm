@@ -24,10 +24,11 @@ import Group0xE0 exposing (delta_dict_E0, delta_dict_lite_E0)
 import Loop
 import SimpleFlagOps exposing (singleByteFlags)
 import SimpleSingleByte exposing (singleByteMainAndFlagRegisters, singleByteMainRegs)
+import SingleWith8BitParameter exposing (singleWith8BitParam)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString)
 import Z80Debug exposing (debugTodo)
 import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..), jp_delta, rst_delta)
-import Z80Env exposing (Z80Env, addCpuTimeEnv, m1, mem16, out, pop, z80_in, z80_push, z80env_constructor)
+import Z80Env exposing (Z80Env, addCpuTimeEnv, m1, mem, mem16, out, pop, z80_in, z80_push, z80env_constructor)
 import Z80Execute exposing (DeltaWithChanges(..), apply_delta)
 import Z80Flags exposing (FlagRegisters, IntWithFlags, c_FC, c_FS, cp, set_af, z80_or, z80_sub)
 import Z80Ram exposing (c_FRSTART)
@@ -709,35 +710,43 @@ execute_delta rom48k tmp_z80 =
       interrupts = tmp_z80.interrupts
       c = tmp_z80.env |> m1 tmp_z80.pc (Bitwise.or interrupts.ir (Bitwise.and interrupts.r 0x7F)) rom48k
    in
-   case singleByteMainRegs  |> Dict.get c.value of
-        Just mainRegFunc ->  RegisterChangeDelta c.time (mainRegFunc tmp_z80.main)
-        Nothing ->
-            case singleByteFlags |> Dict.get c.value of
-                Just flagFunc -> FlagDelta c.time (flagFunc tmp_z80.flags)
+   case singleWith8BitParam |> Dict.get c.value of
+       Just f ->
+           let
+              param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) c.time rom48k tmp_z80.env.ram
+           in
+           -- duplicate of code in imm8 - add 3 to the cpu_time
+           Simple8BitDelta (param.time |> addCpuTimeTime 3) (f param.value)
+       Nothing ->
+           case singleByteMainRegs  |> Dict.get c.value of
+                Just mainRegFunc ->  RegisterChangeDelta c.time (mainRegFunc tmp_z80.main)
                 Nothing ->
-                  case singleByteMainAndFlagRegisters |> Dict.get c.value of
-                      Just f -> PureDelta c.time (f tmp_z80.main tmp_z80.flags)
-                      Nothing ->
-                          let
-                             env = tmp_z80.env
-                             old_z80 = { tmp_z80 | env = { env | time = c.time }, interrupts = { interrupts | r = interrupts.r + 1 } }
-                             new_pc = Bitwise.and (old_z80.pc + 1) 0xFFFF
-                             z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
-                             new_time = z80.env.time
-                          in
-                         case z80 |> execute_ltC0 c.value rom48k of
-                           Just z80delta -> OldDeltaWithChanges (DeltaWithChangesData z80delta interrupts new_pc new_time)
-                           Nothing ->
-                                --case c.value of
-                                    --0xDD -> DeltaWithChanges (group_xy IXIY_IX z80) interrupts new_pc new_time
-                                    --0xFD -> DeltaWithChanges (group_xy IXIY_IY z80) interrupts new_pc new_time
-                                    --0xED -> DeltaWithChanges (Whole (group_ed z80)) interrupts new_pc new_time
-                                    --0xCD -> DeltaWithChanges (execute_0xCD z80) interrupts new_pc new_time
-                                    --_ ->
-                             let
-                               delta = debugTodo "execute" (c.value |> toHexString) z80  |> Whole
-                             in
-                               OldDeltaWithChanges (DeltaWithChangesData delta interrupts new_pc new_time)
+                    case singleByteFlags |> Dict.get c.value of
+                        Just flagFunc -> FlagDelta c.time (flagFunc tmp_z80.flags)
+                        Nothing ->
+                          case singleByteMainAndFlagRegisters |> Dict.get c.value of
+                              Just f -> PureDelta c.time (f tmp_z80.main tmp_z80.flags)
+                              Nothing ->
+                                  let
+                                     env = tmp_z80.env
+                                     old_z80 = { tmp_z80 | env = { env | time = c.time }, interrupts = { interrupts | r = interrupts.r + 1 } }
+                                     new_pc = Bitwise.and (old_z80.pc + 1) 0xFFFF
+                                     z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
+                                     new_time = z80.env.time
+                                  in
+                                 case z80 |> execute_ltC0 c.value rom48k of
+                                   Just z80delta -> OldDeltaWithChanges (DeltaWithChangesData z80delta interrupts new_pc new_time)
+                                   Nothing ->
+                                        --case c.value of
+                                            --0xDD -> DeltaWithChanges (group_xy IXIY_IX z80) interrupts new_pc new_time
+                                            --0xFD -> DeltaWithChanges (group_xy IXIY_IY z80) interrupts new_pc new_time
+                                            --0xED -> DeltaWithChanges (Whole (group_ed z80)) interrupts new_pc new_time
+                                            --0xCD -> DeltaWithChanges (execute_0xCD z80) interrupts new_pc new_time
+                                            --_ ->
+                                     let
+                                       delta = debugTodo "execute" (c.value |> toHexString) z80  |> Whole
+                                     in
+                                       OldDeltaWithChanges (DeltaWithChangesData delta interrupts new_pc new_time)
 -- case 0xD4: call((Ff&0x100)==0); break;
 -- case 0xE0: time++; if((flags()&FP)==0) MP=PC=pop(); break;
 -- case 0xE2: jp((flags()&FP)==0); break;
