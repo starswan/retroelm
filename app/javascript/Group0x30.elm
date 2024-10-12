@@ -49,7 +49,7 @@ execute_0x30 rom48k z80 =
     else
         let
             v =
-                z80.env |> imm8 rom48k z80.pc
+                 imm8 z80.pc z80.env.time rom48k z80.env.ram
         in
         --{ z80 | env = v.env, pc = v.pc }
         CpuTimeWithPc v.time v.pc
@@ -158,7 +158,7 @@ execute_0x36 ixiyhl rom48k z80 =
         HL ->
             let
                 v =
-                    z80.env |> imm8 rom48k z80.pc
+                    imm8 z80.pc z80.env.time rom48k z80.env.ram
 
                 env_1 =
                     z80.env
@@ -220,7 +220,7 @@ execute_0x38 rom48k z80 =
     else
         let
             v =
-                z80.env |> imm8 rom48k z80.pc
+                imm8 z80.pc z80.env.time rom48k z80.env.ram
         in
         --{ z80 | env = v.env, pc = v.pc }
         CpuTimeWithPc v.time v.pc
@@ -278,7 +278,7 @@ execute_0x3E rom48k z80 =
             z80.flags
 
         v =
-            z80.env |> imm8 rom48k z80.pc
+            imm8 z80.pc z80.env.time rom48k z80.env.ram
 
         --new_z80 = { z80 | env = v.env, pc = v.pc }
     in

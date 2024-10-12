@@ -5,6 +5,7 @@ import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, add
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8)
 import Z80Env exposing (Z80Env, Z80EnvWithPC, addCpuTimeEnv, mem, mem16, setMem, z80_push)
 import Z80Flags exposing (FlagRegisters, flags)
+import Z80Ram exposing (Z80Ram)
 import Z80Rom exposing (Z80ROM)
 
 
@@ -92,11 +93,11 @@ type IXIY
 --	}
 
 
-imm8 : Z80ROM -> Int -> Z80Env -> CpuTimePcAndValue
-imm8 rom48k pc env =
+imm8 : Int -> CpuTimeCTime -> Z80ROM -> Z80Ram -> CpuTimePcAndValue
+imm8 pc  time rom48k ram =
     let
         v =
-            mem pc env.time rom48k env.ram
+            mem pc time rom48k ram
 
         new_pc =
             Bitwise.and (pc + 1) 0xFFFF

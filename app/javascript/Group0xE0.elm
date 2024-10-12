@@ -107,7 +107,7 @@ execute_0xE6 rom48k z80 =
     -- case 0xE6: and(imm8()); break;
     let
         a =
-            z80.env |> imm8 rom48k z80.pc
+            imm8 z80.pc z80.env.time rom48k z80.env.ram
 
         env_1 =
             z80.env
@@ -167,7 +167,7 @@ execute_0xEE rom48k z80 =
     -- case 0xEE: xor(imm8()); break;
     let
         v =
-            z80.env |> imm8 rom48k z80.pc
+            imm8 z80.pc z80.env.time rom48k z80.env.ram
 
         --env_1 = z80.env
         --z80_1 = { z80 | env = { env_1 | time = v.time }, pc = v.pc }

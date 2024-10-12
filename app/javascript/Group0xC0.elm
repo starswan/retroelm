@@ -133,7 +133,7 @@ execute_0xC6 rom48k z80 =
     -- case 0xC6: add(imm8()); break;
     let
         v =
-            z80.env |> imm8 rom48k z80.pc
+            imm8 z80.pc z80.env.time rom48k z80.env.ram
 
         --env_1 = z80.env
         --z80_1 = { z80 | env = { env_1 | time = v.time }, pc = v.pc }
@@ -247,7 +247,7 @@ execute_0xCE rom48k z80 =
     -- case 0xCE: adc(imm8()); break;
     let
         v =
-            z80.env |> imm8 rom48k z80.pc
+            imm8 z80.pc z80.env.time rom48k z80.env.ram
 
         flags =
             z80.flags |> adc v.value

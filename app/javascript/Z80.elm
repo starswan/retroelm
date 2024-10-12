@@ -470,7 +470,7 @@ execute_0xD3: Z80ROM -> Z80 -> Z80Delta
 execute_0xD3 rom48k z80 =
   -- case 0xD3: env.out(v=imm8()|A<<8,A); MP=v+1&0xFF|v&0xFF00; time+=4; break;
   let
-    value = z80.env |> imm8 rom48k z80.pc
+    value = imm8 z80.pc z80.env.time rom48k z80.env.ram
     env_1 = z80.env
     env_2 = { env_1 | time = value.time }
     v = Bitwise.or value.value (shiftLeftBy8 z80.flags.a)
@@ -493,7 +493,7 @@ execute_0xD6: Z80ROM -> Z80 -> Z80Delta
 execute_0xD6 rom48k z80 =
    -- case 0xD6: sub(imm8()); break;
   let
-    v = z80.env |> imm8 rom48k z80.pc
+    v = imm8 z80.pc z80.env.time rom48k z80.env.ram
     flags = z80.flags |> z80_sub v.value
     --env_1 = z80.env
   in
@@ -544,7 +544,7 @@ execute_0xDB: Z80ROM -> Z80 -> Z80Delta
 execute_0xDB rom48k z80 =
    -- case 0xDB: MP=(v=imm8()|A<<8)+1; A=env.in(v); time+=4; break;
    let
-      imm8val = z80.env |> imm8 rom48k z80.pc
+      imm8val = imm8 z80.pc z80.env.time rom48k z80.env.ram
       env_1 = z80.env
       z80_1 = { z80 | env = { env_1 | time = imm8val.time }, pc = imm8val.pc }
       v = or imm8val.value (shiftLeftBy8 z80_1.flags.a)
@@ -595,7 +595,7 @@ execute_0xF6: Z80ROM -> Z80 -> Z80Delta
 execute_0xF6 rom48k z80 =
    -- case 0xF6: or(imm8()); break;
    let
-      a = z80.env |> imm8 rom48k z80.pc
+      a = imm8 z80.pc z80.env.time rom48k z80.env.ram
       --env_1 = z80.env
       --z80_1 = { z80 | env = { env_1 | time = a.time }, pc = a.pc }
       flags = z80.flags |> z80_or a.value
@@ -647,7 +647,7 @@ execute_0xFE: Z80ROM -> Z80 -> Z80
 execute_0xFE rom48k z80 =
    -- case 0xFE: cp(imm8()); break;
    let
-      v = z80.env |> imm8 rom48k z80.pc
+      v = imm8 z80.pc z80.env.time rom48k z80.env.ram
       flags = z80.flags |> cp v.value
       env_1 = z80.env
    in

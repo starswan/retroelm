@@ -59,7 +59,7 @@ execute_0x20 rom48k z80 =
     else
         let
             x =
-                z80.env |> imm8 rom48k z80.pc
+                imm8 z80.pc z80.env.time rom48k z80.env.ram
         in
         --{ z80 | env = x.env, pc = x.pc }
         CpuTimeWithPc x.time x.pc
@@ -169,7 +169,7 @@ execute_0x26 ixiyhl rom48k z80 =
     -- case 0x26: xy=xy&0xFF|imm8()<<8; break;
     let
         value =
-            z80.env |> imm8 rom48k z80.pc
+            imm8 z80.pc z80.env.time rom48k z80.env.ram
 
         --new_z80 = { z80 | env = value.env, pc = value.pc }
         xy =
@@ -199,7 +199,7 @@ execute_0x28 rom48k z80 =
     else
         let
             x =
-                z80.env |> imm8 rom48k z80.pc
+                imm8 z80.pc z80.env.time rom48k z80.env.ram
         in
         --{ z80 | env = x.env, pc = x.pc }
         CpuTimeWithPc x.time x.pc
@@ -332,7 +332,7 @@ execute_0x2E ixiyhl rom48k z80 =
             Bitwise.and xy 0xFF00
 
         l =
-            z80.env |> imm8 rom48k z80.pc
+            imm8 z80.pc z80.env.time rom48k z80.env.ram
 
         --new_z80 = { z80 | env = l.env, pc = l.pc }
         new_xy =
