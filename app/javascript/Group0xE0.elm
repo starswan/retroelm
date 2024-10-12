@@ -4,35 +4,39 @@ import Dict exposing (Dict)
 import GroupED exposing (group_ed)
 import Z80Delta exposing (Z80Delta(..), rst_delta)
 import Z80Env exposing (addCpuTimeEnv, z80_pop, z80_push)
-import Z80Flags exposing (z80_and, z80_xor)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIYHL(..), Z80, get_de, get_xy, imm8, set_de_main)
+import Z80Types exposing (IXIY(..), IXIYHL(..), Z80, get_de, get_xy, get_xy_ixiy, set_de_main)
+
+
+miniDictE0 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
+miniDictE0 =
+    Dict.fromList
+        [ ( 0xE1, pop_hl )
+        , ( 0xE5, push_hl )
+        , ( 0xE9, jp_hl )
+        ]
 
 
 delta_dict_E0 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_E0 =
     Dict.fromList
-        [ ( 0xE1, execute_0xE1 )
-        , ( 0xE3, execute_0xE3 )
-        , ( 0xE5, execute_0xE5 )
-        , ( 0xE9, execute_0xE9 )
+        [ ( 0xE3, execute_0xE3 )
+
         ]
 
 
 delta_dict_lite_E0 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_E0 =
     Dict.fromList
-        [ ( 0xE6, execute_0xE6 )
-        , ( 0xE7, execute_0xE7 )
+        [ ( 0xE7, execute_0xE7 )
         , ( 0xEB, execute_0xEB )
         , ( 0xED, group_ed )
-        , ( 0xEE, execute_0xEE )
         , ( 0xEF, execute_0xEF )
         ]
 
 
-execute_0xE1 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0xE1 ixiyhl rom48k z80 =
+pop_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
+pop_hl ixiyhl rom48k z80 =
     -- case 0xE1: HL=pop(); break;
     -- case 0xE1: xy=pop(); break;
     let
@@ -45,14 +49,11 @@ execute_0xE1 ixiyhl rom48k z80 =
             z80.main
     in
     case ixiyhl of
-        IX ->
+        IXIY_IX ->
             MainRegsWithSpPcAndTime { main | ix = hl.value } hl.sp z80.pc hl.time
 
-        IY ->
+        IXIY_IY ->
             MainRegsWithSpPcAndTime { main | iy = hl.value } hl.sp z80.pc hl.time
-
-        HL ->
-            MainRegsWithSpAndTime { main | hl = hl.value } hl.sp hl.time
 
 
 execute_0xE3 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
@@ -90,36 +91,16 @@ execute_0xE3 ixiyhl rom48k z80 =
             MainRegsWithEnv { main | hl = hl.value } pushed
 
 
-execute_0xE5 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0xE5 ixiyhl _ z80 =
+push_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
+push_hl ixiyhl _ z80 =
     -- case 0xE5: push(HL); break;
     -- case 0xE5: push(xy); break;
     let
         pushed =
-            z80.env |> z80_push (z80.main |> get_xy ixiyhl)
+            z80.env |> z80_push (z80.main |> get_xy_ixiy ixiyhl)
     in
     --{ z80 | env = pushed }
     EnvWithPc pushed z80.pc
-
-
-execute_0xE6 : Z80ROM -> Z80 -> Z80Delta
-execute_0xE6 rom48k z80 =
-    -- case 0xE6: and(imm8()); break;
-    let
-        a =
-            imm8 z80.pc z80.env.time rom48k z80.env.ram
-
-        env_1 =
-            z80.env
-
-        z80_1 =
-            { z80 | env = { env_1 | time = a.time }, pc = a.pc }
-
-        flags =
-            z80_1.flags |> z80_and a.value
-    in
-    --{ z80_1 | flags = flags }
-    FlagsWithPcAndTime flags a.pc a.time
 
 
 execute_0xE7 : Z80ROM -> Z80 -> Z80Delta
@@ -127,13 +108,13 @@ execute_0xE7 _ z80 =
     z80 |> rst_delta 0xE7
 
 
-execute_0xE9 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0xE9 ixiyhl _ z80 =
+jp_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
+jp_hl ixiyhl _ z80 =
     -- case 0xE9: PC=HL; break;
     -- case 0xE9: PC=xy; break;
     let
         xy =
-            z80.main |> get_xy ixiyhl
+            z80.main |> get_xy_ixiy ixiyhl
 
         --a = if Dict.member xy Z80Rom.c_COMMON_NAMES then
         --      Nothing
@@ -160,22 +141,6 @@ execute_0xEB _ z80 =
     in
     --z80 |> set_de v |> set_hl de
     MainRegs { main | hl = de }
-
-
-execute_0xEE : Z80ROM -> Z80 -> Z80Delta
-execute_0xEE rom48k z80 =
-    -- case 0xEE: xor(imm8()); break;
-    let
-        v =
-            imm8 z80.pc z80.env.time rom48k z80.env.ram
-
-        --env_1 = z80.env
-        --z80_1 = { z80 | env = { env_1 | time = v.time }, pc = v.pc }
-        flags =
-            z80.flags |> z80_xor v.value
-    in
-    --{ z80_1 | flags = flags }
-    FlagsWithPcAndTime flags v.pc v.time
 
 
 execute_0xEF : Z80ROM -> Z80 -> Z80Delta

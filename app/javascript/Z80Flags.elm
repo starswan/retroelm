@@ -479,6 +479,16 @@ shifter7 v_in flagRegs =
     flagRegs |> shifter_v (shiftRightBy1 (v_in * 0x0201))
 
 
+--private int add16(int a, int b)
+--{
+--	int r = a + b;
+--	Ff = Ff & FS | r>>>8 & 0x128;
+--	Fa &= ~FH;
+--	Fb = Fb&0x80 | ((r ^ a ^ b)>>>8 ^ Fr) & FH;
+--	MP = a+1;
+--	time += 7;
+--	return (char)r;
+--}
 add16 : Int -> Int -> FlagRegisters -> IntWithFlagsAndTime
 add16 a b main_flags =
     let

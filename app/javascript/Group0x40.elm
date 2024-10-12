@@ -1,7 +1,7 @@
 module Group0x40 exposing (..)
 
 import Dict exposing (Dict)
-import Z80Delta exposing (Z80Delta(..), delta_noop)
+import Z80Delta exposing (Z80Delta(..))
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIY, IXIYHL, Z80, get_h_ixiy, get_l_ixiy, hl_deref_with_z80)
 
@@ -15,21 +15,12 @@ miniDict40 =
         , ( 0x4D, ld_c_l )
         ]
 
+
 delta_dict_40 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_40 =
     Dict.fromList
-        [ ( 0x46, execute_0x46 )
+        [ ( 0x46, ld_b_indirect_hl )
         , ( 0x4E, execute_0x4E )
-        ]
-
-
-delta_dict_lite_40 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
-delta_dict_lite_40 =
-    Dict.fromList
-        [ -- case 0x40: break;
-          ( 0x40, delta_noop )
-        , -- case 0x49: break;
-          ( 0x49, delta_noop )
         ]
 
 
@@ -56,9 +47,9 @@ execute_0x45 ixiyhl rom z80 =
     in
     MainRegsWithPc { main | b = get_l_ixiy ixiyhl z80.main } z80.pc
 
-
-execute_0x46 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0x46 ixiyhl rom48k z80 =
+-- need single byte with env and main
+ld_b_indirect_hl : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+ld_b_indirect_hl ixiyhl rom48k z80 =
     -- case 0x46: B=env.mem(HL); time+=3; break;
     -- case 0x46: B=env.mem(getd(xy)); time+=3; break;
     let
@@ -106,5 +97,3 @@ execute_0x4E ixiyhl rom48k z80 =
     in
     --{ z80 | pc = value.pc, env = value.env } |> set_c value.value
     MainRegsWithPcAndCpuTime { main | c = value.value } value.pc value.time
-
-

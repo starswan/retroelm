@@ -420,6 +420,23 @@ env_mem_hl ixiyhl rom48k z80 =
             in
             CpuTimePcAndValue (dval.time |> addCpuTimeTime 8) (char (z80.pc + 1)) (char (z80.main.iy + byte dval.value))
 
+env_mem_hl_ixiy : IXIY -> Z80ROM -> Z80 -> CpuTimePcAndValue
+env_mem_hl_ixiy ixiyhl rom48k z80 =
+    case ixiyhl of
+        IXIY_IX ->
+            let
+                dval =
+                    mem z80.pc z80.env.time rom48k z80.env.ram
+            in
+            CpuTimePcAndValue (dval.time |> addCpuTimeTime 8) (char (z80.pc + 1)) (char (z80.main.ix + byte dval.value))
+
+        IXIY_IY ->
+            let
+                dval =
+                    mem z80.pc z80.env.time rom48k z80.env.ram
+            in
+            CpuTimePcAndValue (dval.time |> addCpuTimeTime 8) (char (z80.pc + 1)) (char (z80.main.iy + byte dval.value))
+
 
 get_bc : MainWithIndexRegisters -> Int
 get_bc z80_main =
