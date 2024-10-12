@@ -91,7 +91,7 @@ suite =
                                |> setMem 0x6545 0x31
                   new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0x8765 },
                                                         main = { z80main | hl = 0x6545, b = 0xA5 }, flags = { flags | a = 0x39 } }
-                  mem_value =  new_z80.env |> mem 0x6545 z80rom
+                  mem_value = mem 0x6545 new_z80.env.time z80rom new_z80.env.ram
                in
                   Expect.equal ((addr + 2), 0x62) (new_z80.pc, mem_value.value)
             ,test "0xCB 0x07 RLC A" <|

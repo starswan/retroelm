@@ -10,34 +10,30 @@ import Z80Flags exposing (add16, dec, inc, scf_ccf)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL(..), Z80, env_mem_hl, get_xy, imm16, imm8, jr, set_xy)
 
+
 delta_dict_30 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_30 =
     Dict.fromList
-        [
-          (0x34, execute_0x34),
-          (0x35, execute_0x35),
-          (0x36, execute_0x36),
-          (0x39, execute_0x39)
+        [ ( 0x34, execute_0x34 )
+        , ( 0x35, execute_0x35 )
+        , ( 0x36, execute_0x36 )
+        , ( 0x39, execute_0x39 )
         ]
 
 
 delta_dict_lite_30 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_30 =
     Dict.fromList
-        [
-          (0x30, execute_0x30),
-          (0x31, execute_0x31),
-          (0x32, execute_0x32),
-          (0x33, execute_0x33),
-          (0x37, execute_0x37),
-          (0x38, execute_0x38),
-          (0x3A, execute_0x3A),
-          (0x3B, execute_0x3B),
-          (0x3C, execute_0x3C),
-          (0x3D, execute_0x3D),
-          (0x3E, execute_0x3E),
-          (0x3F, execute_0x3F)
+        [ ( 0x30, execute_0x30 )
+        , ( 0x31, execute_0x31 )
+        , ( 0x32, execute_0x32 )
+        , ( 0x33, execute_0x33 )
+        , ( 0x38, execute_0x38 )
+        , ( 0x3A, execute_0x3A )
+        , ( 0x3B, execute_0x3B )
+        , ( 0x3E, execute_0x3E )
         ]
+
 
 execute_0x30 : Z80ROM -> Z80 -> Z80Delta
 execute_0x30 rom48k z80 =
@@ -53,7 +49,7 @@ execute_0x30 rom48k z80 =
     else
         let
             v =
-                z80 |> imm8 rom48k
+                 imm8 z80.pc z80.env.time rom48k z80.env.ram
         in
         --{ z80 | env = v.env, pc = v.pc }
         CpuTimeWithPc v.time v.pc
@@ -111,17 +107,14 @@ execute_0x34 ixiyhl rom48k z80 =
         env_1 =
             z80.env
 
-        env_2 =
-            { env_1 | time = cpuTimePcAndValue.time }
-
         cpuTimeAndValue =
-            env_2 |> mem cpuTimePcAndValue.value rom48k
+            mem cpuTimePcAndValue.value cpuTimePcAndValue.time rom48k env_1.ram
 
         valueWithFlags =
             z80.flags |> inc cpuTimeAndValue.value
 
         new_env =
-            { env_2 | time = cpuTimeAndValue.time |> addCpuTimeTime 4 } |> setMem cpuTimePcAndValue.value valueWithFlags.value
+            { env_1 | time = cpuTimeAndValue.time |> addCpuTimeTime 4 } |> setMem cpuTimePcAndValue.value valueWithFlags.value
     in
     --{ z80_1 | env = new_env, flags = v.flags } |> add_cpu_time 3
     EnvWithFlagsAndPc (new_env |> addCpuTimeEnv 3) valueWithFlags.flags cpuTimePcAndValue.pc
@@ -137,7 +130,7 @@ execute_0x35 ixiyhl rom48k z80 =
 
         --z80_1 = { z80 | pc = a.pc }
         value =
-            z80.env |> mem a.value rom48k
+            mem a.value z80.env.time rom48k z80.env.ram
 
         env_1 =
             z80.env
@@ -165,7 +158,7 @@ execute_0x36 ixiyhl rom48k z80 =
         HL ->
             let
                 v =
-                    z80 |> imm8 rom48k
+                    imm8 z80.pc z80.env.time rom48k z80.env.ram
 
                 env_1 =
                     z80.env
@@ -185,7 +178,7 @@ execute_0x36 ixiyhl rom48k z80 =
                     get_xy ixiyhl z80.main
 
                 mempc =
-                    z80.env |> mem z80.pc rom48k
+                    mem z80.pc z80.env.time rom48k z80.env.ram
 
                 env_1 =
                     z80.env
@@ -194,14 +187,14 @@ execute_0x36 ixiyhl rom48k z80 =
                     char (xy + byte mempc.value)
 
                 --z80_1 = { z80 | env = mempc.env } |> add_cpu_time 3
-                z80_1_env =
-                    { env_1 | time = mempc.time } |> addCpuTimeEnv 3
+                --z80_1_env =
+                --    { env_1 | time = mempc.time } |> addCpuTimeEnv 3
 
                 v =
-                    z80_1_env |> mem (char (z80.pc + 1)) rom48k
+                    mem (char (z80.pc + 1)) (mempc.time |> addCpuTimeTime 3) rom48k env_1.ram
 
                 z80_2 =
-                    z80_1_env |> addCpuTimeEnv 5
+                    { env_1 | time = (v.time |> addCpuTimeTime 5) }
 
                 x =
                     setMem a v.value z80_2
@@ -211,13 +204,6 @@ execute_0x36 ixiyhl rom48k z80 =
             in
             --{ z80_2 | env = x, pc = new_pc } |> add_cpu_time 3
             EnvWithPc (x |> addCpuTimeEnv 3) new_pc
-
-
-execute_0x37 : Z80ROM -> Z80 -> Z80Delta
-execute_0x37 rom48k z80 =
-    -- case 0x37: scf_ccf(0); break;
-    --{ z80 | flags = z80.flags |> scf_ccf 0 }
-    z80.flags |> scf_ccf 0 |> FlagRegs
 
 
 execute_0x38 : Z80ROM -> Z80 -> Z80Delta
@@ -234,7 +220,7 @@ execute_0x38 rom48k z80 =
     else
         let
             v =
-                z80 |> imm8 rom48k
+                imm8 z80.pc z80.env.time rom48k z80.env.ram
         in
         --{ z80 | env = v.env, pc = v.pc }
         CpuTimeWithPc v.time v.pc
@@ -269,7 +255,7 @@ execute_0x3A rom48k z80 =
             z80 |> imm16 rom48k
 
         mem_value =
-            z80.env |> mem v.value rom48k
+            mem v.value z80.env.time rom48k z80.env.ram
     in
     CpuTimeWithFlagsAndPc (mem_value.time |> addCpuTimeTime 3) { z80_flags | a = mem_value.value } v.pc
 
@@ -284,34 +270,6 @@ execute_0x3B rom48k z80 =
     SpAndCpuTime new_sp 2
 
 
-execute_0x3C : Z80ROM -> Z80 -> Z80Delta
-execute_0x3C rom48k z80 =
-    -- case 0x3C: A=inc(A); break;
-    let
-        v =
-            inc z80.flags.a z80.flags
-
-        new_flags =
-            v.flags
-    in
-    --{ z80 | flags = { new_flags | a = v.value } }
-    FlagRegs { new_flags | a = v.value }
-
-
-execute_0x3D : Z80ROM -> Z80 -> Z80Delta
-execute_0x3D rom48k z80 =
-    -- case 0x3D: A=dec(A); break;
-    let
-        v =
-            dec z80.flags.a z80.flags
-
-        new_flags =
-            v.flags
-    in
-    --{ z80 | flags = { new_flags | a = v.value } }
-    FlagRegs { new_flags | a = v.value }
-
-
 execute_0x3E : Z80ROM -> Z80 -> Z80Delta
 execute_0x3E rom48k z80 =
     -- case 0x3E: A=imm8(); break;
@@ -320,17 +278,9 @@ execute_0x3E rom48k z80 =
             z80.flags
 
         v =
-
-            z80 |> imm8 rom48k
+            imm8 z80.pc z80.env.time rom48k z80.env.ram
 
         --new_z80 = { z80 | env = v.env, pc = v.pc }
     in
     --{ new_z80 | flags = { z80_flags | a = v.value } }
     CpuTimeWithFlagsAndPc v.time { z80_flags | a = v.value } v.pc
-
-
-execute_0x3F : Z80ROM -> Z80 -> Z80Delta
-execute_0x3F rom48k z80 =
-    -- case 0x3F: scf_ccf(Ff&0x100); break;
-    --{ z80 | flags = z80.flags |> scf_ccf (and z80.flags.ff 0x100) }
-    z80.flags |> scf_ccf (Bitwise.and z80.flags.ff 0x0100) |> FlagRegs

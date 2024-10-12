@@ -1,6 +1,7 @@
 module Z80Delta exposing (..)
 
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, addCpuTimeTime)
+import Z80ChangeData exposing (Z80ChangeData)
 import Z80Env exposing (Z80Env, addCpuTimeEnv, setMem, setMem16, z80_push)
 import Z80Flags exposing (FlagRegisters)
 import Z80Rom exposing (Z80ROM)
@@ -47,16 +48,15 @@ type Z80Delta
     | Fszh0n0pTimeDeltaSet408Bit Int Int Int
 
 
-type alias DeltaWithChanges =
+type alias DeltaWithChangesData =
     { delta : Z80Delta
     , interrupts : InterruptRegisters
     , pc : Int
     , time : CpuTimeCTime
     }
 
-
-apply_delta : Z80 -> DeltaWithChanges -> Z80
-apply_delta z80 z80delta =
+applyDeltaWithChanges : DeltaWithChangesData -> Z80 -> Z80
+applyDeltaWithChanges z80delta z80  =
     let
         z80_env =
             z80.env
