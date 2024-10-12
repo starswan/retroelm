@@ -6,7 +6,7 @@ import Dict exposing (Dict)
 import Utils exposing (shiftLeftBy8)
 import Z80Delta exposing (Z80Delta(..), delta_noop)
 import Z80Env exposing (mem)
-import Z80Flags exposing (add16, dec, inc, rot)
+import Z80Flags exposing (add16)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL, Z80, get_bc, get_xy, imm16, imm8, set_bc_main, set_xy)
 
