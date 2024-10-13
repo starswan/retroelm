@@ -1,7 +1,8 @@
 module Z80Address exposing (..)
 
 
-import Utils exposing (byte)
+import Bitwise
+import Utils exposing (byte, shiftRightBy8)
 import Z80WriteableAddress exposing (Z80WriteableAddress(..))
 type Z80Address
     = ROMAddress Int
@@ -45,7 +46,7 @@ incRamAddress address =
                 ROMAddress 0
 
             else
-                RAMAddress (Z80MemoryAddress (int + 1))
+      + 1          RAMAddress (Z80MemoryAddress (int + 1))
 
 increment : Z80Address -> Z80Address
 increment z80_address =
@@ -77,6 +78,10 @@ increment2: Z80Address -> Z80Address
 increment2 z80_address =
   z80_address |> increment |> increment
 
+decrement2: Z80Address -> Z80Address
+decrement2 z80_address =
+  z80_address |> decrement |> decrement
+
 decrement : Z80Address -> Z80Address
 decrement z80_address =
     case z80_address of
@@ -106,3 +111,15 @@ decrement z80_address =
 addIndexOffset: Int -> Z80Address -> Z80Address
 addIndexOffset int z80_addr =
     (z80_addr |> toInt) + (byte int) |> fromInt
+
+top8Bits: Z80Address -> Int
+top8Bits z80address =
+  (z80address |> toInt) |> shiftRightBy8
+
+top8BitsWithoutShift: Z80Address -> Int
+top8BitsWithoutShift z80address =
+  (z80address |> toInt) |> Bitwise.and 0xFF00
+
+lower8Bits: Z80Address -> Int
+lower8Bits z80address =
+    (z80address |> toInt) |> Bitwise.and 0xFF

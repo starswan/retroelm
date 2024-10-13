@@ -3,6 +3,7 @@ module Group0x70 exposing (..)
 import Bitwise exposing (shiftRightBy)
 import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
+import Z80Address exposing (Z80Address(..))
 import Z80Delta exposing (Z80Delta(..), delta_noop)
 import Z80Env exposing (addCpuTimeEnv, setMem)
 import Z80Rom exposing (Z80ROM)
@@ -50,14 +51,17 @@ execute_0x7077 ixiyhl rom48k z80 value =
         env_1 =
             z80.env
 
-        new_env =
-            { env_1 | time = mem_target.time }
-                |> setMem mem_target.value value
-                |> addCpuTimeEnv 3
+        --new_env =
+        --    { env_1 | time = mem_target.time }
+        --        |> setMem mem_target.value value
+        --        |> addCpuTimeEnv 3
     in
     --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
     --EnvWithPc new_env mem_target.pc
-    SetMem8WithCpuTimeIncrementAndPc mem_target.value value mem_target.time 3 mem_target.pc
+    case mem_target.value of
+      ROMAddress int -> NoChange
+      RAMAddress ramAddress ->
+        SetMem8WithCpuTimeIncrementAndPc ramAddress value mem_target.time 3 mem_target.pc
 
 
 execute_0x70 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta

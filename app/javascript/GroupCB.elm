@@ -4,12 +4,13 @@ import Bitwise exposing (complement, shiftLeftBy, shiftRightBy)
 import CpuTimeCTime exposing (CpuTimePcAndValue, addCpuTimeTime)
 import Dict exposing (Dict)
 import Utils exposing (byte, char, toHexString)
+import Z80Address exposing (Z80Address(..), addIndexOffset, increment, increment2, toInt)
 import Z80Debug exposing (debugTodo)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (addCpuTimeEnv, m1, mem, setMem)
 import Z80Flags exposing (IntWithFlags, bit, c_F53, shifter, shifter0)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY, IXIYHL(..), IntWithFlagsTimeAndPC, Z80, a_with_z80, add_cpu_time, b_with_z80, c_with_z80, d_with_z80, e_with_z80, get_ixiy_xy, h_with_z80, hl_deref_with_z80, inc_pc, inc_pc2, l_with_z80, set408bit, set_h, set_l)
+import Z80Types exposing (IXIY, IXIYHL(..), IntWithFlagsTimeAndPC, Z80, a_with_z80, add_cpu_time, b_with_z80, c_with_z80, d_with_z80, e_with_z80, get_ixiy_xy, h_with_z80, hl_deref_with_z80, l_with_z80, set408bit, set_h, set_l)
 
 
 group_cb_dict : Dict Int (Z80 -> Z80Delta)
@@ -138,8 +139,10 @@ execute_CB06 rom48k z80 =
         env =
             z80.env
 
-        env_1 =
-            { env | time = x.time } |> setMem z80.main.hl x.value
+        env_1 = case z80.main.hl of
+          ROMAddress int -> { env | time = x.time }
+          RAMAddress ramAddress ->
+            { env | time = x.time } |> setMem ramAddress x.value
     in
     EnvWithFlagsAndPc env_1 x.flags x.pc
 
@@ -181,7 +184,7 @@ group_cb rom48k tmp_z80 =
             { tmp_z80 | env = { env | time = c.time } }
 
         new_pc =
-            old_z80 |> inc_pc
+            old_z80.pc |> increment
 
         z80 =
             { old_z80 | pc = new_pc } |> add_cpu_time 4
@@ -323,16 +326,18 @@ group_xy_cb ixiyhl rom48k z80 =
             mem z80.pc z80.env.time rom48k z80.env.ram
 
         a =
-            char (xy + byte offset.value)
+            --char (xy + byte offset.value)
+            xy |> addIndexOffset offset.value
 
         env_1 =
             z80.env
 
         c =
-            mem (char (z80.pc + 1)) (offset.time |> addCpuTimeTime 3) rom48k z80.env.ram
+            --mem (char (z80.pc + 1)) (offset.time |> addCpuTimeTime 3) rom48k z80.env.ram
+            mem (z80.pc |> increment) (offset.time |> addCpuTimeTime 3) rom48k z80.env.ram
 
         new_pc =
-            z80 |> inc_pc2
+            z80.pc |> increment2
 
         v1 =
             mem a (c.time |> addCpuTimeTime 5) rom48k z80.env.ram
@@ -362,7 +367,7 @@ group_xy_cb ixiyhl rom48k z80 =
                         flags =
                             bit o v1.value z80_3.flags
                     in
-                    IntWithFlags v1.value { flags | ff = Bitwise.or (Bitwise.and flags.ff (complement c_F53)) (shiftRightBy (Bitwise.and 8 c_F53) a) }
+                    IntWithFlags v1.value { flags | ff = Bitwise.or (Bitwise.and flags.ff (complement c_F53)) (shiftRightBy (Bitwise.and 8 c_F53) (a |> toInt)) }
 
                 0x80 ->
                     IntWithFlags (Bitwise.and v1.value (complement (shiftLeftBy o 1))) z80_3.flags
@@ -375,7 +380,10 @@ group_xy_cb ixiyhl rom48k z80 =
                 z80_3.env
 
             else
-                z80_3.env |> setMem a v2.value |> addCpuTimeEnv 3
+              case a of
+                ROMAddress int -> z80_3.env
+                RAMAddress ramAddress ->
+                  z80_3.env |> setMem ramAddress v2.value |> addCpuTimeEnv 3
 
         --y = debug_log "xy_cb2" ((z80.pc |> toHexString) ++ " c " ++ (c.value |> toHexString2) ++
         --                                                   " set " ++ (a |> toHexString) ++

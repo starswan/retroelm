@@ -4,6 +4,7 @@ import Bitwise
 import CpuTimeCTime exposing (CpuTimeCTime, addCpuTimeTime)
 import RegisterChange exposing (RegisterChange, applyRegisterChange)
 import SingleWith8BitParameter exposing (Single8BitChange, applySimple8BitChange)
+import Z80Address exposing (increment, increment2)
 import Z80Change exposing (FlagChange(..), applyZ80Change)
 import Z80ChangeData exposing (RegisterChangeData, Z80ChangeData)
 import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..), applyDeltaWithChanges)
@@ -52,7 +53,8 @@ applySimple8BitDelta cpu_time z80changeData tmp_z80 =
             { tmp_z80 | env = { env | time = cpu_time }, interrupts = { interrupts | r = interrupts.r + 1 } }
 
         new_pc =
-            Bitwise.and (z80.pc + 2) 0xFFFF
+            --Bitwise.and (z80.pc + 2) 0xFFFF
+            z80.pc |> increment2
     in
     { z80 | pc = new_pc } |> applySimple8BitChange z80changeData
 
@@ -67,7 +69,8 @@ applyFlagDelta cpu_time z80_flags tmp_z80 =
             tmp_z80.env
 
         new_pc =
-            Bitwise.and (tmp_z80.pc + 1) 0xFFFF
+            --Bitwise.and (tmp_z80.pc + 1) 0xFFFF
+            tmp_z80.pc |> increment
 
         z80 =
             { tmp_z80 | pc = new_pc, env = { env | time = cpu_time |> addCpuTimeTime 4 }, interrupts = { interrupts | r = interrupts.r + 1 } }
@@ -104,7 +107,8 @@ applyPureDelta cpu_time z80changeData tmp_z80 =
             { tmp_z80 | env = { env | time = cpu_time |> addCpuTimeTime (4 + z80changeData.cpu_time) }, interrupts = { interrupts | r = interrupts.r + 1 } }
 
         new_pc =
-            Bitwise.and (z80.pc + z80changeData.pc_change) 0xFFFF
+            --Bitwise.and (z80.pc + z80changeData.pc_change) 0xFFFF
+            z80.pc |> increment
     in
     { z80 | pc = new_pc } |> applyZ80Change z80changeData.changes
 
@@ -122,6 +126,7 @@ applyRegisterDelta cpu_time z80changeData tmp_z80 =
             { tmp_z80 | env = { env | time = cpu_time |> addCpuTimeTime (4 + z80changeData.cpu_time) }, interrupts = { interrupts | r = interrupts.r + 1 } }
 
         new_pc =
-            Bitwise.and (z80.pc + z80changeData.pc_change) 0xFFFF
+            --Bitwise.and (z80.pc + z80changeData.pc_change) 0xFFFF
+            z80.pc |> increment
     in
     { z80 | pc = new_pc } |> applyRegisterChange z80changeData.changes

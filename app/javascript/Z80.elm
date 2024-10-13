@@ -26,7 +26,7 @@ import SimpleFlagOps exposing (singleByteFlags)
 import SimpleSingleByte exposing (singleByteMainAndFlagRegisters, singleByteMainRegs)
 import SingleWith8BitParameter exposing (singleWith8BitParam)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString)
-import Z80Address exposing (Z80Address(..))
+import Z80Address exposing (Z80Address(..), fromInt, increment, toInt)
 import Z80Debug exposing (debugTodo)
 import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..), jp_delta, rst_delta)
 import Z80Env exposing (Z80Env, addCpuTimeEnv, m1, mem, mem16, out, pop, z80_in, z80_push, z80env_constructor)
@@ -34,18 +34,18 @@ import Z80Execute exposing (DeltaWithChanges(..), apply_delta)
 import Z80Flags exposing (FlagRegisters, IntWithFlags, c_FC, c_FS, cp, set_af, z80_or, z80_sub)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, get_af, get_de, imm8, inc_pc, jp_z80, rst_z80, set_de_main, set_iff)
+import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, get_af, get_de, imm8, jp_z80, rst_z80, set_de_main, set_iff)
 
 constructor: Z80
 constructor =
     let
-        main = Z80Types.MainWithIndexRegisters 0 0 0 0 0 0 0
-        alternate = MainRegisters 0 0 0 0 0
+        main = Z80Types.MainWithIndexRegisters 0 0 0 0 (0 |> fromInt)  (0 |> fromInt) (0 |> fromInt)
+        alternate = MainRegisters 0 0 0 0 (0 |> fromInt)
         main_flags = FlagRegisters 0 0 0 0 0
         alt_flags = FlagRegisters 0 0 0 0 0
         interrupts = InterruptRegisters 0 0 0 0 False
     in
-        Z80 z80env_constructor 0 main main_flags alternate alt_flags interrupts c_FRSTART
+        Z80 z80env_constructor (0 |> fromInt) main main_flags alternate alt_flags interrupts c_FRSTART
 --	int a() {return A;}
 --get_a: Z80 -> Int
 --get_a z80 =
@@ -98,37 +98,38 @@ get_ei z80 =
 --    { z80 | iy = iy }
 
 --	void pc(int v) {PC = v;}
-set_pc: Int -> Z80 -> Z80
-set_pc pc z80 =
-   let
-      -- ignore common routines and LDIR/LDDR and friends (jump back 2)
-      --y = if Dict.member pc Z80Rom.c_COMMON_NAMES || pc == z80.pc - 2 then
-      --      Nothing
-      --    else
-      --      let
-      --        sub_name = pc |> subName
-      --      in
-      --        if sub_name|> String.startsWith "CHAN-OPEN" then
-      --          debug_log sub_name (z80.flags.a |> toHexString2) Nothing
-      --        else if sub_name |> String.startsWith "PRINT-OUT " then
-      --           debug_log sub_name (z80.flags.a |> toHexString2) Nothing
-      --        else if sub_name |> String.startsWith "PO-CHAR " then
-      --           debug_log sub_name ("DE " ++ (z80 |> get_de |> toHexString) ++
-      --                                        " HL " ++ (z80.main.hl |> toHexString) ++
-      --                                        " BC " ++ (z80 |> get_bc |> toHexString) ++
-      --                                        " A " ++ (z80.flags.a |> toHexString2)) Nothing
-      --        else if sub_name |> String.startsWith "PR-ALL-3 " then
-      --           debug_log sub_name ("DE " ++ (z80 |> get_de |> toHexString) ++
-      --                                        " HL " ++ (z80.main.hl |> toHexString) ++
-      --                                        " B " ++ (z80.main.b |> toHexString2) ++
-      --                                        " C " ++ (z80.main.c |> toHexString2)) Nothing
-      --      else
-      --          debug_log "set_pc" ("from " ++ (z80.pc |> toHexString) ++
-      --                           " to " ++ (pc |> subName) ++
-      --                           " (sp " ++ (z80.sp |> toHexString) ++ ")") Nothing
-      z80_1 =  { z80 | pc = Bitwise.and pc 0xFFFF }
-   in
-      z80_1
+--set_pc: Int -> Z80 -> Z80
+--set_pc pc z80 =
+--   let
+--      -- ignore common routines and LDIR/LDDR and friends (jump back 2)
+--      --y = if Dict.member pc Z80Rom.c_COMMON_NAMES || pc == z80.pc - 2 then
+--      --      Nothing
+--      --    else
+--      --      let
+--      --        sub_name = pc |> subName
+--      --      in
+--      --        if sub_name|> String.startsWith "CHAN-OPEN" then
+--      --          debug_log sub_name (z80.flags.a |> toHexString2) Nothing
+--      --        else if sub_name |> String.startsWith "PRINT-OUT " then
+--      --           debug_log sub_name (z80.flags.a |> toHexString2) Nothing
+--      --        else if sub_name |> String.startsWith "PO-CHAR " then
+--      --           debug_log sub_name ("DE " ++ (z80 |> get_de |> toHexString) ++
+--      --                                        " HL " ++ (z80.main.hl |> toHexString) ++
+--      --                                        " BC " ++ (z80 |> get_bc |> toHexString) ++
+--      --                                        " A " ++ (z80.flags.a |> toHexString2)) Nothing
+--      --        else if sub_name |> String.startsWith "PR-ALL-3 " then
+--      --           debug_log sub_name ("DE " ++ (z80 |> get_de |> toHexString) ++
+--      --                                        " HL " ++ (z80.main.hl |> toHexString) ++
+--      --                                        " B " ++ (z80.main.b |> toHexString2) ++
+--      --                                        " C " ++ (z80.main.c |> toHexString2)) Nothing
+--      --      else
+--      --          debug_log "set_pc" ("from " ++ (z80.pc |> toHexString) ++
+--      --                           " to " ++ (pc |> subName) ++
+--      --                           " (sp " ++ (z80.sp |> toHexString) ++ ")") Nothing
+--      z80_1 =  { z80 | pc = Bitwise.and pc 0xFFFF }
+--      --z80_1 =  { z80 | pc = Bitwise.and pc 0xFFFF }
+--   in
+--      z80_1
 
 --	void sp(int v) {SP = v;}
 --set_sp: Int -> Z80 -> Z80
@@ -154,7 +155,7 @@ set_pc pc z80 =
 adc_hl: Int -> Z80 -> Z80
 adc_hl b z80 =
    let
-      a = z80.main.hl
+      a = z80.main.hl |> toInt
       r1 = a + b + (and (shiftRightBy8 z80.flags.ff) c_FC)
       ff = shiftRightBy8 r1
       fa = shiftRightBy8 a
@@ -164,7 +165,7 @@ adc_hl b z80 =
       main = z80.main
       flags = z80.flags
    in
-      { z80 | main = { main | hl = r }, flags = { flags | ff = ff, fa = fa, fb = fb, fr = fr} } |> add_cpu_time 7
+      { z80 | main = { main | hl = r |> fromInt }, flags = { flags | ff = ff, fa = fa, fb = fb, fr = fr} } |> add_cpu_time 7
 --
 --
 --	private void rrd()
@@ -443,7 +444,7 @@ execute_0xD0 rom48k z80 =
         --x = debug_log "ret nc" (popped.value |> subName) Nothing
       in
         --{ z80_1 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
-        CpuTimeWithSpAndPc popped.time popped.sp popped.value
+        CpuTimeWithSpAndPc popped.time popped.sp (popped.value |> fromInt)
     else
       --z80_1
       OnlyTime z80_1_time
@@ -505,7 +506,7 @@ execute_0xD6 rom48k z80 =
 
 execute_0xD7: Z80ROM -> Z80 -> Z80Delta
 execute_0xD7 _ z80 =
-    z80 |> rst_delta 0xD7
+    z80 |> rst_delta (ROMAddress (0xD7 - 199))
 
 execute_0xD8: Z80ROM -> Z80 -> Z80Delta
 execute_0xD8 rom48k z80 =
@@ -520,7 +521,7 @@ execute_0xD8 rom48k z80 =
       in
         --debug_log "ret c" (v.value |> subName) ret
         --{ z80_1 | env = { env | time = v.time, sp = v.sp }, pc = v.value }
-        CpuTimeWithSpAndPc v.time v.sp v.value
+        CpuTimeWithSpAndPc v.time v.sp (v.value |> fromInt)
     else
         --z80_1
       OnlyTime z80_1_time
@@ -560,7 +561,7 @@ execute_0xDB rom48k z80 =
 
 execute_0xDF: Z80ROM -> Z80 -> Z80Delta
 execute_0xDF _ z80 =
-    z80 |> rst_delta 0xDF
+    z80 |> rst_delta (ROMAddress (0xDF - 199))
 
 execute_0xF1: Z80ROM -> Z80 -> Z80Delta
 execute_0xF1 rom48k z80 =
@@ -608,7 +609,7 @@ execute_0xF6 rom48k z80 =
 
 execute_0xF7: Z80ROM -> Z80 -> Z80Delta
 execute_0xF7 _ z80 =
-    z80 |> rst_delta 0xF7
+    z80 |> rst_delta (ROMAddress (0xF7 - 199))
 
 execute_0xF8: Z80ROM -> Z80 -> Z80Delta
 execute_0xF8 rom48k z80 =
@@ -621,7 +622,7 @@ execute_0xF8 rom48k z80 =
                        popped = { env | time = z80_1_time } |> pop rom48k
                    in
                        --{ z80 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
-                       CpuTimeWithSpAndPc popped.time popped.sp popped.value
+                       CpuTimeWithSpAndPc popped.time popped.sp (popped.value |> fromInt)
                else
                    --z80
                    OnlyTime z80_1_time
@@ -711,11 +712,12 @@ execute_delta rom48k tmp_z80 =
    let
       interrupts = tmp_z80.interrupts
       c = tmp_z80.env |> m1 tmp_z80.pc (Bitwise.or interrupts.ir (Bitwise.and interrupts.r 0x7F)) rom48k
+      pc_plus_1 = tmp_z80.pc |> increment
    in
    case singleWith8BitParam |> Dict.get c.value of
        Just f ->
            let
-              param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) c.time rom48k tmp_z80.env.ram
+              param = mem pc_plus_1 c.time rom48k tmp_z80.env.ram
            in
            -- duplicate of code in imm8 - add 3 to the cpu_time
            Simple8BitDelta (param.time |> addCpuTimeTime 3) (f param.value)
@@ -732,12 +734,12 @@ execute_delta rom48k tmp_z80 =
                                   let
                                      env = tmp_z80.env
                                      old_z80 = { tmp_z80 | env = { env | time = c.time }, interrupts = { interrupts | r = interrupts.r + 1 } }
-                                     new_pc = Bitwise.and (old_z80.pc + 1) 0xFFFF
-                                     z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
+                                     --new_pc = Bitwise.and (old_z80.pc + 1) 0xFFFF
+                                     z80 = { old_z80 | pc = pc_plus_1 } |> add_cpu_time 4
                                      new_time = z80.env.time
                                   in
                                  case z80 |> execute_ltC0 c.value rom48k of
-                                   Just z80delta -> OldDeltaWithChanges (DeltaWithChangesData z80delta interrupts new_pc new_time)
+                                   Just z80delta -> OldDeltaWithChanges (DeltaWithChangesData z80delta interrupts pc_plus_1 new_time)
                                    Nothing ->
                                         --case c.value of
                                             --0xDD -> DeltaWithChanges (group_xy IXIY_IX z80) interrupts new_pc new_time
@@ -748,7 +750,7 @@ execute_delta rom48k tmp_z80 =
                                      let
                                        delta = debugTodo "execute" (c.value |> toHexString) z80  |> Whole
                                      in
-                                       OldDeltaWithChanges (DeltaWithChangesData delta interrupts new_pc new_time)
+                                       OldDeltaWithChanges (DeltaWithChangesData delta interrupts pc_plus_1 new_time)
 -- case 0xD4: call((Ff&0x100)==0); break;
 -- case 0xE0: time++; if((flags()&FP)==0) MP=PC=pop(); break;
 -- case 0xE2: jp((flags()&FP)==0); break;
@@ -812,7 +814,7 @@ group_xy ixiy rom48k old_z80 =
     intr = old_z80.interrupts
     env = old_z80.env
     z80_1 = { old_z80 | env = { env | time = c.time }, interrupts = { intr | r = intr.r + 1 } }
-    new_pc = z80_1 |> inc_pc
+    new_pc = z80_1.pc |> increment
     z80 = { z80_1 | pc = new_pc } |> add_cpu_time 4
 
     ltc0 = z80 |> execute_ltC0_xy c.value ixiy rom48k
@@ -896,9 +898,9 @@ im0: Int -> Z80 -> Z80
 im0 bus z80 =
     if and bus 0x38 == 0xFF then
         let
-            new_pc = bus - 199
+            new_pc = bus - 199 |> fromInt
         in
-            z80 |> set_pc new_pc
+            { z80 | pc = new_pc }
     else
         z80
 
@@ -914,20 +916,20 @@ interrupt bus rom48k z80 =
             --z81 = debug_log "interrupt" "keyboard scan" z80
             new_ints = { ints | iff = 0, halted = False }
             z80_1 = { z80 | interrupts = new_ints }
-            pushed = z80_1.env |> z80_push z80_1.pc
+            pushed = z80_1.env |> z80_push (z80_1.pc |> toInt)
             new_z80 = { z80_1 | env = pushed |> addCpuTimeEnv 6 }
         in
             case ints.iM of
                 0 -> new_z80 |> im0 bus
                 1 -> new_z80 |> im0 bus
-                2 -> { new_z80 | pc = 0x38 }
+                2 -> { new_z80 | pc = ROMAddress 0x38 }
                 3 -> let
                         new_ir = Bitwise.and ints.ir 0xFF00
-                        addr = Bitwise.or new_ir bus
+                        addr = Bitwise.or new_ir bus |> fromInt
                         env_and_pc = z80.env |> mem16 addr rom48k
                         env = z80.env
                       in
-                        { new_z80 | env = { env | time = env_and_pc.time } |> addCpuTimeEnv 6, pc = env_and_pc.value }
+                        { new_z80 | env = { env | time = env_and_pc.time } |> addCpuTimeEnv 6, pc = (env_and_pc.value |> fromInt) }
                 _ -> new_z80
 
 --set_env: Z80Env -> Z80 -> Z80

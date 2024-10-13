@@ -6,12 +6,10 @@ type alias Z80ChangeData =
     {
         cpu_time: Int
         , changes: Z80Change
-        , pc_change: Int
     }
 
 type alias RegisterChangeData =
         {
             cpu_time: Int
             , changes: RegisterChange
-            , pc_change: Int
         }

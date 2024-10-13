@@ -6,10 +6,10 @@
 module Z80Env exposing (..)
 
 import Bitwise exposing (and, or)
-import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimePcAndValue, CpuTimeSpAndValue, addCpuTimeTime, c_NOCONT, cont, cont1, cont_port)
+import CpuTimeCTime exposing (CpuTimeAndAddress, CpuTimeAndValue, CpuTimeCTime, CpuTimePcAndValue, CpuTimeSpAndValue, addCpuTimeTime, c_NOCONT, cont, cont1, cont_port)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (shiftLeftBy8, shiftRightBy8, toHexString2)
-import Z80Address exposing (Z80Address(..), decrement, increment, increment2)
+import Z80Address exposing (Z80Address(..), decrement, fromInt, increment, increment2, toInt)
 import Z80Debug exposing (debugLog)
 import Z80Ram exposing (Z80Ram, c_FRSTART, getRamValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
@@ -121,7 +121,7 @@ m1 tmp_addr ir rom48k z80env =
         --value =
         --    if addr >= 0 then
         --        z80env.ram |> getRamValue addr
-        --
+        --toInt
         --    else
         --        -- not implementing IF1 switching for now
         --        rom48k |> getROMValue tmp_addr

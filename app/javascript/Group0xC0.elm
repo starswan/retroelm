@@ -3,6 +3,7 @@ module Group0xC0 exposing (..)
 import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import GroupCB exposing (group_cb, group_xy_cb)
+import Z80Address exposing (Z80Address(..), fromInt, toInt)
 import Z80Delta exposing (Z80Delta(..), jp, jp_delta, rst_delta)
 import Z80Env exposing (addCpuTimeEnv, pop)
 import Z80Flags exposing (adc, z80_add)
@@ -55,7 +56,7 @@ execute_0xC0 rom48k z80 =
             --   z80_2 = { z80_1 | env = { env | time = result.time, sp = result.sp } }
         in
         --   { z80_2 | pc = result.value }
-        CpuTimeWithSpAndPc result.time result.sp result.value
+        CpuTimeWithSpAndPc result.time result.sp (result.value |> fromInt)
 
     else
         --z80_1
@@ -100,7 +101,7 @@ execute_0xC3 rom48k z80 =
         --y = debug_log "jp" (v.value |> subName) Nothing
     in
     --z80_1 |> set_pc v.value
-    CpuTimeWithPc v.time v.value
+    CpuTimeWithPc v.time (v.value |> fromInt)
 
 
 execute_0xC4 : Z80ROM -> Z80 -> Z80Delta
@@ -151,7 +152,7 @@ execute_0xC7 _ z80 =
     --   result = z80 |> rst 0xC7
     --in
     --  EnvWithPc result.env result.pc
-    z80 |> rst_delta 0xC7
+    z80 |> rst_delta (ROMAddress (0xC7 - 199) )
 
 
 retz_0xC8 : Z80ROM -> Z80 -> Z80Delta
@@ -170,7 +171,7 @@ retz_0xC8 rom48k z80 =
                 { env | time = z80_1_time } |> pop rom48k
         in
         --{ z80_1 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
-        CpuTimeWithSpAndPc popped.time popped.sp popped.value
+        CpuTimeWithSpAndPc popped.time popped.sp (popped.value |> fromInt)
 
     else
         --z80_1
@@ -188,7 +189,7 @@ execute_0xC9 rom48k z80 =
         --env = z80.env
     in
     --{ z80 | env = { env | time = a.time, sp = a.sp }, pc = a.value }
-    CpuTimeWithSpAndPc a.time a.sp a.value
+    CpuTimeWithSpAndPc a.time a.sp (a.value |> fromInt)
 
 
 execute_0xCA : Z80ROM -> Z80 -> Z80Delta
@@ -239,7 +240,7 @@ call_0xCD rom48k z80 =
     in
     --{ z80_1 | env = pushed, pc = v.value }
     --EnvWithPc pushed v.value
-    PushWithCpuTimeAndPc v.pc v.time v.value
+    PushWithCpuTimeAndPc (v.pc |> toInt) v.time (v.value |> fromInt)
 
 
 execute_0xCE : Z80ROM -> Z80 -> Z80Delta
@@ -264,4 +265,4 @@ execute_0xCF _ z80 =
     --   result = z80 |> rst 0xCF
     --in
     --   EnvWithPc result.env result.pc
-    z80 |> rst_delta 0xCF
+    z80 |> rst_delta (ROMAddress (0xCF - 199))

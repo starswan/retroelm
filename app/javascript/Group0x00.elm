@@ -4,6 +4,7 @@ import Bitwise
 import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import Utils exposing (shiftLeftBy8)
+import Z80Address exposing (Z80Address(..), fromInt, toInt)
 import Z80Delta exposing (Z80Delta(..), delta_noop)
 import Z80Env exposing (mem)
 import Z80Flags exposing (add16)
@@ -44,15 +45,18 @@ execute_0x01 rom48k z80 =
 
 
 execute_0x02 : Z80ROM -> Z80 -> Z80Delta
-execute_0x02 rom48k z80 =
+execute_0x02 _ z80 =
     -- case 0x02: MP=(v=B<<8|C)+1&0xFF|A<<8; env.mem(v,A); time+=3; break;
     let
         addr =
-            shiftLeftBy8 z80.main.b + z80.main.c
+            shiftLeftBy8 z80.main.b + z80.main.c |> fromInt
     in
     --{ z80 | env = z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3 }
     --OnlyEnv (z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3)
-    SetMem8WithTime addr z80.flags.a 3
+    case addr of
+      ROMAddress _ -> NoChange
+      RAMAddress z80WriteableAddress ->
+        SetMem8WithTime z80WriteableAddress z80.flags.a 3
 
 
 ex_af : Z80ROM -> Z80 -> Z80Delta
@@ -67,13 +71,13 @@ execute_0x09 ixiyhl _ z80 =
     --case 0x09: xy=add16(xy,B<<8|C); break;
     let
         xy =
-            get_xy ixiyhl z80.main
+            get_xy ixiyhl z80.main |> toInt
 
         new_xy =
             add16 xy (get_bc z80) z80.flags
 
         new_z80 =
-            set_xy new_xy.value ixiyhl z80.main
+            set_xy (new_xy.value |> fromInt) ixiyhl z80.main
     in
     --Whole ({ z80 | main = new_z80, flags = new_xy.flags } |> add_cpu_time new_xy.time)
     FlagsWithPCMainAndTime new_xy.flags z80.pc new_z80 new_xy.time
@@ -90,7 +94,7 @@ execute_0x0A rom48k z80 =
             z80.main
 
         v =
-            Bitwise.or (shiftLeftBy8 z80_main.b) z80_main.c
+            Bitwise.or (shiftLeftBy8 z80_main.b) z80_main.c |> fromInt
 
         new_a =
             mem v z80.env.time rom48k z80.env.ram

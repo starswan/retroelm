@@ -2,6 +2,7 @@ module Group0xE0 exposing (..)
 
 import Dict exposing (Dict)
 import GroupED exposing (group_ed)
+import Z80Address exposing (Z80Address(..), fromInt, toInt)
 import Z80Delta exposing (Z80Delta(..), rst_delta)
 import Z80Env exposing (addCpuTimeEnv, pop, z80_push)
 import Z80Flags exposing (z80_and, z80_xor)
@@ -46,13 +47,13 @@ execute_0xE1 ixiyhl rom48k z80 =
     in
     case ixiyhl of
         IX ->
-            MainRegsWithSpPcAndTime { main | ix = hl.value } hl.sp z80.pc hl.time
+            MainRegsWithSpPcAndTime { main | ix = hl.value |> fromInt } hl.sp z80.pc hl.time
 
         IY ->
-            MainRegsWithSpPcAndTime { main | iy = hl.value } hl.sp z80.pc hl.time
+            MainRegsWithSpPcAndTime { main | iy = hl.value |> fromInt } hl.sp z80.pc hl.time
 
         HL ->
-            MainRegsWithSpAndTime { main | hl = hl.value } hl.sp hl.time
+            MainRegsWithSpAndTime { main | hl = hl.value |> fromInt } hl.sp hl.time
 
 
 execute_0xE3 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
@@ -70,7 +71,7 @@ execute_0xE3 ixiyhl rom48k z80 =
             { z80 | env = { env | time = hl.time, sp = hl.sp } }
 
         pushed =
-            z80_1.env |> z80_push (z80_1.main |> get_xy ixiyhl) |> addCpuTimeEnv 2
+            z80_1.env |> z80_push (z80_1.main |> get_xy ixiyhl |> toInt) |> addCpuTimeEnv 2
 
         --z80_2 = { z80_1 | env = pushed }
         main =
@@ -81,13 +82,13 @@ execute_0xE3 ixiyhl rom48k z80 =
         --IY -> { z80_2 | main = { main | iy = v.value } }
         --HL -> { z80_2 | main = { main | hl = v.value } }
         IX ->
-            MainRegsWithEnvAndPc { main | ix = hl.value } pushed z80.pc
+            MainRegsWithEnvAndPc { main | ix = hl.value |> fromInt } pushed z80.pc
 
         IY ->
-            MainRegsWithEnvAndPc { main | iy = hl.value } pushed z80.pc
+            MainRegsWithEnvAndPc { main | iy = hl.value |> fromInt} pushed z80.pc
 
         HL ->
-            MainRegsWithEnv { main | hl = hl.value } pushed
+            MainRegsWithEnv { main | hl = hl.value |> fromInt} pushed
 
 
 execute_0xE5 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
@@ -96,7 +97,7 @@ execute_0xE5 ixiyhl _ z80 =
     -- case 0xE5: push(xy); break;
     let
         pushed =
-            z80.env |> z80_push (z80.main |> get_xy ixiyhl)
+            z80.env |> z80_push (z80.main |> get_xy ixiyhl |> toInt)
     in
     --{ z80 | env = pushed }
     EnvWithPc pushed z80.pc
@@ -124,7 +125,7 @@ execute_0xE6 rom48k z80 =
 
 execute_0xE7 : Z80ROM -> Z80 -> Z80Delta
 execute_0xE7 _ z80 =
-    z80 |> rst_delta 0xE7
+    z80 |> rst_delta (ROMAddress (0xE7 - 199))
 
 
 execute_0xE9 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
@@ -152,14 +153,14 @@ execute_0xEB _ z80 =
             z80.main.hl
 
         de =
-            z80.main |> get_de
+            z80.main |> get_de  |> fromInt
 
         --x = debug_log "EX DE,HL" ("DE " ++ (v |> toHexString) ++ " HL " ++ (de |> toHexString)) Nothing
         main =
-            z80.main |> set_de_main v
+            z80.main |> set_de_main (v |> toInt)
     in
     --z80 |> set_de v |> set_hl de
-    MainRegs { main | hl = de }
+    MainRegs { main | hl = de}
 
 
 execute_0xEE : Z80ROM -> Z80 -> Z80Delta
@@ -180,4 +181,4 @@ execute_0xEE rom48k z80 =
 
 execute_0xEF : Z80ROM -> Z80 -> Z80Delta
 execute_0xEF _ z80 =
-    z80 |> rst_delta 0xEF
+    z80 |> rst_delta (ROMAddress (0xEF - 199))

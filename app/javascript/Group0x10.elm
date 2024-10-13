@@ -4,6 +4,7 @@ import Bitwise
 import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import Utils exposing (byte, shiftLeftBy8, shiftRightBy8)
+import Z80Address exposing (addIndexOffset, fromInt, increment, toInt)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (addCpuTimeEnv, mem)
 import Z80Flags exposing (add16, dec, inc, rot)
@@ -49,8 +50,8 @@ execute_0x10 rom48k z80 =
         mem_value =
              mem v z80_1.env.time rom48k z80_1.env.ram
 
-        d =
-            byte mem_value.value
+        --d =
+        --    byte mem_value.value
 
         env_0 =
             z80.env
@@ -61,15 +62,17 @@ execute_0x10 rom48k z80 =
         b =
             Bitwise.and (z80_2.main.b - 1) 0xFF
 
-        ( z80_3, v3 ) =
+        ( new_time, v3 ) =
             if b /= 0 then
-                ( z80_2.env.time |> addCpuTimeTime 5, v + 1 + d )
+                --( z80_2.env.time |> addCpuTimeTime 5, v + 1 + d )
+                ( z80_2.env.time |> addCpuTimeTime 5, v |> increment |> addIndexOffset mem_value.value)
 
             else
-                ( z80_2.env.time, v + 1 )
+                --( z80_2.env.time, v + 1 )
+                ( z80_2.env.time, v |> increment )
     in
     --{ z80_3 | main = { z80_main | b = b } } |> set_pc v3
-    MainRegsWithPcAndCpuTime { z80_main | b = b } v3 z80_3
+    MainRegsWithPcAndCpuTime { z80_main | b = b } v3 new_time
 
 
 execute_0x11 : Z80ROM -> Z80 -> Z80Delta
@@ -90,10 +93,14 @@ execute_0x12 rom48k z80 =
     -- case 0x12: MP=(v=D<<8|E)+1&0xFF|A<<8; env.mem(v,A); time+=3; break;
     let
         addr =
-            shiftLeftBy8 z80.main.d + z80.main.e
+            shiftLeftBy8 z80.main.d + z80.main.e |> fromInt
     in
+    case addr of
+      Z80Address.ROMAddress int ->
+        NoChange
+      Z80Address.RAMAddress z80WriteableAddress ->
+        SetMem8WithTime z80WriteableAddress z80.flags.a 3
     --z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3 |> OnlyEnv
-    SetMem8WithTime addr z80.flags.a 3
 
 
 execute_0x16 : Z80ROM -> Z80 -> Z80Delta
@@ -122,7 +129,8 @@ execute_0x18 rom48k z80 =
             mem z80.pc z80.env.time rom48k z80.env.ram
 
         pc_val =
-            z80.pc + 1 + byte mem_value.value
+            --z80.pc + 1 + byte mem_value.value
+            z80.pc |> increment |> addIndexOffset mem_value.value
 
         --pc_val = ProgramCounter dest
         --x = if (dest |> subName |> (String.startsWith "CALL-SUB")) then
@@ -148,13 +156,13 @@ execute_0x19 ixiyhl rom48k z80 =
     -- case 0x19: xy=add16(xy,D<<8|E); break;
     let
         xy =
-            get_xy ixiyhl z80.main
+            get_xy ixiyhl z80.main |> toInt
 
         new_xy =
             add16 xy (get_de z80.main) z80.flags
 
         new_z80 =
-            set_xy new_xy.value ixiyhl z80.main
+            set_xy (new_xy.value |> fromInt) ixiyhl z80.main
     in
     --{ z80 | main = new_z80, flags = new_xy.flags} |> add_cpu_time new_xy.time
     FlagsWithPCMainAndTime new_xy.flags z80.pc new_z80 new_xy.time
@@ -168,7 +176,7 @@ execute_0x1A rom48k z80 =
             z80.main
 
         addr =
-            Bitwise.or (shiftLeftBy8 z80_main.d) z80_main.e
+            Bitwise.or (shiftLeftBy8 z80_main.d) z80_main.e |> fromInt
 
         new_a =
             mem addr z80.env.time rom48k z80.env.ram

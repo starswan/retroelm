@@ -4,6 +4,7 @@ import Bitwise
 import CpuTimeCTime exposing (CpuTimeAndPc, addCpuTimeTime)
 import Dict exposing (Dict)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8)
+import Z80Address exposing (decrement, fromInt, increment, lower8Bits, toInt, top8Bits, top8BitsWithoutShift)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (mem16)
 import Z80Flags exposing (add16, cpl, daa, dec, inc)
@@ -76,7 +77,7 @@ execute_0x21 ixiyhl rom48k z80 =
         --z80_1 = { z80 | env = new_xy.env, pc = new_xy.pc }
         --x = debug_log ("LD " ++ (ixiyhl |> toString) ++ "," ++ (new_xy.value |> toHexString)) ("pc = " ++ (z80.pc |> toHexString)) Nothing
         main =
-            z80.main |> set_xy new_xy.value ixiyhl
+            z80.main |> set_xy (new_xy.value |> fromInt) ixiyhl
     in
     --{ z80_1 | main = main }
     MainRegsWithPcAndCpuTime main new_xy.pc new_xy.time
@@ -95,7 +96,11 @@ execute_0x22 rom48k z80 =
         --x = debug_log "LD nn, HL" ((z80.pc |> toHexString) ++ " addr " ++ (v.value |> toHexString) ++ " " ++ (new_z80.main.hl |> toHexString)) env
     in
     --EnvWithPc env v.pc
-    SetMem16WithTimeAndPc v.value z80.main.hl 6 v.pc
+    case (v.value |> fromInt) of
+      Z80Address.ROMAddress int ->
+        NoChange
+      Z80Address.RAMAddress z80WriteableAddress ->
+        SetMem16WithTimeAndPc z80WriteableAddress (z80.main.hl |> toInt) 6 v.pc
 
 
 execute_0x23 : IXIY -> Z80ROM -> Z80 -> Z80Delta
@@ -111,7 +116,8 @@ execute_0x23 ixiyhl rom48k z80 =
         --    else
         --        Nothing
         main =
-            z80.main |> set_xy_ixiy (char (xy + 1)) ixiyhl
+            --z80.main |> set_xy_ixiy (char (xy + 1)) ixiyhl
+            z80.main |> set_xy_ixiy (xy |> increment) ixiyhl
     in
     --{ z80 | main = main } |> add_cpu_time 2
     MainRegsWithPcAndCpuTime main z80.pc (z80.env.time |> addCpuTimeTime 2)
@@ -126,11 +132,11 @@ execute_0x24 ixiyhl rom48k z80 =
             get_xy_ixiy ixiyhl z80.main
 
         value =
-            inc (shiftRightBy8 xy) z80.flags
+            inc (top8Bits xy) z80.flags
 
         --z80_1 = { z80 | flags = value.flags }
         new_xy =
-            Bitwise.or (Bitwise.and xy 0xFF) (shiftLeftBy8 value.value)
+            Bitwise.or (lower8Bits xy) (shiftLeftBy8 value.value) |> fromInt
 
         main =
             set_xy_ixiy new_xy ixiyhl z80.main
@@ -148,13 +154,13 @@ execute_0x25 ixiyhl rom48k z80 =
             get_xy_ixiy ixiyhl z80.main
 
         value =
-            dec (shiftRightBy8 xy) z80.flags
+            dec (top8Bits xy) z80.flags
 
         z80_1 =
             { z80 | flags = value.flags }
 
         new_xy =
-            Bitwise.or (Bitwise.and xy 0xFF) (shiftLeftBy8 value.value)
+            Bitwise.or (lower8Bits xy) (shiftLeftBy8 value.value) |> fromInt
 
         main =
             set_xy_ixiy new_xy ixiyhl z80_1.main
@@ -176,7 +182,7 @@ execute_0x26 ixiyhl rom48k z80 =
             get_xy ixiyhl z80.main
 
         new_xy =
-            Bitwise.or (Bitwise.and xy 0xFF) (shiftLeftBy8 value.value)
+            Bitwise.or (lower8Bits xy) (shiftLeftBy8 value.value) |> fromInt
 
         main =
             set_xy new_xy ixiyhl z80.main
@@ -211,13 +217,13 @@ add_hl_hl ixiyhl rom48k z80 =
     -- case 0x29: xy=add16(xy,xy); break;
     let
         xy =
-            get_xy_ixiy ixiyhl z80.main
+            get_xy_ixiy ixiyhl z80.main |> toInt
 
         new_xy =
             add16 xy xy z80.flags
 
         new_z80 =
-            set_xy_ixiy new_xy.value ixiyhl z80.main
+            set_xy_ixiy (new_xy.value |> fromInt) ixiyhl z80.main
     in
     --{ z80 | main = new_z80, flags = new_xy.flags } |> add_cpu_time new_xy.time
     FlagsWithPCMainAndTime new_xy.flags z80.pc new_z80 new_xy.time
@@ -233,11 +239,11 @@ execute_0x2A ixiyhl rom48k z80 =
 
         --z80_1 = { z80 | pc = v.pc }
         new_xy =
-            z80.env |> mem16 v.value rom48k
+            z80.env |> mem16 (v.value |> fromInt) rom48k
 
         --z80_2 = { z80_1 | env = new_xy.env }
         main =
-            z80.main |> set_xy new_xy.value ixiyhl
+            z80.main |> set_xy (new_xy.value |> fromInt) ixiyhl
     in
     --{ z80_2 | main = main } |> add_cpu_time 6
     MainRegsWithPcAndCpuTime main v.pc (new_xy.time |> addCpuTimeTime 6)
@@ -253,7 +259,8 @@ execute_0x2B ixiyhl rom48k z80 =
             get_xy_ixiy ixiyhl z80.main
 
         new_xy =
-            Bitwise.and (xy - 1) 0xFFFF
+            --Bitwise.and (xy - 1) 0xFFFF
+            xy |> decrement
 
         new_z80 =
             set_xy_ixiy new_xy ixiyhl z80.main
@@ -275,14 +282,16 @@ execute_0x2C ixiyhl rom48k z80 =
             get_xy_ixiy ixiyhl z80.main
 
         h =
-            Bitwise.and xy 0xFF00
+            --Bitwise.and xy 0xFF00
+            top8BitsWithoutShift xy
 
         l =
-            inc (Bitwise.and xy 0xFF) z80_flags
+            --inc (Bitwise.and xy 0xFF) z80_flags
+            inc (lower8Bits xy) z80_flags
 
         --z80_1 = { z80 | flags = l.flags }
         new_xy =
-            Bitwise.or h l.value
+            Bitwise.or h l.value |> fromInt
 
         main =
             set_xy_ixiy new_xy ixiyhl z80.main
@@ -304,14 +313,16 @@ execute_0x2D ixiyhl rom48k z80 =
             get_xy_ixiy ixiyhl z80.main
 
         h =
-            Bitwise.and xy 0xFF00
+            --Bitwise.and xy 0xFF00
+            top8BitsWithoutShift xy
 
         l =
-            dec (Bitwise.and xy 0xFF) z80_flags
+            --dec (Bitwise.and xy 0xFF) z80_flags
+            dec (lower8Bits xy) z80_flags
 
         --new_z80 = { z80 | flags = l.flags }
         new_xy =
-            Bitwise.or h l.value
+            Bitwise.or h l.value |> fromInt
 
         main =
             set_xy_ixiy new_xy ixiyhl z80.main
@@ -329,14 +340,15 @@ execute_0x2E ixiyhl rom48k z80 =
             get_xy ixiyhl z80.main
 
         h =
-            Bitwise.and xy 0xFF00
+            --Bitwise.and xy 0xFF00
+            top8BitsWithoutShift xy
 
         l =
             imm8 z80.pc z80.env.time rom48k z80.env.ram
 
         --new_z80 = { z80 | env = l.env, pc = l.pc }
         new_xy =
-            Bitwise.or h l.value
+            Bitwise.or h l.value |> fromInt
 
         main =
             set_xy new_xy ixiyhl z80.main

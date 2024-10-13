@@ -3,7 +3,7 @@ module Z80Types exposing (..)
 import Bitwise exposing (complement)
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndAddress, CpuTimePcAndValue, addCpuTimeTime)
 import Utils exposing (byte, shiftLeftBy8, shiftRightBy8)
-import Z80Address exposing (Z80Address(..), addIndexOffset, fromInt, increment, increment2, toInt)
+import Z80Address exposing (Z80Address(..), addIndexOffset, decrement2, fromInt, increment, increment2, toInt)
 import Z80Env exposing (Z80Env, Z80EnvWithPC, addCpuTimeEnv, mem, mem16, setMem, z80_push)
 import Z80Flags exposing (FlagRegisters, flags)
 import Z80Ram exposing (Z80Ram)
@@ -15,7 +15,7 @@ type alias MainRegisters =
     , c : Int
     , d : Int
     , e : Int
-    , hl : Int
+    , hl : Z80Address
     }
 
 
@@ -63,7 +63,7 @@ type alias IntWithFlagsTimeAndPC =
     { value : Int
     , flags : FlagRegisters
     , time : CpuTimeCTime
-    , pc : Int
+    , pc : Z80Address
     }
 
 
@@ -421,9 +421,10 @@ get_de z80 =
     z80.d |> shiftLeftBy8 |> Bitwise.or z80.e
 
 
---dec_pc2 : Z80 -> Z80
---dec_pc2 z80 =
---    { z80 | pc = Bitwise.and (z80.pc - 2) 0xFFFF }
+dec_pc2 : Z80 -> Z80
+dec_pc2 z80 =
+    --{ z80 | pc = Bitwise.and (z80.pc - 2) 0xFFFF }
+    { z80 | pc = z80.pc |> decrement2 }
 
 
 

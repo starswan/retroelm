@@ -4,6 +4,7 @@ import Bitwise
 import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import Utils exposing (byte, char)
+import Z80Address exposing (Z80Address(..), addIndexOffset, decrement, fromInt, increment, increment2, toInt)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (addCpuTimeEnv, mem, setMem)
 import Z80Flags exposing (add16, dec, inc, scf_ccf)
@@ -63,7 +64,7 @@ execute_0x31 rom48k z80 =
             z80 |> imm16 rom48k
     in
     --{ z80 | env = v.env, pc = v.pc, sp = v.value }
-    CpuTimeWithSpAndPc v.time v.value v.pc
+    CpuTimeWithSpAndPc v.time (v.value |> fromInt) v.pc
 
 
 execute_0x32 : Z80ROM -> Z80 -> Z80Delta
@@ -75,19 +76,20 @@ execute_0x32 rom48k z80 =
 
         --new_z80 = { z80 | pc = v.pc }
     in
-    EnvWithPc (z80.env |> setMem v.value z80.flags.a |> addCpuTimeEnv 3) v.pc
-
-
-
---{ new_z80 | env = v.env |> set_mem v.value new_z80.flags.a } |> add_cpu_time 3
-
+    --{ new_z80 | env = v.env |> set_mem v.value new_z80.flags.a } |> add_cpu_time 3
+    case v.value |> fromInt of
+      ROMAddress int ->
+        OnlyPc v.pc
+      RAMAddress ramAddress ->
+        EnvWithPc (z80.env |> setMem ramAddress z80.flags.a |> addCpuTimeEnv 3) v.pc
 
 execute_0x33 : Z80ROM -> Z80 -> Z80Delta
 execute_0x33 rom48k z80 =
     -- case 0x33: SP=(char)(SP+1); time+=2; break;
     let
         new_sp =
-            Bitwise.and (z80.env.sp + 1) 0xFFFF
+            --Bitwise.and (z80.env.sp + 1) 0xFFFF
+            z80.env.sp |> increment
     in
     SpAndCpuTime new_sp 2
 
@@ -114,7 +116,11 @@ execute_0x34 ixiyhl rom48k z80 =
             z80.flags |> inc cpuTimeAndValue.value
 
         new_env =
-            { env_1 | time = cpuTimeAndValue.time |> addCpuTimeTime 4 } |> setMem cpuTimePcAndValue.value valueWithFlags.value
+          case cpuTimePcAndValue.value of
+            ROMAddress int ->
+              { env_1 | time = cpuTimeAndValue.time |> addCpuTimeTime 4 }
+            RAMAddress ramAdddress ->
+              { env_1 | time = cpuTimeAndValue.time |> addCpuTimeTime 4 } |> setMem ramAdddress valueWithFlags.value
     in
     --{ z80_1 | env = new_env, flags = v.flags } |> add_cpu_time 3
     EnvWithFlagsAndPc (new_env |> addCpuTimeEnv 3) valueWithFlags.flags cpuTimePcAndValue.pc
@@ -139,8 +145,11 @@ execute_0x35 ixiyhl rom48k z80 =
             z80.flags |> dec value.value
 
         new_env =
-            { env_1 | time = value.time } |> addCpuTimeEnv 4 |> setMem a.value v.value
-
+          case a.value of
+            ROMAddress int ->
+              { env_1 | time = value.time } |> addCpuTimeEnv 4
+            RAMAddress z80WriteableAddress ->
+              { env_1 | time = value.time } |> addCpuTimeEnv 4 |> setMem z80WriteableAddress v.value
         env_2 =
             new_env |> addCpuTimeEnv 3
     in
@@ -166,8 +175,11 @@ execute_0x36 ixiyhl rom48k z80 =
                 new_z80 =
                     { z80 | env = { env_1 | time = v.time }, pc = v.pc }
 
-                new_env =
-                    setMem z80.main.hl v.value new_z80.env
+                new_env = case z80.main.hl of
+                  ROMAddress int ->
+                    new_z80.env
+                  RAMAddress z80WriteableAddress ->
+                    new_z80.env |> setMem z80WriteableAddress v.value
             in
             --{ new_z80 | env = new_env }
             EnvWithPc new_env v.pc
@@ -184,23 +196,29 @@ execute_0x36 ixiyhl rom48k z80 =
                     z80.env
 
                 a =
-                    char (xy + byte mempc.value)
+                    --char (xy + byte mempc.value)
+                    xy |> addIndexOffset mempc.value
 
                 --z80_1 = { z80 | env = mempc.env } |> add_cpu_time 3
                 --z80_1_env =
                 --    { env_1 | time = mempc.time } |> addCpuTimeEnv 3
 
                 v =
-                    mem (char (z80.pc + 1)) (mempc.time |> addCpuTimeTime 3) rom48k env_1.ram
+                    --mem (char (z80.pc + 1)) (mempc.time |> addCpuTimeTime 3) rom48k env_1.ram
+                    mem (z80.pc |> increment) (mempc.time |> addCpuTimeTime 3) rom48k env_1.ram
 
                 z80_2 =
                     { env_1 | time = (v.time |> addCpuTimeTime 5) }
 
-                x =
-                    setMem a v.value z80_2
+                x = case a of
+                  ROMAddress int ->
+                    z80_2
+                  RAMAddress z80WriteableAddress ->
+                    z80_2 |> setMem z80WriteableAddress v.value
 
                 new_pc =
-                    Bitwise.and (z80.pc + 2) 0xFFFF
+                    --Bitwise.and (z80.pc + 2) 0xFFFF
+                    z80.pc |> increment2
             in
             --{ z80_2 | env = x, pc = new_pc } |> add_cpu_time 3
             EnvWithPc (x |> addCpuTimeEnv 3) new_pc
@@ -232,13 +250,13 @@ execute_0x39 ixiyhl rom48k z80 =
     --case 0x39: xy=add16(xy,SP); break;
     let
         xy =
-            get_xy ixiyhl z80.main
+            get_xy ixiyhl z80.main |> toInt
 
         new_xy =
-            add16 xy z80.env.sp z80.flags
+            add16 xy (z80.env.sp |> toInt) z80.flags
 
         new_z80 =
-            set_xy new_xy.value ixiyhl z80.main
+            set_xy (new_xy.value |> fromInt) ixiyhl z80.main
     in
     --{ z80 | main = new_z80, flags = new_xy.flags }  |> add_cpu_time new_xy.time
     FlagsWithPCMainAndTime new_xy.flags z80.pc new_z80 new_xy.time
@@ -255,7 +273,7 @@ execute_0x3A rom48k z80 =
             z80 |> imm16 rom48k
 
         mem_value =
-            mem v.value z80.env.time rom48k z80.env.ram
+            mem (v.value |> fromInt) z80.env.time rom48k z80.env.ram
     in
     CpuTimeWithFlagsAndPc (mem_value.time |> addCpuTimeTime 3) { z80_flags | a = mem_value.value } v.pc
 
@@ -265,7 +283,8 @@ execute_0x3B rom48k z80 =
     -- case 0x3B: SP=(char)(SP-1); time+=2; break;
     let
         new_sp =
-            Bitwise.and (z80.env.sp - 1) 0xFFFF
+            --Bitwise.and (z80.env.sp - 1) 0xFFFF
+            z80.env.sp |> decrement
     in
     SpAndCpuTime new_sp 2
 
