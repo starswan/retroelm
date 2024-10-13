@@ -26,6 +26,7 @@ import SimpleFlagOps exposing (singleByteFlags)
 import SimpleSingleByte exposing (singleByteMainAndFlagRegisters, singleByteMainRegs)
 import SingleWith8BitParameter exposing (singleWith8BitParam)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString)
+import Z80Address exposing (Z80Address(..))
 import Z80Debug exposing (debugTodo)
 import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..), jp_delta, rst_delta)
 import Z80Env exposing (Z80Env, addCpuTimeEnv, m1, mem, mem16, out, pop, z80_in, z80_push, z80env_constructor)
@@ -403,10 +404,11 @@ lt40_dict_lite = Dict.fromList
 -- case 0xEF:
 -- case 0xF7:
 -- case 0xFF: push(PC); PC=c-199; break;
+-- 199 = 192 + 7 = 0xC7
 
 execute_0xFF: Z80ROM -> Z80 -> Z80
 execute_0xFF _ z80 =
-    z80 |> rst_z80 0xFF
+    z80 |> rst_z80 ((0xFF - 199) |> ROMAddress)
 
 xYDict: Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
 xYDict = miniDict40

@@ -1,5 +1,6 @@
 module RegisterChange exposing (..)
 
+import Z80Address exposing (Z80Address)
 import Z80Types exposing (Z80)
 type RegisterChange
     = ChangeRegisterC Int
@@ -7,7 +8,7 @@ type RegisterChange
     | ChangeRegisterB Int
     | ChangeRegisterDE Int Int
     | ChangeRegisterE Int
-    | ChangeRegisterHL Int
+    | ChangeRegisterHL Z80Address
 
 applyRegisterChange : RegisterChange -> Z80 -> Z80
 applyRegisterChange change z80 =

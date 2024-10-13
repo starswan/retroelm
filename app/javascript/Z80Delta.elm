@@ -1,6 +1,7 @@
 module Z80Delta exposing (..)
 
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, addCpuTimeTime)
+import Z80Address exposing (Z80Address)
 import Z80ChangeData exposing (Z80ChangeData)
 import Z80Env exposing (Z80Env, addCpuTimeEnv, setMem, setMem16, z80_push)
 import Z80Flags exposing (FlagRegisters)
@@ -10,7 +11,7 @@ import Z80Types exposing (IXIYHL(..), InterruptRegisters, MainRegisters, MainWit
 
 type Z80Delta
     = Whole Z80
-    | MainRegsWithPcAndCpuTime MainWithIndexRegisters Int CpuTimeCTime
+    | MainRegsWithPcAndCpuTime MainWithIndexRegisters Z80Address CpuTimeCTime
     | MainRegsAndCpuTime MainWithIndexRegisters Int
     | FlagsWithMain FlagRegisters MainWithIndexRegisters
     | FlagsWithPCMainAndTime FlagRegisters Int MainWithIndexRegisters Int
@@ -24,7 +25,7 @@ type Z80Delta
     | CpuTimeWithFlagsAndPc CpuTimeCTime FlagRegisters Int
     | MainRegsWithEnv MainWithIndexRegisters Z80Env
     | SpAndCpuTime Int Int
-    | EnvWithPc Z80Env Int
+    | EnvWithPc Z80Env Z80Address
     | CpuTimeWithPc CpuTimeCTime Int
     | CpuTimeWithSpAndPc CpuTimeCTime Int Int
     | NoChange
@@ -51,7 +52,7 @@ type Z80Delta
 type alias DeltaWithChangesData =
     { delta : Z80Delta
     , interrupts : InterruptRegisters
-    , pc : Int
+    , pc : Z80Address
     , time : CpuTimeCTime
     }
 
@@ -205,7 +206,7 @@ jp y rom48k z80 =
         CpuTimeAndPc a.time a.pc
 
 
-rst_delta : Int -> Z80 -> Z80Delta
+rst_delta : Z80Address -> Z80 -> Z80Delta
 rst_delta value z80 =
     --z80 |> rst_z80 0xC7
     let

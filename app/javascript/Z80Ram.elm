@@ -3,8 +3,8 @@ module Z80Ram exposing (..)
 import Bitwise
 import ScreenStorage exposing (Z80Screen, getScreenValue, setScreenValue)
 import Utils exposing (shiftLeftBy8)
-import Z80Address exposing (Z80WriteableAddress(..))
 import Z80Memory exposing (Z80Memory, getMemValue, setMemValue)
+import Z80WriteableAddress exposing (Z80WriteableAddress(..))
 type alias Z80Ram =
     {
         screen: Z80Screen,

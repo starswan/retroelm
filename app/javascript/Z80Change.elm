@@ -1,5 +1,6 @@
 module Z80Change exposing (..)
 
+import Z80Address exposing (Z80Address)
 import Z80Flags exposing (FlagRegisters)
 import Z80Types exposing (Z80)
 
@@ -9,8 +10,8 @@ type Z80Change
     | FlagsWithCRegister FlagRegisters Int
     | FlagsWithDRegister FlagRegisters Int
     | FlagsWithERegister FlagRegisters Int
-    | HLRegister Int
-    | FlagsWithHLRegister FlagRegisters Int
+    | HLRegister Z80Address
+    | FlagsWithHLRegister FlagRegisters Z80Address
     | Z80RegisterB Int
     | Z80RegisterC Int
 
