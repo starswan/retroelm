@@ -26,7 +26,7 @@ getRamValue: Z80WriteableAddress -> Z80Ram -> Int
 getRamValue addr z80ram =
   case addr of
       Z80ScreenAddress int -> z80ram.screen |> getScreenValue int
-      Z80MemoryAddress int -> z80ram.non_screen |> getValue int
+      Z80MemoryAddress int -> z80ram.non_screen |> getMemValue int
 
 getRam16Value: Int -> Z80Ram -> Int
 getRam16Value addr z80ram =
@@ -50,7 +50,7 @@ setRamValue: Z80WriteableAddress -> Int -> Z80Ram-> Z80Ram
 setRamValue addr value z80ram =
   case addr of
       Z80ScreenAddress int ->{ z80ram | screen = z80ram.screen |> setScreenValue int value }
-      Z80MemoryAddress int -> { z80ram | non_screen = z80ram.non_screen |> Z80Memory.set_value int value }
+      Z80MemoryAddress int -> { z80ram | non_screen = z80ram.non_screen |> setMemValue int value }
    --if addr >= 6912 then
    --   { z80ram | non_screen = z80ram.non_screen |> setMemValue (addr - 6912) value }
    --else

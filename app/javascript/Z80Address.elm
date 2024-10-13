@@ -10,6 +10,18 @@ type Z80WriteableAddress
     = Z80ScreenAddress Int
     | Z80MemoryAddress Int
 
+fromInt: Int -> Z80Address
+fromInt addr =
+    if addr < 0x3FFF then
+        ROMAddress addr
+    else
+        let
+            ramAddr = addr - 0x4000
+        in
+        if ramAddr <= 6912 then
+            RAMAddress (Z80ScreenAddress ramAddr)
+        else
+            RAMAddress (Z80MemoryAddress (ramAddr - 6912))
 
 increment : Z80Address -> Z80Address
 increment z80_address =

@@ -25,7 +25,7 @@ type alias Z80Env =
      ram : Z80Ram
     , keyboard : Keyboard
     , time : CpuTimeCTime
-    , sp : Int
+    , sp : Z80Address
     }
 
 
@@ -47,7 +47,7 @@ type alias ValueWithTime =
 
 
 z80env_constructor =
-    Z80Env Z80Ram.constructor Keyboard.constructor (CpuTimeCTime c_FRSTART 0) 0
+    Z80Env Z80Ram.constructor Keyboard.constructor (CpuTimeCTime c_FRSTART 0) (Z80Address.fromInt 0)
 
 
 --set_rom : Array Int -> Z80Env -> Z80Env
@@ -176,7 +176,7 @@ mem base_addr time rom48k ram =
                             new_z80 =
                                 z80env_time |> cont1 0
                         in
-                        ( new_z80, new_z80.cpu_time + 3, z80env.ram |> getRamValue address )
+                        ( new_z80, new_z80.cpu_time + 3, ram |> getRamValue address )
 
                     Z80MemoryAddress addr ->
                         if addr < 0x4000 - 0x1B00 then
@@ -187,7 +187,7 @@ mem base_addr time rom48k ram =
                             ( new_z80, new_z80.cpu_time + 3, ram |> getRamValue address )
 
                         else
-                            ( z80env_time, c_NOCONT, z80env.ram |> getRamValue address )
+                            ( z80env_time, c_NOCONT, ram |> getRamValue address )
             --if addr >= 0 then
             --    if addr < 0x4000 then
             --        let
@@ -299,7 +299,7 @@ mem16 addr rom48k z80env  =
                                   getRamValue (Z80ScreenAddress (int + 1)) z80env.ram
 
                               z80env_1_time =
-                                      z80env_time |> cont1 0 |> cont1 3 |> add_cpu_time_time 6
+                                      z80env_time |> cont1 0 |> cont1 3 |> addCpuTimeTime 6
                           in
                           CpuTimeAndValue z80env_1_time (Bitwise.or low (shiftLeftBy8 high))
 
@@ -323,7 +323,7 @@ mem16 addr rom48k z80env  =
 
                               z80env_1_time =
                                   if int < 0x4000 - 0x1B00 then
-                                      z80env_time |> cont1 0 |> cont1 3 |> add_cpu_time_time 6
+                                      z80env_time |> cont1 0 |> cont1 3 |> addCpuTimeTime 6
 
                                   else
                                       CpuTimeCTime z80env_time.cpu_time c_NOCONT
@@ -460,7 +460,7 @@ setMem z80_addr value z80env =
             --z80_addr - 0x4000
 
         ( new_env, ctime ) =
-            case addr of
+            case z80_addr of
                 ROMAddress int -> ( z80env, c_NOCONT )
                 RAMAddress address ->
                     case address of
@@ -479,7 +479,7 @@ setMem z80_addr value z80env =
                                 ( z80env, new_time )
 
                             else
-                                ( z80env |> set_ram address value, new_time )
+                                ( z80env |> setRam address value, new_time )
 
                         Z80MemoryAddress int ->
                             if int < 0x4000 - 0x1B00 then
@@ -497,9 +497,9 @@ setMem z80_addr value z80env =
                                     ( z80env, new_time )
 
                                 else
-                                    ( z80env |> set_ram address value, new_time )
+                                    ( z80env |> setRam address value, new_time )
                             else
-                                ( z80env |> set_ram address value, c_NOCONT )
+                                ( z80env |> setRam address value, c_NOCONT )
 
 
             --if addr < 0x4000 then
@@ -580,8 +580,8 @@ setMem16 addr value z80env =
                     case address of
                         Z80ScreenAddress int ->
                             env_1
-                                |> set_mem addr (Bitwise.and value 0xFF)
-                                |> set_mem (addr |> increment) (shiftRightBy8 value)
+                                |> setMem addr (Bitwise.and value 0xFF)
+                                |> setMem (addr |> increment) (shiftRightBy8 value)
 
                         Z80MemoryAddress int ->
                             if addr1 >= 0x4000 then
@@ -592,7 +592,7 @@ setMem16 addr value z80env =
                                     else
                                         env_1
                                             |> setMem addr (Bitwise.and value 0xFF)
-                                            |> setMem (addr + 1) (shiftRightBy8 value)
+                                            |> setMem (addr |> increment) (shiftRightBy8 value)
 
 
         --if addr1 < 0 then
