@@ -14,6 +14,7 @@ import Tapfile exposing (Tapfile)
 import Utils exposing (char)
 import Vector8
 import Z80 exposing (execute, get_ei, interrupt)
+import Z80Address exposing (increment2, toInt)
 import Z80Debug exposing (debugLog)
 import Z80Delta exposing (Z80Delta)
 import Z80Env exposing (mem, mem16, reset_cpu_time)
@@ -1008,7 +1009,7 @@ checkLoad spectrum =
             spectrum.cpu
 
         pc1 =
-            cpu.pc
+            cpu.pc |> toInt
     in
     if (cpu |> get_ei) || pc1 < 0x056B || pc1 > 0x0604 then
         Nothing
@@ -1022,10 +1023,12 @@ checkLoad spectrum =
                 if pc1 >= 0x05E3 then
                     let
                         ( pc2, sp2 ) =
-                            ( cpu.env |> mem16 sp1 spectrum.rom48k |> .value, char sp1 + 2 )
+                            --( cpu.env |> mem16 sp1 spectrum.rom48k |> .value, char sp1 + 2 )
+                            ( cpu.env |> mem16 sp1 spectrum.rom48k |> .value, sp1 |> increment2 )
                     in
                     if pc2 == 0x05E6 then
-                        ( cpu.env |> mem16 sp2 spectrum.rom48k |> .value, char sp2 + 2 )
+                        --( cpu.env |> mem16 sp2 spectrum.rom48k |> .value, char sp2 + 2 )
+                        ( cpu.env |> mem16 sp2 spectrum.rom48k |> .value, sp2 |> increment2 )
 
                     else
                         ( pc2, sp2 )

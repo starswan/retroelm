@@ -46,7 +46,7 @@ incRamAddress address =
                 ROMAddress 0
 
             else
-      + 1          RAMAddress (Z80MemoryAddress (int + 1))
+                RAMAddress (Z80MemoryAddress (int + 1))
 
 increment : Z80Address -> Z80Address
 increment z80_address =

@@ -4,13 +4,16 @@ import Bitwise exposing (shiftRightBy)
 import Expect exposing (Expectation)
 import Test exposing (..)
 import Z80 exposing (execute_instruction)
+import Z80Address exposing (Z80Address(..), fromInt, toInt)
 import Z80Env exposing (mem, mem16, setMem, setMem16)
 import Z80Rom
+import Z80WriteableAddress exposing (Z80WriteableAddress(..))
 
 suite : Test
 suite =
    let
        addr = 30000
+       writeAddr = Z80MemoryAddress (30000 - 0x4000)
        old_z80 = Z80.constructor
        z80 = { old_z80 | pc = addr }
        flags = z80.flags
