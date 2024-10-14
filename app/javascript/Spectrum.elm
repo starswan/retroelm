@@ -7,14 +7,14 @@ module Spectrum exposing (..)
 
 import Array exposing (Array)
 import Bitwise exposing (complement, shiftRightBy)
-import Dict
+import Dict exposing (Dict)
 import Group0x00 exposing (ex_af)
 import Keyboard exposing (KeyEvent, Keyboard, update_keyboard)
 import Tapfile exposing (Tapfile)
 import Utils exposing (char)
 import Vector8
 import Z80 exposing (execute, get_ei, interrupt)
-import Z80Address exposing (increment2, toInt)
+import Z80Address exposing (Z80Address, increment2, toInt)
 import Z80Debug exposing (debugLog)
 import Z80Delta exposing (Z80Delta)
 import Z80Env exposing (mem, mem16, reset_cpu_time)
@@ -1086,208 +1086,209 @@ checkLoad spectrum =
 
 type alias TapeState =
     { p : Int
-    , ix : Int
+    , ix : Z80Address
     , de : Int
     , h : Int
     , l : Int
     , a : Int
     , f : Int
     , rf : Int
-    , data : List Int
+    , data : Dict Z80Address Int
     , break : Bool
     }
 
 
-doLoad : Z80 -> Z80ROM -> Z80Tape -> ( Z80, Bool )
-doLoad cpu z80rom tape =
-    --		if(tape_changed || (keyboard[7]&1)==0) {
-    --			cpu.f(0);
-    --			return false;
-    --		}
-    if (cpu.env.keyboard.keyboard |> Vector8.get Vector8.Index7 |> Bitwise.and 1) == 0 then
-        let
-            flags =
-                set_flags 0 cpu.flags.a
-        in
-        ( { cpu | flags = flags }, False )
-
-    else
-        --		int p = tape_pos;
-        --
-        --		int ix = cpu.ix();
-        --		int de = cpu.de();
-        --		int h, l = cpu.hl(); h = l>>8 & 0xFF; l &= 0xFF;
-        --		int a = cpu.a();
-        --		int f = cpu.f();
-        --		int rf = -1;
-        --		if(p == tape_blk) {
-        --			p += 2;
-        --			if(tape.length < p) {
-        --				if(ready) {
-        --					cpu.pc(cpu.pop());
-        --					cpu.f(cpu.FZ);
-        --				}
-        --				return !ready;
-        --			}
-        --			tape_blk = p + (tape[p-2]&0xFF | tape[p-1]<<8&0xFF00);
-        --			h = 0;
-        --		}
-        let
-            p =
-                tape.tapePos
-
-            h0 =
-                cpu.main |> get_h HL
-
-            h1 =
-                if p.position == 0 then
-                    0
-
-                else
-                    h0
-
-            bool =
-                case tape.tapfiles |> Dict.get p.tapfileNumber of
-                    Just aTapfile ->
-                        let
-                            tapeBlk =
-                                aTapfile.block.dataLength
-
-                            startState =
-                                { p = tape.tapePos.position, ix = cpu.main.ix, de = cpu.main |> get_de, h = h1, l = cpu.main |> get_l HL, a = cpu.flags.a, f = cpu.flags |> flags, rf = -1, data = Dict.empty, break = False }
-
-                            new_data =
-                                --		for(;;) {
-                                aTapfile.block.data
-                                    |> List.foldl
-                                        (\item state ->
-                                            let
-                                                --	if(p == tape_blk) {
-                                                --	   rf = cpu.FZ;
-                                                --		break;
-                                                --	}
-                                                --	if(p == tape.length) {
-                                                --		if(ready)
-                                                --			rf = cpu.FZ;
-                                                --		break;
-                                                --	}
-                                                ( break1, rf1 ) =
-                                                    if not state.break && state.p == tapeBlk then
-                                                        ( True, c_FZ )
-
-                                                    else
-                                                        ( state.break, state.rf )
-
-                                                --	l = tape[p++]&0xFF;
-                                                l =
-                                                    if not break1 then
-                                                        Bitwise.and item 0xFF
-
-                                                    else
-                                                        state.l
-
-                                                --	h ^= l;
-                                                h =
-                                                    if not break1 then
-                                                        Bitwise.xor state.h l
-
-                                                    else
-                                                        state.h
-
-                                                --	if(de == 0) {
-                                                --		a = h;
-                                                --		rf = 0;
-                                                --		if(a<1)
-                                                --			rf = cpu.FC;
-                                                --		break;
-                                                --	}
-                                                ( a, rf2, break ) =
-                                                    if not break1 && state.de == 0 then
-                                                        if h < 1 then
-                                                            ( h, c_FC, True )
-
-                                                        else
-                                                            ( h, 0, True )
-
-                                                    else
-                                                        ( state.a, rf1, break1 )
-
-                                                --		if((f&cpu.FZ)==0) {
-                                                --			a ^= l;
-                                                --			if(a != 0) {
-                                                --				rf = 0;
-                                                --				break;
-                                                --			}
-                                                --			f |= cpu.FZ;
-                                                --			continue;
-                                                --		}
-                                                a_rf_f_break_1 =
-                                                    if not break && Bitwise.and state.f c_FZ == 0 then
-                                                        let
-                                                            new_a =
-                                                                Bitwise.xor a l
-                                                        in
-                                                        if new_a /= 0 then
-                                                            { data = state.data, a = new_a, rf = 0, break = True, f = state.f, continue = False }
-
-                                                        else
-                                                            { data = state.data, a = new_a, rf = rf2, break = break, f = Bitwise.or state.f c_FZ, continue = True }
-
-                                                    else
-                                                        { data = state.data, a = a, rf = rf2, break = break, f = state.f, continue = False }
-
-                                                --		if((f&cpu.FC)!=0)
-                                                --			mem(ix, l);
-                                                --		else {
-                                                --			a = mem(ix) ^ l;
-                                                --			if(a != 0) {
-                                                --				rf = 0;
-                                                --				break;
-                                                --			}
-                                                --		}
-                                                data_a_rf_break =
-                                                    if not a_rf_f_break_1.break && not a_rf_f_break_1.continue then
-                                                        if Bitwise.and a_rf_f_break_1.f c_FC /= 0 then
-                                                            { a_rf_f_break_1 | data = a_rf_f_break_1.data |> Dict.insert state.ix l }
-
-                                                        else
-                                                            let
-                                                                new_a =
-                                                                    Bitwise.xor (mem state.ix cpu.env.time z80rom cpu.env.ram |> .value) l
-                                                            in
-                                                            if new_a /= 0 then
-                                                                { a_rf_f_break_1 | a = new_a, rf = 0, break = True }
-
-                                                            else
-                                                                { a_rf_f_break_1 | a = new_a }
-
-                                                    else
-                                                        a_rf_f_break_1
-
-                                                --			ix = (char)(ix+1);
-                                                --			de--;
-                                                --		}
-                                            in
-                                            { state
-                                                | ix = char (state.ix + 1)
-                                                , de = state.de - 1
-                                                , data = data_a_rf_break.data
-                                                , h = h
-                                                , l = l
-                                                , a = data_a_rf_break.a
-                                                , f = data_a_rf_break.f
-                                                , break = data_a_rf_break.break
-                                                , rf = data_a_rf_break.rf
-                                            }
-                                        )
-                                        startState
-                        in
-                        True
-
-                    Nothing ->
-                        False
-        in
-        ( cpu, bool )
+--doLoad : Z80 -> Z80ROM -> Z80Tape -> ( Z80, Bool )
+--doLoad cpu z80rom tape =
+--    --		if(tape_changed || (keyboard[7]&1)==0) {
+--    --			cpu.f(0);
+--    --			return false;
+--    --		}
+--    if (cpu.env.keyboard.keyboard |> Vector8.get Vector8.Index7 |> Bitwise.and 1) == 0 then
+--        let
+--            flags =
+--                set_flags 0 cpu.flags.a
+--        in
+--        ( { cpu | flags = flags }, False )
+--
+--    else
+--        --		int p = tape_pos;
+--        --
+--        --		int ix = cpu.ix();
+--        --		int de = cpu.de();
+--        --		int h, l = cpu.hl(); h = l>>8 & 0xFF; l &= 0xFF;
+--        --		int a = cpu.a();
+--        --		int f = cpu.f();
+--        --		int rf = -1;
+--        --		if(p == tape_blk) {
+--        --			p += 2;
+--        --			if(tape.length < p) {
+--        --				if(ready) {
+--        --					cpu.pc(cpu.pop());
+--        --					cpu.f(cpu.FZ);
+--        --				}
+--        --				return !ready;
+--        --			}
+--        --			tape_blk = p + (tape[p-2]&0xFF | tape[p-1]<<8&0xFF00);
+--        --			h = 0;
+--        --		}
+--        let
+--            p =
+--                tape.tapePos
+--
+--            h0 =
+--                cpu.main |> get_h HL
+--
+--            h1 =
+--                if p.position == 0 then
+--                    0
+--
+--                else
+--                    h0
+--
+--            bool =
+--                case tape.tapfiles |> Dict.get p.tapfileNumber of
+--                    Just aTapfile ->
+--                        let
+--                            tapeBlk =
+--                                aTapfile.block.dataLength
+--
+--                            startState: TapeState
+--                            startState =
+--                                { p = tape.tapePos.position, ix = cpu.main.ix, de = cpu.main |> get_de, h = h1, l = cpu.main |> get_l HL, a = cpu.flags.a, f = cpu.flags |> flags, rf = -1, data = Dict.empty, break = False }
+--
+--                            new_data =
+--                                --		for(;;) {
+--                                aTapfile.block.data
+--                                    |> List.foldl
+--                                        (\item state ->
+--                                            let
+--                                                --	if(p == tape_blk) {
+--                                                --	   rf = cpu.FZ;
+--                                                --		break;
+--                                                --	}
+--                                                --	if(p == tape.length) {
+--                                                --		if(ready)
+--                                                --			rf = cpu.FZ;
+--                                                --		break;
+--                                                --	}
+--                                                ( break1, rf1 ) =
+--                                                    if not state.break && state.p == tapeBlk then
+--                                                        ( True, c_FZ )
+--
+--                                                    else
+--                                                        ( state.break, state.rf )
+--
+--                                                --	l = tape[p++]&0xFF;
+--                                                l =
+--                                                    if not break1 then
+--                                                        Bitwise.and item 0xFF
+--
+--                                                    else
+--                                                        state.l
+--
+--                                                --	h ^= l;
+--                                                h =
+--                                                    if not break1 then
+--                                                        Bitwise.xor state.h l
+--
+--                                                    else
+--                                                        state.h
+--
+--                                                --	if(de == 0) {
+--                                                --		a = h;
+--                                                --		rf = 0;
+--                                                --		if(a<1)
+--                                                --			rf = cpu.FC;
+--                                                --		break;
+--                                                --	}
+--                                                ( a, rf2, break ) =
+--                                                    if not break1 && state.de == 0 then
+--                                                        if h < 1 then
+--                                                            ( h, c_FC, True )
+--
+--                                                        else
+--                                                            ( h, 0, True )
+--
+--                                                    else
+--                                                        ( state.a, rf1, break1 )
+--
+--                                                --		if((f&cpu.FZ)==0) {
+--                                                --			a ^= l;
+--                                                --			if(a != 0) {
+--                                                --				rf = 0;
+--                                                --				break;
+--                                                --			}
+--                                                --			f |= cpu.FZ;
+--                                                --			continue;
+--                                                --		}
+--                                                a_rf_f_break_1 =
+--                                                    if not break && Bitwise.and state.f c_FZ == 0 then
+--                                                        let
+--                                                            new_a =
+--                                                                Bitwise.xor a l
+--                                                        in
+--                                                        if new_a /= 0 then
+--                                                            { data = state.data, a = new_a, rf = 0, break = True, f = state.f, continue = False }
+--
+--                                                        else
+--                                                            { data = state.data, a = new_a, rf = rf2, break = break, f = Bitwise.or state.f c_FZ, continue = True }
+--
+--                                                    else
+--                                                        { data = state.data, a = a, rf = rf2, break = break, f = state.f, continue = False }
+--
+--                                                --		if((f&cpu.FC)!=0)
+--                                                --			mem(ix, l);
+--                                                --		else {
+--                                                --			a = mem(ix) ^ l;
+--                                                --			if(a != 0) {
+--                                                --				rf = 0;
+--                                                --				break;
+--                                                --			}
+--                                                --		}
+--                                                data_a_rf_break =
+--                                                    if not a_rf_f_break_1.break && not a_rf_f_break_1.continue then
+--                                                        if Bitwise.and a_rf_f_break_1.f c_FC /= 0 then
+--                                                            { a_rf_f_break_1 | data = a_rf_f_break_1.data |> Dict.insert state.ix l }
+--
+--                                                        else
+--                                                            let
+--                                                                new_a =
+--                                                                    Bitwise.xor (mem state.ix cpu.env.time z80rom cpu.env.ram |> .value) l
+--                                                            in
+--                                                            if new_a /= 0 then
+--                                                                { a_rf_f_break_1 | a = new_a, rf = 0, break = True }
+--
+--                                                            else
+--                                                                { a_rf_f_break_1 | a = new_a }
+--
+--                                                    else
+--                                                        a_rf_f_break_1
+--
+--                                                --			ix = (char)(ix+1);
+--                                                --			de--;
+--                                                --		}
+--                                            in
+--                                            { state
+--                                                | ix = char (state.ix + 1)
+--                                                , de = state.de - 1
+--                                                , data = data_a_rf_break.data
+--                                                , h = h
+--                                                , l = l
+--                                                , a = data_a_rf_break.a
+--                                                , f = data_a_rf_break.f
+--                                                , break = data_a_rf_break.break
+--                                                , rf = data_a_rf_break.rf
+--                                            }
+--                                        )
+--                                        startState
+--                        in
+--                        True
+--
+--                    Nothing ->
+--                        False
+--        in
+--        ( cpu, bool )
 
 
 
