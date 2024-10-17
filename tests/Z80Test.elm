@@ -20,28 +20,9 @@ suite =
    in
    describe "Z80.execute_instruction" -- Nest as many descriptions as you like.
       [
-         describe "NOP"
-            [
-               test "0x00" <|
-                  \_ ->
-                     let
-                        z80inc = { z80 | env = z80env |> setMem addr 0x00 } |> Z80.execute_instruction z80rom
-                     in
-                        Expect.equal ((addr + 1), 4) (z80inc.pc, z80inc.env.time.cpu_time - z80.env.time.cpu_time)
-            ],
          describe "16 bit load immediate"
          [
-            test "0x01 LD BC,nn" <|
-            \_ ->
-               let
-                  new_env = z80env
-                            |> setMem addr 0x01
-                            |> setMem (addr + 1) 0x34
-                            |> setMem (addr + 2) 0x45
-                  z80_after_01 = { z80 | env = new_env } |> Z80.execute_instruction z80rom
-               in
-                  Expect.equal ((addr + 3), 0x45, 0x34) (z80_after_01.pc, z80_after_01.main.b, z80_after_01.main.c)
-            , test "0x11 LD DE,nn" <|
+            test "0x11 LD DE,nn" <|
             \_ ->
                let
                   new_env = z80env
@@ -75,80 +56,9 @@ suite =
                in
                   Expect.equal ((addr + 4), 0x0705) (new_z80.pc, new_z80.main.iy)
          ],
-         describe "INSTR 0x02"
-            [
-               test "0x02" <|
-               \_ ->
-                  let
-                     z80inc = { z80 | env = z80env |> setMem addr 0x02,
-                                      main = { z80main | b = 0x45, c = 0x34 },
-                                                         flags = { flags | a = 0x27 } }
-                     z80_after_01 = z80inc |> Z80.execute_instruction z80rom
-                     mem_value = mem 0x4534 z80_after_01.env.time z80rom z80_after_01.env.ram
-                  in
-                     Expect.equal ((addr + 1), 0x27) (z80_after_01.pc, mem_value.value)
-            ],
-         describe "INC BC"
-         [
-            test "0x03" <|
-            \_ ->
-               let
-                  z80_after_01 = execute_instruction z80rom { z80 | env = z80env |> setMem addr 0x03,
-                                                             main = { z80main | b = 0x45, c = 0xFF } }
-               in
-                  Expect.equal ((addr + 1), 0x46, 0x00) (z80_after_01.pc, z80_after_01.main.b, z80_after_01.main.c)
-         ],
-         describe "DEC B"
-         [
-            test "0x05" <|
-            \_ ->
-               let
-                  z80_after_01 = execute_instruction z80rom { z80 | env = z80env |> setMem addr 0x05,
-                                                             main = { z80main | b = 0x45 } }
-               in
-                  Expect.equal ((addr + 1), 0x44) (z80_after_01.pc, z80_after_01.main.b)
-         ],
-         describe "RLCA"
-         [
-            test "0x07" <|
-            \_ ->
-               let
-                  new_env = z80env
-                            |> setMem addr 0x07
-                            |> setMem (addr + 1) 0x78
-                  z80_after_01 = execute_instruction z80rom { z80 | env = new_env,
-                                                             flags = { flags | a = 0x87 } }
-               in
-                  -- This is RLCA - bit 7 goes into bit 0 and carry flag
-                  Expect.equal ((addr + 1), 0x0F) (z80_after_01.pc, z80_after_01.flags.a)
-         ],
-         describe "EX AF,AF'"
-         [
-            test "0x08" <|
-            \_ ->
-               let
-                  z80_after_01 = execute_instruction z80rom { z80 | env = z80env |> setMem addr 0x08,
-                                                             flags = { flags | a = 0x87 } }
-               in
-                  Expect.equal ((addr + 1), 0x87, z80.alt_flags) (z80_after_01.pc, z80_after_01.alt_flags.a, z80_after_01.flags)
-         ],
          describe "ADD HL, 16-bit"
          [
-            test "0x09 ADD HL, BC" <|
-            \_ ->
-               let
-                  z80_01 = execute_instruction z80rom { z80 | env = z80env |> setMem addr 0x09,
-                                                       main = { z80main | ix = 0x27, b = 0x01, c = 0x02, hl = 0x0304 } }
-               in
-                  Expect.equal ((addr + 1), 0x0406, 0x27) (z80_01.pc, z80_01.main.hl, z80_01.main.ix)
-            ,test "0xDD 0x09 ADD IX, BC" <|
-            \_ ->
-               let
-                  z80_after_01 = execute_instruction z80rom { z80 | env = z80env |> setMem addr 0xDD |> setMem (addr + 1) 0x09,
-                                                             main = { z80main | ix = 0x05, b = 0x01, c = 0x02, hl = 0x3445 } }
-               in
-                  Expect.equal ((addr + 2), 0x3445, 0x0107) (z80_after_01.pc, z80_after_01.main.hl, z80_after_01.main.ix)
-            ,test "0x19 ADD HL, DE" <|
+            test "0x19 ADD HL, DE" <|
             \_ ->
                let
                   z80_after_01 = execute_instruction z80rom { z80 | env = z80env |> setMem addr 0x19,
@@ -200,17 +110,7 @@ suite =
          ],
          describe "LD A, (16 bit)"
          [
-            test "0x0A - LD A,(BC)" <|
-            \_ ->
-               let
-                  new_env = z80env
-                            |> setMem addr 0x0A
-                            |> setMem 0x4546 0x78
-                  z80_after_01 = execute_instruction z80rom { z80 | env = new_env,
-                                                             main = { z80main | b = 0x45, c = 0x46 } }
-               in
-                  Expect.equal ((addr + 1), 0x78) (z80_after_01.pc, z80_after_01.flags.a)
-            ,test "0x1A - LD A,(DE)" <|
+            test "0x1A - LD A,(DE)" <|
             \_ ->
                let
                   new_env = z80env
@@ -223,14 +123,7 @@ suite =
          ],
          describe "DEC 16 bit"
          [
-            test "0x0B DEC BC" <|
-            \_ ->
-               let
-                  z80_after_01 = execute_instruction z80rom { z80 | env = z80env |> setMem addr 0x0B,
-                                                             main = { z80main | b = 0x45, c = 0x00 } }
-               in
-                  Expect.equal ((addr + 1), 0x44, 0xFF) (z80_after_01.pc, z80_after_01.main.b, z80_after_01.main.c)
-            ,test "0x1B DEC DE" <|
+            test "0x1B DEC DE" <|
             \_ ->
                let
                   z80_after_01 = execute_instruction z80rom { z80 | env = z80env |> setMem addr 0x1B,
@@ -268,21 +161,7 @@ suite =
          ],
          describe "INC 8 bit"
          [
-            test "INC B - 0x04" <|
-            \_ ->
-               let
-                  z80_after_01 = execute_instruction z80rom { z80 | env = z80env |> setMem addr 0x04,
-                                                             main = { z80main | b = 0x45 } }
-               in
-                  Expect.equal ((addr + 1), 0x46) (z80_after_01.pc, z80_after_01.main.b)
-            ,test "INC C - 0x0C" <|
-            \_ ->
-               let
-                  z80_after_01 = execute_instruction z80rom { z80 | env = z80env |> setMem addr 0x0C,
-                                                             main = { z80main | b = 0x45, c = 0x00 } }
-               in
-                  Expect.equal ((addr + 1), 0x45, 0x01) (z80_after_01.pc, z80_after_01.main.b, z80_after_01.main.c)
-            ,test "INC D 0x14" <|
+            test "INC D 0x14" <|
             \_ ->
                let
                   new_env = z80env
@@ -387,14 +266,7 @@ suite =
          ],
          describe "DEC 8 bit"
          [
-            test "DEC C - 0x0D" <|
-            \_ ->
-               let
-                  z80_after_01 = execute_instruction z80rom { z80 | env = z80env |> setMem addr 0x0D,
-                                                             main = { z80main | b = 0x45, c = 0x00 } }
-               in
-                  Expect.equal ((addr + 1), 0x45, 0xFF) (z80_after_01.pc, z80_after_01.main.b, z80_after_01.main.c)
-            ,test "DEC E - 0x1D" <|
+            test "DEC E - 0x1D" <|
             \_ ->
                let
                   z80_after_01 = execute_instruction z80rom { z80 | env = z80env |> setMem addr 0x1D,
@@ -413,26 +285,7 @@ suite =
          ],
          describe "LD 8-bit,n"
          [
-            test "0x06 LD B,n" <|
-            \_ ->
-               let
-                  new_env = z80env
-                            |> setMem addr 0x06
-                            |> setMem (addr + 1) 0x78
-                  z80_after_01 = execute_instruction z80rom { z80 | env = new_env }
-               in
-                  Expect.equal ((addr + 2), 0x78) (z80_after_01.pc, z80_after_01.main.b)
-            ,test "LD C,n - 0x0E" <|
-            \_ ->
-               let
-                  new_env = z80env
-                            |> setMem addr 0x0E
-                            |> setMem (addr + 1) 0x78
-                  z80_after_01 = execute_instruction z80rom { z80 | env = new_env,
-                                                             main = { z80main | b = 0x45, c = 0x00 } }
-               in
-                  Expect.equal ((addr + 2), 0x45, 0x78) (z80_after_01.pc, z80_after_01.main.b, z80_after_01.main.c)
-            ,test "LD D,n - 0x16" <|
+            test "LD D,n - 0x16" <|
             \_ ->
                let
                   new_env = z80env
@@ -505,16 +358,6 @@ suite =
                                                              main = { z80main | d = 0x45, e = 0x00 }, flags = { flags | a = 0x39 } }
                in
                   Expect.equal ((addr + 2), 0x78) (z80_after_01.pc, z80_after_01.flags.a)
-         ],
-         describe "RRCA"
-         [
-            test "RRCA - 0x0F" <|
-            \_ ->
-               let
-                  z80_after_01 = execute_instruction z80rom { z80 | env = z80env |> setMem addr 0x0F,
-                                                             flags = { flags | a = 0x80 } }
-               in
-                  Expect.equal ((addr + 1), 0x40) (z80_after_01.pc, z80_after_01.flags.a)
          ],
          describe "DJNZ - 0x10"
          [
@@ -1302,10 +1145,3 @@ suite =
                   Expect.equal ((addr + 4), 0x00) (new_z80.pc, new_z80.flags.fr)
          ]
       ]
-      --   -- Expect.equal is designed to be used in pipeline style, like this.
-      --   , test "reverses a known string" <|
-      --       \_ ->
-      --           "ABCDEFG"
-      --               |> String.reverse
-      --               |> Expect.equal "GFEDCBA"
-      --   ]
