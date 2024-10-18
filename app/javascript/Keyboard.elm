@@ -323,12 +323,9 @@ pressed k keyboard mlist =
             if n >= 0 then
                 let
                     keyboard_n =
-                        case Array.get n (keyboard.keyboard |> Vector8.toList |> Array.fromList) of
-                            Just value ->
-                                value
-
-                            Nothing ->
-                                debugLog "pressed" ("keyboard_n impossible" ++ String.fromInt n) 0
+                        case Vector8.intToIndex n of
+                            Just vecIndex -> keyboard.keyboard |> Vector8.get vecIndex
+                            Nothing -> debugTodo "pressed" ("keyboard_n impossible" ++ String.fromInt n) 0
                 in
                 Bitwise.or v1 keyboard_n
 
