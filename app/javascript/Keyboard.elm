@@ -1,6 +1,5 @@
 module Keyboard exposing (..)
 
-import Array exposing (Array)
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
 import Char exposing (toUpper)
 import Dict
@@ -213,15 +212,42 @@ z80_keyboard_input portnum keyboard =
 --	}
 --
 -- 01000 (octal) === 0x0200 (hex)
-m_initial = Vector5.repeat -1
-initial_keyboard = Keyboard (Vector8.repeat 0xFF) []
+
+
+m_initial =
+    Vector5.repeat -1
+
+
+initial_keyboard =
+    Keyboard (Vector8.repeat 0xFF) []
+
+
+
 -- Java Keyboard routines use octal - convert here to avoid transcribing mistakes
-c_0300 = 0xC0
-c_01000 = 0x200
-c_0100 = 0x40
-c_0200 = 0x80
-c_0103 = 0x43
-c_017 = 0x0F
+
+
+c_0300 =
+    0xC0
+
+
+c_01000 =
+    0x0200
+
+
+c_0100 =
+    0x40
+
+
+c_0200 =
+    0x80
+
+
+c_0103 =
+    0x43
+
+
+c_017 =
+    0x0F
 
 
 update_keyboard : List KeyEvent -> Keyboard
@@ -284,14 +310,20 @@ pressed k keyboard mlist =
         -- as we are anding with 0x07 here, the Maybe.withDefault can never happen
         a =
             Bitwise.and k 7
+
         vec_a =
             a |> Vector8.intToIndex |> Maybe.withDefault Vector8.Index0
 
         b =
             Bitwise.and (k |> shiftRightBy 3) 7
-        vec_b = case b |> Vector5.intToIndex of
-            Just index -> index
-            Nothing -> (debugTodo "pressed" ("Error: b = " ++ String.fromInt b) Vector5.Index0)
+
+        vec_b =
+            case b |> Vector5.intToIndex of
+                Just index ->
+                    index
+
+                Nothing ->
+                    debugTodo "pressed" ("Error: b = " ++ String.fromInt b) Vector5.Index0
 
         --v1 =
         --    case Array.get a (keyboard.keyboard |> Array.fromList) of
@@ -300,7 +332,8 @@ pressed k keyboard mlist =
         --
         --        Nothing ->
         --            debugLog "pressed" ("v is impossible " ++ String.fromInt a) 0
-        v1 = Bitwise.and (keyboard.keyboard |> Vector8.get vec_a) (1 |> shiftLeftBy b |> Bitwise.complement)
+        v1 =
+            Bitwise.and (keyboard.keyboard |> Vector8.get vec_a) (1 |> shiftLeftBy b |> Bitwise.complement)
 
         --n =
         --    case Array.get b (mlist |> Array.fromList) of
@@ -309,23 +342,29 @@ pressed k keyboard mlist =
         --
         --        Nothing ->
         --            debugTodo "pressed" ("n is wrong mlist size " ++ String.fromInt (mlist |> List.length) ++ " b = " ++ String.fromInt b) 0
-        n = mlist |> Vector5.get vec_b
+        n =
+            mlist |> Vector5.get vec_b
 
         --keyboard1 =
         --    (keyboard.keyboard |> Vector8.toList |> List.take a) ++ List.singleton v1 ++ (keyboard.keyboard |> Vector8.toList |> List.reverse |> List.take (7 - a) |> List.reverse)
-        keyboard1 = keyboard.keyboard |> Vector8.set vec_a v1
+        keyboard1 =
+            keyboard.keyboard |> Vector8.set vec_a v1
 
         --new_mlist =
         --    (mlist |> List.take b) ++ List.singleton a ++ (mlist |> List.reverse |> List.take (4 - b) |> List.reverse)
-        new_mlist = mlist |> Vector5.set vec_b a
+        new_mlist =
+            mlist |> Vector5.set vec_b a
 
         new_v =
             if n >= 0 then
                 let
                     keyboard_n =
                         case Vector8.intToIndex n of
-                            Just vecIndex -> keyboard.keyboard |> Vector8.get vecIndex
-                            Nothing -> debugTodo "pressed" ("keyboard_n impossible" ++ String.fromInt n) 0
+                            Just vecIndex ->
+                                keyboard.keyboard |> Vector8.get vecIndex
+
+                            Nothing ->
+                                debugTodo "pressed" ("keyboard_n impossible" ++ String.fromInt n) 0
                 in
                 Bitwise.or v1 keyboard_n
 
@@ -391,6 +430,8 @@ pressed k keyboard mlist =
 
 c_SPECCY_KEYBOARD_CHARS =
     "[AQ10P\n ZSW29OL]XDE38IKMCFR47UJNVGT56YHB" |> String.toList |> List.indexedMap (\index char -> ( char, index )) |> Dict.fromList
+
+
 
 --	i = "\t\0\0!_\"\0\0:\0\0@);=\0\0\0\0#(\0+.?\0<$'\0-,/\0>%&\0^*".indexOf(a);
 --       0 1 2 345 6 7 89 0 12345 6 7 8 901 2345 6789 0123 4567 89
@@ -479,8 +520,8 @@ keyEventToValue event =
 
         ControlKeyDownEvent controlKey ->
             case controlKey of
-    --			case KeyEvent.VK_INSERT:
-    --			case KeyEvent.VK_ESCAPE: return 0103;
+                --			case KeyEvent.VK_INSERT:
+                --			case KeyEvent.VK_ESCAPE: return 0103;
                 Escape ->
                     Just ( c_0103, [] )
 
