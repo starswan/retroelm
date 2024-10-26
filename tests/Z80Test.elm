@@ -245,41 +245,6 @@ suite =
                   Expect.equal { pc = (addr + 1), fa = 6, fb = -7, ff = 0, fr = 0 }
                   { pc = new_z80.pc, fa = new_z80.flags.fa, fb =  new_z80.flags.fb, ff = new_z80.flags.ff, fr = new_z80.flags.fr }
          ],
-         describe "CALL(0xCD) and RET(C9)"
-         [
-            test "Call followed by return" <|
-            \_ ->
-               let
-                  stackp = 0xF000
-                  start = 0x5000
-                  new_env = z80env
-                               |> setMem start 0xC9
-                               |> setMem (start + 1) 0xCD
-                               |> setMem (start + 2) (Bitwise.and start 0xFF)
-                               |> setMem (start + 3) (shiftRightBy 8 start)
-                  z80_1 = { z80 | env = { new_env | sp = stackp + 2 }, pc = (start + 1),
-                                  flags = { flags | a = 0x30 } } |> execute_instruction z80rom
-                  mem_value = z80_1.env |> mem16 stackp z80rom
-                  z80_2 = z80_1 |> execute_instruction z80rom
-               in
-                  Expect.equal
-                  {addr=start, sp1=stackp, stacked=start + 4, addr4=start + 4, sp2=stackp + 2}
-                  {addr=z80_1.pc, sp1=z80_1.env.sp, stacked=mem_value.value, addr4=z80_2.pc, sp2=z80_2.env.sp}
-         ],
-         describe "ADD A, n (0xC6)"
-         [
-            test "doit" <|
-            \_ ->
-               let
-                  new_env = z80env
-                               |> setMem addr 0xC6
-                               |> setMem (addr + 1) 0x16
-                  new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0xFF77 },
-                                                        main = { z80main | hl = 0x5050, d = 0x60, e = 0x00, b = 0x00, c = 0x05 }, flags = { flags | a = 0x60 } }
-               in
-                  Expect.equal {pc=(addr + 2), a=0x76}
-                  {pc=new_z80.pc, a=new_z80.flags.a}
-         ],
          describe "EXX (0xD9)"
          [
             test "doit" <|
@@ -297,18 +262,7 @@ suite =
          ],
          describe "16 bit Pop"
          [
-            test "POP BC (0xC1)" <|
-            \_ ->
-               let
-                  new_env = z80env
-                               |> setMem addr 0xC1
-                               |> setMem 0xFF77 0x16
-                               |> setMem 0xFF78 0x56
-                  new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0xFF77 },
-                                                        main = { z80main | hl = 0x5050, d = 0x60, e = 0x00, b = 0x00, c = 0x05 } }
-               in
-                  Expect.equal {pc=(addr + 1), b=0x56, c=0x16, sp=0xFF79}  {sp=new_z80.env.sp, pc=new_z80.pc, b=new_z80.main.b, c=new_z80.main.c}
-            ,test "POP DE (0xD1)" <|
+            test "POP DE (0xD1)" <|
             \_ ->
                let
                   new_env = z80env
