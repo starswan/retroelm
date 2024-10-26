@@ -5,7 +5,10 @@
   </div>
 
   <dl class="dl-horizontal">
-    <dd><%= link_to 'Play Java Version', game_path(@game, format: :jnlp) %></dd>
+    <dd><%= link_to 'Play Java Version', game_path(@game, format: :jnlp) %>
+    <%= link_to t('.back', :default => t("helpers.links.back")),
+                games_path, :class => 'btn btn-default'  %>
+    </dd>
   </dl>
   <div>
     <%= content_tag :canvas, 'Game', width: 512, height: 384, id: 'applet',
@@ -18,6 +21,5 @@
   <!--  <param name="load" value="/<%#= @game.tapfile %>"/>-->
   <!--</applet>-->
 
-  <%= link_to t('.back', :default => t("helpers.links.back")),
-              games_path, :class => 'btn btn-default'  %>
+  <%= image_tag "SpectrumKeyboard.png" %>
 </div>

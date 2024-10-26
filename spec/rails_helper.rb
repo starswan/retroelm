@@ -15,7 +15,8 @@ require 'rspec/rails'
 require "capybara/cuprite"
 Capybara.register_driver(:cuprite) do |app|
   # Capybara::Cuprite::Driver.new(app, window_size: [1200, 800])
-  Capybara::Cuprite::Driver.new(app, headless: false, process_timeout: 15)
+  # Capybara::Cuprite::Driver.new(app, headless: false, process_timeout: 15, window_size: [1280, 800])
+  Capybara::Cuprite::Driver.new(app, headless: false, process_timeout: 15, window_size: [1024, 1280])
 end
 Capybara.javascript_driver = :cuprite
 

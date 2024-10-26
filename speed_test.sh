@@ -5,10 +5,10 @@ count=$1
 timings=()
 for i in $(seq $count)
 do
-  value=`HZ=4 rspec spec/features/z80_spec.rb | fgrep Speed | cut --delim=' ' -f2`
+  value=$(HZ=2 rspec spec/features/z80_spec.rb | grep -F Speed | cut --delim=' ' -f2)
   timings+=($value)
   echo -n $i "Timings" ${timings[*]}
-  sum=`echo ${timings[*]} | tr ' ' '+'`
+  sum=$(echo ${timings[*]} | tr ' ' '+')
   echo -n " Average "
   echo "scale=3; ($sum) / $i" | bc -l
 done
