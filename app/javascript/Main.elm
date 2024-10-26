@@ -11,7 +11,7 @@ import Browser
 import Browser.Events exposing (onKeyDown, onKeyUp)
 import Bytes exposing (Bytes)
 import Bytes.Decode exposing (unsignedInt8)
-import Dict exposing (values)
+import Dict
 import Html exposing (Html, button, div, h2, span, text)
 import Html.Attributes exposing (disabled, id, style, tabindex)
 import Html.Events exposing (onClick)
