@@ -1,6 +1,8 @@
-module Z80Address exposing (AddressType, Z80Address, addIndexOffset, decrement, decrement2, fromInt, incrementBy1, incrementBy2, incrementBy3, incrementBy4, lower8Bits, toInt, top8Bits, top8BitsWithoutShift)
+--module Z80Address exposing (Z80Address, addIndexOffset, decrement, decrement2, fromInt, incrementBy1, incrementBy2, incrementBy3, lower8Bits, toInt, top8Bits, top8BitsWithoutShift)
 
---module Z80Address exposing (..)
+
+module Z80Address exposing (..)
+
 --import Z80WriteableAddress exposing (Z80WriteableAddress(..))
 --type Z80Address
 --    = ROMAddress Int
@@ -10,21 +12,27 @@ import Bitwise
 import Utils exposing (byte, shiftRightBy8)
 
 
-type AddressType
-    = ROM
-    | Screen
-    | Lomem
-    | HiMem
-
-
 type Z80Address
-    = Z80Address Int AddressType
+    = ROM Int
+    | Screen Int
+    | Lomem Int
+    | HiMem Int
 
 
-decodeType : Int -> ( Int, AddressType )
-decodeType addr =
+
+--type Z80Address
+--    = Z80Address Int AddressType
+
+
+fromInt : Int -> Z80Address
+fromInt addr =
+    addr |> Bitwise.and 0xFFFF |> fromSafeInt
+
+
+fromSafeInt : Int -> Z80Address
+fromSafeInt addr =
     if addr <= 0x3FFF then
-        ( addr, ROM )
+        addr |> ROM
 
     else
         let
@@ -32,7 +40,7 @@ decodeType addr =
                 addr - 0x4000
         in
         if ramAddr < 6912 then
-            ( ramAddr, Screen )
+            ramAddr |> Screen
 
         else
             let
@@ -40,28 +48,20 @@ decodeType addr =
                     ramAddr - 6912
             in
             if ramAddr <= 0x7FFF then
-                ( memAddr, Lomem )
+                memAddr |> Lomem
 
             else
-                ( memAddr, HiMem )
-
-
-fromInt : Int -> Z80Address
-fromInt raw_addr =
-    Bitwise.and raw_addr 0xFFFF |> fromSafeInt
-
-
--- if we know the address is in bounds, we can call this instead
-fromSafeInt : Int -> Z80Address
-fromSafeInt raw_addr =
-    let
-        ( addr, addrType ) =
-            raw_addr |> decodeType
-    in
-    Z80Address addr addrType
+                memAddr |> HiMem
 
 
 
+--fromInt : Int -> Z80Address
+--fromInt raw_addr =
+--    let
+--        ( addr, addrType ) =
+--            Bitwise.and raw_addr 0xFFFF |> decodeType
+--    in
+--    Z80Address addr addrType
 --    if addr < 0x3FFF then
 --        ROMAddress addr
 --    else
@@ -78,16 +78,19 @@ fromSafeInt raw_addr =
 toInt : Z80Address -> Int
 toInt z80_address =
     case z80_address of
-        Z80Address int addr_type ->
-            case addr_type of
-                ROM ->
-                    int
+        --Z80Address int addr_type ->
+        --    case addr_type of
+        ROM int ->
+            int
 
-                Screen ->
-                    int + 0x4000
+        Screen int ->
+            int + 0x4000
 
-                _ ->
-                    int + 0x4000 + 6912
+        Lomem int ->
+            int + 0x4000 + 6912
+
+        HiMem int ->
+            int + 0x4000 + 6912
 
 
 
@@ -119,69 +122,66 @@ toInt z80_address =
 incrementBy1 : Z80Address -> Z80Address
 incrementBy1 z80_address =
     case z80_address of
-        Z80Address addr addressType ->
-            case addressType of
-                ROM ->
-                    if addr == 0x3FFF then
-                        Z80Address 0 Screen
+        --Z80Address addr addressType ->
+        --    case addressType of
+        ROM addr ->
+            if addr == 0x3FFF then
+                0 |> Screen
 
-                    else
-                        Z80Address (addr + 1) ROM
+            else
+                (addr + 1) |> ROM
 
-                Screen ->
-                    if addr == 6911 then
-                        Z80Address 0 Lomem
+        Screen addr ->
+            if addr == 6911 then
+                0 |> Lomem
 
-                    else
-                        Z80Address (addr + 1) Screen
+            else
+                (addr + 1) |> Screen
 
-                Lomem ->
-                    if addr == 49151 - 6912 then
-                        Z80Address 0 HiMem
+        Lomem addr ->
+            if addr == 49151 - 6912 then
+                0 |> HiMem
 
-                    else
-                        Z80Address (addr + 1) Lomem
+            else
+                (addr + 1) |> Lomem
 
-                HiMem ->
-                    if addr == 49151 - 6912 then
-                        Z80Address 0 ROM
+        HiMem addr ->
+            if addr == 49151 - 6912 then
+                0 |> ROM
 
-                    else
-                        Z80Address (addr + 1) HiMem
+            else
+                (addr + 1) |> HiMem
 
 
 incrementBy2 : Z80Address -> Z80Address
 incrementBy2 z80_address =
     case z80_address of
-        Z80Address addr addressType ->
-            case addressType of
-                ROM ->
-                    if addr >= 0x3FFE then
-                        Z80Address (addr - 0x3FFE) Screen
+        --Z80Address addr addressType ->
+        --    case addressType of
+        ROM addr ->
+            if addr >= 0x3FFE then
+                (addr - 0x3FFE) |> Screen
 
-                    else
-                        Z80Address (addr + 2) ROM
+            else
+                (addr + 2) |> ROM
 
-                Screen ->
-                    if addr >= 6910 then
-                        Z80Address (addr - 6910) Lomem
+        Screen addr ->
+            let
+                --( new_addr, new_type ) =
+                x =
+                    Bitwise.and (addr + 0x4002) 0xFFFF |> fromInt
+            in
+            x
 
-                    else
-                        Z80Address (addr + 2) Screen
+        Lomem addr ->
+            let
+                x =
+                    Bitwise.and (addr + 0x4002 + 6912) 0xFFFF |> fromInt
+            in
+            x
 
-                Lomem ->
-                    let
-                        ( new_addr, new_type ) =
-                            Bitwise.and (addr + 0x4002 + 6912) 0xFFFF |> decodeType
-                    in
-                    Z80Address new_addr new_type
-
-                HiMem ->
-                    let
-                        ( new_addr, new_type ) =
-                            Bitwise.and (addr + 0x4002 + 6912) 0xFFFF |> decodeType
-                    in
-                    Z80Address new_addr new_type
+        HiMem addr ->
+            Bitwise.and (addr + 0x4002 + 6912) 0xFFFF |> fromInt
 
 
 incrementBy3 : Z80Address -> Z80Address
@@ -224,58 +224,53 @@ decrement2 : Z80Address -> Z80Address
 decrement2 z80_address =
     --z80_address |> decrement |> decrement
     case z80_address of
-        Z80Address addr addressType ->
-            case addressType of
-                ROM ->
-                    if addr == 0 then
-                        Z80Address 0xBFFE HiMem
+        --Z80Address addr addressType ->
+        --    case addressType of
+        ROM addr ->
+            if addr == 0 then
+                0xBFFE |> HiMem
 
-                    else if addr == 1 then
-                        Z80Address 0xBFFF HiMem
+            else if addr == 1 then
+                0xBFFF |> HiMem
 
-                    else
-                        Z80Address (addr - 2) ROM
+            else
+                (addr - 2) |> ROM
 
-                Screen ->
-                    let
-                        ( new_addr, new_type ) =
-                            Bitwise.and (addr + 0x3FFE) 0xFFFF |> decodeType
-                    in
-                    Z80Address new_addr new_type
+        Screen addr ->
+            Bitwise.and (addr + 0x3FFE) 0xFFFF |> fromInt
 
-                _ ->
-                    let
-                        ( new_addr, new_type ) =
-                            Bitwise.and (addr + 0x3FFE + 6912) 0xFFFF |> decodeType
-                    in
-                    Z80Address new_addr new_type
+        Lomem addr ->
+            Bitwise.and (addr + 0x3FFE + 6912) 0xFFFF |> fromInt
+
+        HiMem addr ->
+            Bitwise.and (addr + 0x3FFE + 6912) 0xFFFF |> fromInt
 
 
 decrement : Z80Address -> Z80Address
 decrement z80_address =
     case z80_address of
-        Z80Address addr addressType ->
-            case addressType of
-                ROM ->
-                    if addr == 0 then
-                        Z80Address (0xBFFF - 6912) HiMem
+        --Z80Address addr addressType ->
+        --    case addressType of
+        ROM addr ->
+            if addr == 0 then
+                (0xBFFF - 6912) |> HiMem
 
-                    else
-                        Z80Address (addr - 1) ROM
+            else
+                (addr - 1) |> ROM
 
-                Screen ->
-                    let
-                        ( new_addr, new_type ) =
-                            Bitwise.and (addr + 0x3FFF) 0xFFFF |> decodeType
-                    in
-                    Z80Address new_addr new_type
+        Screen addr ->
+            --Bitwise.and (addr + 0x3FFF) 0xFFFF |> fromInt
+            if addr == 0 then
+                0x3FFF |> ROM
 
-                _ ->
-                    let
-                        ( new_addr, new_type ) =
-                            Bitwise.and (addr + 0x3FFF + 6912) 0xFFFF |> decodeType
-                    in
-                    Z80Address new_addr new_type
+            else
+                (addr - 1) |> Screen
+
+        Lomem addr ->
+            Bitwise.and (addr + 0x3FFF + 6912) 0xFFFF |> fromInt
+
+        HiMem addr ->
+            Bitwise.and (addr + 0x3FFF + 6912) 0xFFFF |> fromInt
 
 
 

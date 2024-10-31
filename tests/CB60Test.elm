@@ -3,7 +3,7 @@ module CB60Test exposing (..)
 import Expect exposing (Expectation)
 import Test exposing (..)
 import Z80 exposing (execute_instruction)
-import Z80Address exposing (fromInt, toInt)
+import Z80Address exposing (fromInt, incrementBy1, incrementBy2, incrementBy3, toInt)
 import Z80Env exposing (setMem)
 import Z80Rom
 
@@ -15,7 +15,7 @@ suite =
             0x5800
 
         addr_plus_1 =
-            addr_int + 1
+            addr_int + 1 |> fromInt
 
         addr =
             addr_int |> fromInt
@@ -42,7 +42,7 @@ suite =
             z80.flags
 
         z80env =
-            z80.env |> setMem addr_int 0xCB
+            z80.env |> setMem addr 0xCB
 
         z80rom =
             Z80Rom.constructor
@@ -70,7 +70,7 @@ suite =
                     let
                         new_env =
                             z80env
-                                |> setMem addr_int 0xCB
+                                |> setMem addr 0xCB
                                 |> setMem addr_plus_1 0x60
 
                         new_z80 =
@@ -239,7 +239,7 @@ suite =
                     let
                         new_env =
                             z80env
-                                |> setMem addr_int 0xCB
+                                |> setMem addr 0xCB
                                 |> setMem addr_plus_1 0x65
 
                         new_z80 =
@@ -258,7 +258,7 @@ suite =
                         new_env =
                             z80env
                                 |> setMem addr_plus_1 0x66
-                                |> setMem 0x6545 0x10
+                                |> setMem (0x6545 |> fromInt) 0x10
 
                         new_z80 =
                             execute_instruction z80rom
@@ -274,11 +274,11 @@ suite =
                     let
                         new_env =
                             z80env
-                                |> setMem addr_int 0xDD
+                                |> setMem addr 0xDD
                                 |> setMem addr_plus_1 0xCB
-                                |> setMem (addr_int + 2) 0x05
-                                |> setMem (addr_int + 3) 0x66
-                                |> setMem 0x6545 0x00
+                                |> setMem ((addr |> incrementBy2)) 0x05
+                                |> setMem (addr |> incrementBy3) 0x66
+                                |> setMem (0x6545 |> fromInt) 0x00
 
                         new_z80 =
                             execute_instruction z80rom
@@ -294,11 +294,11 @@ suite =
                     let
                         new_env =
                             z80env
-                                |> setMem addr_int 0xDD
+                                |> setMem addr 0xDD
                                 |> setMem addr_plus_1 0xCB
-                                |> setMem (addr_int + 2) 0x05
-                                |> setMem (addr_int + 3) 0x66
-                                |> setMem 0x6545 0x10
+                                |> setMem ((addr |> incrementBy2)) 0x05
+                                |> setMem (addr |> incrementBy3) 0x66
+                                |> setMem (0x6545 |> fromInt) 0x10
 
                         new_z80 =
                             execute_instruction z80rom

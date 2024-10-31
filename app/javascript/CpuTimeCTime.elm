@@ -24,17 +24,29 @@ type alias CpuTimeAndValue =
     }
 
 
-type alias CpuTimePcAndValue =
+type alias CpuTimeAndAddress =
+    { time : CpuTimeCTime
+    , address : Z80Address
+    }
+
+
+type alias CpuTimePcAndInt =
     { time : CpuTimeCTime
     , pc : Z80Address
     , value : Int
+    }
+
+type alias CpuTimePcAndAddress =
+    { time : CpuTimeCTime
+    , pc : Z80Address
+    , address : Z80Address
     }
 
 
 type alias CpuTimeSpAndValue =
     { time : CpuTimeCTime
     , sp : Z80Address
-    , value : Z80Address
+    , address : Z80Address
     }
 
 

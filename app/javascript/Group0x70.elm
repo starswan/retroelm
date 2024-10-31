@@ -42,7 +42,7 @@ execute_0x7077_ixiy ixiyhl rom48k z80 value =
         --        |> addCpuTimeEnv 3
     in
     --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
-    SetMem8WithCpuTimeIncrementAndPc mem_target.value value mem_target.time 3 mem_target.pc
+    SetMem8WithCpuTimeIncrementAndPc mem_target.address value mem_target.time 3 mem_target.pc
 
 
 ld_indirect_hl_b : IXIY -> Z80ROM -> Z80 -> Z80Delta

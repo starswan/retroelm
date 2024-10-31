@@ -112,7 +112,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             in
             { z80
                 | pc = pc
-                , main = z80.main |> set_bc_main (v.value |> toInt)
+                , main = z80.main |> set_bc_main (v.address |> toInt)
                 , env = { env1 | time = v.time, sp = v.sp }
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
@@ -130,7 +130,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             in
             { z80
                 | pc = pc
-                , main = { main | hl = v.value }
+                , main = { main | hl = v.address }
                 , env = { env1 | time = v.time, sp = v.sp }
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
@@ -192,7 +192,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             in
             { z80
                 | pc = pc
-                , flags = set_af (v.value |> toInt)
+                , flags = set_af (v.address |> toInt)
                 , env = { env1 | time = v.time, sp = v.sp }
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
@@ -208,7 +208,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             in
             { z80
                 | pc = pc
-                , main = z80.main |> set_de_main (v.value |> toInt)
+                , main = z80.main |> set_de_main (v.address |> toInt)
                 , env = { env1 | time = v.time, sp = v.sp }
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
@@ -259,7 +259,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             in
             { z80
                 | env = { old_env | time = a.time, sp = a.sp }
-                , pc = a.value
+                , pc = a.address
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
 

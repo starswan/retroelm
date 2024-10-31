@@ -11,14 +11,17 @@ import Z80Rom
 suite : Test
 suite =
     let
-        addr =
+        int_addr =
             30000
+
+        addr =
+            int_addr |> fromInt
 
         old_z80 =
             Z80.constructor
 
         z80 =
-            { old_z80 | pc = addr |> fromInt }
+            { old_z80 | pc = addr }
 
         z80env =
             z80.env
@@ -38,8 +41,8 @@ suite =
                         new_env =
                             z80env
                                 |> setMem addr 0xD7
-                                |> setMem 0xFF77 0x16
-                                |> setMem 0xFF78 0x56
+                                |> setMem (0xFF77 |> fromInt) 0x16
+                                |> setMem (0xFF78 |> fromInt) 0x56
 
                         new_z80 =
                             execute_instruction z80rom
@@ -55,8 +58,8 @@ suite =
                         new_env =
                             z80env
                                 |> setMem addr 0xDF
-                                |> setMem 0xFF75 0x16
-                                |> setMem 0xFF76 0x56
+                                |> setMem (0xFF75 |> fromInt) 0x16
+                                |> setMem (0xFF76 |> fromInt) 0x56
 
                         new_z80 =
                             execute_instruction z80rom
@@ -65,7 +68,7 @@ suite =
                                     , main = { z80main | hl = 0x5050 |> fromInt, d = 0x60, e = 0x00, b = 0x00, c = 0x05 }
                                 }
                     in
-                    Expect.equal { pc = 0x18, sp = 0xFF75, mem = addr + 1 } { sp = new_z80.env.sp |> toInt, pc = new_z80.pc |> toInt, mem = mem16 0xFF75 z80rom new_z80.env |> .value }
+                    Expect.equal { pc = 0x18, sp = 0xFF75, mem = int_addr + 1 } { sp = new_z80.env.sp |> toInt, pc = new_z80.pc |> toInt, mem = mem16 (0xFF75 |> fromInt) z80rom new_z80.env |> .address |> toInt }
             ]
         , describe "16 bit Pop"
             [ test "POP HL (0xE1)" <|
@@ -74,8 +77,8 @@ suite =
                         new_env =
                             z80env
                                 |> setMem addr 0xE1
-                                |> setMem 0xFF77 0x16
-                                |> setMem 0xFF78 0x56
+                                |> setMem (0xFF77 |> fromInt) 0x16
+                                |> setMem (0xFF78 |> fromInt) 0x56
 
                         new_z80 =
                             execute_instruction z80rom
@@ -84,6 +87,6 @@ suite =
                                     , main = { z80main | hl = 0x5050 |> fromInt, d = 0x60, e = 0x00, b = 0x00, c = 0x05 }
                                 }
                     in
-                    Expect.equal { pc = addr + 1, hl = 0x5616, sp = 0xFF79 } { sp = new_z80.env.sp |> toInt, pc = new_z80.pc |> toInt, hl = new_z80.main.hl |> toInt }
+                    Expect.equal { pc = int_addr + 1, hl = 0x5616, sp = 0xFF79 } { sp = new_z80.env.sp |> toInt, pc = new_z80.pc |> toInt, hl = new_z80.main.hl |> toInt }
             ]
         ]
