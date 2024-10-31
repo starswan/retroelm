@@ -3,6 +3,7 @@ module Z80Flags exposing (..)
 import Bitwise exposing (complement, shiftLeftBy, shiftRightBy)
 import CpuTimeCTime exposing (CpuTimeIncrement, increment7)
 import Utils exposing (shiftLeftBy1, shiftLeftBy8, shiftRightBy1, shiftRightBy8)
+import Z80Address exposing (Z80Address, fromInt, toInt)
 
 
 type alias FlagRegisters =
@@ -21,7 +22,7 @@ type alias IntWithFlags =
 
 
 type alias IntWithFlagsAndTime =
-    { value : Int
+    { value : Z80Address
     , flags : FlagRegisters
     , time : CpuTimeIncrement
     }
@@ -626,9 +627,10 @@ shifter7 v_in flagRegs =
 --}
 
 
-add16 : Int -> Int -> FlagRegisters -> IntWithFlagsAndTime
-add16 a b main_flags =
+add16 : Z80Address -> Int -> FlagRegisters -> IntWithFlagsAndTime
+add16 a_in b main_flags =
     let
+        a = a_in |> toInt
         r =
             a + b
 
@@ -653,7 +655,8 @@ add16 a b main_flags =
         new_flags =
             { main_flags | ff = ff, fa = fa, fb = fb }
     in
-    IntWithFlagsAndTime (Bitwise.and r 0xFFFF) new_flags increment7
+    --IntWithFlagsAndTime (Bitwise.and r 0xFFFF) new_flags increment7
+    IntWithFlagsAndTime (r |> fromInt) new_flags increment7
 
 
 

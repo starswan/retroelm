@@ -4,6 +4,7 @@ import Bitwise
 import Dict exposing (Dict)
 import GroupED exposing (group_ed)
 import Utils exposing (shiftLeftBy8)
+import Z80Address exposing (fromInt, toInt)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (addCpuTimeEnv, out, z80_in, z80_pop, z80_push)
 import Z80Rom exposing (Z80ROM)
@@ -126,7 +127,7 @@ ex_de_hl ixiyhl _ z80 =
     -- case 0xEB: v=HL; HL=D<<8|E; D=v>>>8; E=v&0xFF; break;
     let
         v =
-            z80.main |> get_xy_ixiy ixiyhl
+            z80.main |> get_xy_ixiy ixiyhl |> toInt
 
         de =
             z80.main |> get_de
@@ -138,10 +139,10 @@ ex_de_hl ixiyhl _ z80 =
     --z80 |> set_de v |> set_hl de
     case ixiyhl of
         IXIY_IX ->
-            MainRegs { main | ix = de }
+            MainRegs { main | ix = de |> fromInt }
 
         IXIY_IY ->
-            MainRegs { main | iy = de }
+            MainRegs { main | iy = de |> fromInt }
 
 
 execute_0xD3 : Z80ROM -> Z80 -> Z80Delta

@@ -1,12 +1,12 @@
 module Group0x70 exposing (..)
 
-import Bitwise exposing (shiftRightBy)
-import CpuTimeCTime exposing (addCpuTimeTime)
+import CpuTimeCTime
 import Dict exposing (Dict)
+import Utils exposing (shiftRightBy8)
+import Z80Address exposing (toInt)
 import Z80Delta exposing (Z80Delta(..))
-import Z80Env exposing (addCpuTimeEnv, c_TIME_LIMIT, setMem)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY, IXIYHL(..), Z80, env_mem_hl_ixiy, get_h, get_h_ixiy, get_l, get_l_ixiy, hl_deref_with_z80_ixiy)
+import Z80Types exposing (IXIY, IXIYHL(..), Z80, env_mem_hl_ixiy, get_h_ixiy, get_l, get_l_ixiy, hl_deref_with_z80_ixiy)
 
 
 miniDict70 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
@@ -111,7 +111,7 @@ ld_indirect_hl_h ixiyhl rom48k z80 =
     --   new_env = { env_1 | time = mem_target.time } |> set_mem mem_target.value (get_h HL z80.main) |> add_cpu_time_env 3
     --in
     --   --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
-    execute_0x7077_ixiy ixiyhl rom48k z80 (get_h HL z80.main)
+    execute_0x7077_ixiy ixiyhl rom48k z80 (z80.main.hl |> toInt |> shiftRightBy8)
 
 
 ld_indirect_hl_l : IXIY -> Z80ROM -> Z80 -> Z80Delta

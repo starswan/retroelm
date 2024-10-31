@@ -24,6 +24,7 @@ constructor =
 getRamValue : Int -> Z80Ram -> Int
 getRamValue addr z80ram =
     let
+        --x = debugLog "getRamValue" (Hex.toString(addr)) Nothing
         ram_addr =
             addr - 6912
     in

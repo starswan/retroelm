@@ -4,7 +4,8 @@ import Bitwise
 import CpuTimeCTime exposing (CpuTimeIncrement, increment3)
 import Dict exposing (Dict)
 import PCIncrement exposing (MediumPCIncrement(..), PCIncrement(..))
-import Utils exposing (byte, shiftLeftBy8)
+import Utils exposing (shiftLeftBy8)
+import Z80Address exposing (Z80Address, fromInt, lower8Bits, top8BitsWithoutShift)
 import Z80Flags exposing (FlagRegisters, adc, sbc, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
 import Z80Types exposing (MainWithIndexRegisters, Z80)
 
@@ -62,12 +63,10 @@ type Single8BitChange
 
 type DoubleWithRegisterChange
     = RelativeJumpWithTimeOffset Single8BitChange (Maybe Int) Int
-    | DoubleRegChangeStoreIndirect Int Int CpuTimeIncrement
-    | NewHLRegisterValue Int
-    | NewIXRegisterValue Int
-    | NewIYRegisterValue Int
-
-
+    | DoubleRegChangeStoreIndirect Z80Address Int CpuTimeIncrement
+    | NewHLRegisterValue Z80Address
+    | NewIXRegisterValue Z80Address
+    | NewIYRegisterValue Z80Address
 type JumpChange
     = ActualJump Int
     | NoJump
@@ -118,36 +117,36 @@ ld_e_n param =
 ld_h_n : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
 ld_h_n z80_main param =
     -- case 0x26: HL=HL&0xFF|imm8()<<8; break;
-    Bitwise.or (param |> shiftLeftBy8) (Bitwise.and z80_main.hl 0xFF) |> NewHLRegisterValue
+    Bitwise.or (param |> shiftLeftBy8) (lower8Bits z80_main.hl) |> fromInt |> NewHLRegisterValue
 
 ld_ix_h_n : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
 ld_ix_h_n z80_main param =
     -- case 0x26: xy=xy&0xFF|imm8()<<8; break;
-    Bitwise.or (param |> shiftLeftBy8) (Bitwise.and z80_main.ix 0xFF) |> NewIXRegisterValue
+    Bitwise.or (param |> shiftLeftBy8) (lower8Bits z80_main.ix) |> fromInt |> NewIXRegisterValue
 
 
 ld_iy_h_n : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
 ld_iy_h_n z80_main param =
     -- case 0x26: xy=xy&0xFF|imm8()<<8; break;
-    Bitwise.or (param |> shiftLeftBy8) (Bitwise.and z80_main.iy 0xFF) |> NewIYRegisterValue
+    Bitwise.or (param |> shiftLeftBy8) (lower8Bits z80_main.iy) |> fromInt |> NewIYRegisterValue
 
 
 ld_l_n : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
 ld_l_n z80_main param =
     -- case 0x2E: HL=HL&0xFF00|imm8(); break;
-    Bitwise.or param (Bitwise.and z80_main.hl 0xFF00) |> NewHLRegisterValue
+    Bitwise.or param (top8BitsWithoutShift z80_main.hl) |> fromInt |> NewHLRegisterValue
 
 
 ld_ix_l_n : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
 ld_ix_l_n z80_main param =
     -- case 0x2E: xy=xy&0xFF00|imm8(); break;
-    Bitwise.or param (Bitwise.and z80_main.ix 0xFF00) |> NewIXRegisterValue
+    Bitwise.or param (top8BitsWithoutShift z80_main.ix) |> fromInt |> NewIXRegisterValue
 
 
 ld_iy_l_n : MainWithIndexRegisters ->  Int -> DoubleWithRegisterChange
 ld_iy_l_n z80_main param =
     -- case 0x2E: xy=xy&0xFF00|imm8(); break;
-    Bitwise.or param (Bitwise.and z80_main.iy 0xFF00) |> NewIYRegisterValue
+    Bitwise.or param (top8BitsWithoutShift z80_main.iy) |> fromInt |> NewIYRegisterValue
 
 
 djnz : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
@@ -156,15 +155,12 @@ djnz z80_main param =
     --if((B=B-1&0xFF)!=0) {time+=5; MP=v+=d;}
     --PC=(char)v;} break;
     let
-        d =
-            byte param
-
         b =
             Bitwise.and (z80_main.b - 1) 0xFF
 
         ( time, jump ) =
             if b /= 0 then
-                ( 9, Just d )
+                ( 9, Just param )
 
             else
                 ( 4, Nothing )
@@ -184,14 +180,14 @@ jr_n param _ =
     -- case 0x18: MP=PC=(char)(PC+1+(byte)env.mem(PC)); time+=8; break;
     -- This is just an inlined jr() call
     --z80 |> set_pc dest |> add_cpu_time 8
-    ActualJump (byte param)
+    ActualJump (param)
 
 
 jr_nz_d : Int -> FlagRegisters -> JumpChange
 jr_nz_d param z80_flags =
     -- case 0x20: if(Fr!=0) jr(); else imm8(); break;
     if z80_flags.fr /= 0 then
-        ActualJump (byte param)
+        ActualJump (param)
 
     else
         NoJump
@@ -201,7 +197,7 @@ jr_z_d : Int -> FlagRegisters -> JumpChange
 jr_z_d param z80_flags =
     -- case 0x28: if(Fr==0) jr(); else imm8(); break;
     if z80_flags.fr == 0 then
-        ActualJump (byte param)
+        ActualJump (param)
 
     else
         NoJump
@@ -211,7 +207,7 @@ jr_nc_d : Int -> FlagRegisters -> JumpChange
 jr_nc_d param z80_flags =
     -- case 0x30: if((Ff&0x100)==0) jr(); else imm8(); break;
     if Bitwise.and z80_flags.ff 0x0100 == 0 then
-        ActualJump (byte param)
+        ActualJump (param)
 
     else
         NoJump
@@ -221,7 +217,7 @@ jr_c_d : Int -> FlagRegisters -> JumpChange
 jr_c_d param z80_flags =
     -- case 0x38: if((Ff&0x100)!=0) jr(); else imm8(); break;
     if Bitwise.and z80_flags.ff 0x0100 /= 0 then
-        ActualJump (byte param)
+        ActualJump (param)
 
     else
         NoJump
@@ -355,5 +351,4 @@ ld_a_n param z80_flags =
     --new_z80 = { z80 | env = v.env, pc = v.pc }
     --in
     --{ new_z80 | flags = { z80_flags | a = v.value } }
-    --CpuTimeWithFlagsAndPc v.time { z80_flags | a = v.value } v.pc
     FlagJump { z80_flags | a = param }

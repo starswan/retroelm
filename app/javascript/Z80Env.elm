@@ -9,6 +9,7 @@ import Bitwise exposing (and, or, shiftRightBy)
 import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimeIncrement, CpuTimePcAndValue, CpuTimeSpAndValue, addCpuTimeTime, addCpuTimeTimeInc, c_NOCONT, cont, cont1, cont_port)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (shiftLeftBy8, shiftRightBy8, toHexString2)
+import Z80Address exposing (Z80Address, decrement, decrement2, fromInt, incrementBy2, toInt)
 import Z80Debug exposing (debugLog)
 import Z80Ram exposing (Z80Ram, getRamValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
@@ -35,7 +36,7 @@ type alias Z80Env =
       ram : Z80Ram
     , keyboard : Keyboard
     , time : CpuTimeCTime
-    , sp : Int
+    , sp : Z80Address
     }
 
 
@@ -47,7 +48,7 @@ type alias Z80EnvWithValue =
 
 type alias Z80EnvWithPC =
     { env : Z80Env
-    , pc : Int
+    , pc : Z80Address
     }
 
 
@@ -58,7 +59,7 @@ type alias ValueWithTime =
 
 
 z80env_constructor =
-    Z80Env Z80Ram.constructor Keyboard.constructor (CpuTimeCTime c_FRSTART 0) 0
+    Z80Env Z80Ram.constructor Keyboard.constructor (CpuTimeCTime c_FRSTART 0) (0 |> fromInt)
 
 
 
@@ -542,22 +543,29 @@ reset_cpu_time z80env =
 --}
 
 
-z80_push : Int -> Z80Env -> Z80Env
+z80_push : Z80Address -> Z80Env -> Z80Env
 z80_push v z80env =
     let
         --a = debug_log "push" ((v |> toHexString) ++ " onto " ++ (z80.sp |> toHexString)) Nothing
         sp_minus_1 =
-            Bitwise.and (z80env.sp - 1) 0xFFFF
+            --Bitwise.and (z80env.sp - 1) 0xFFFF
+            z80env.sp |> decrement
 
         new_sp =
-            Bitwise.and (z80env.sp - 2) 0xFFFF
+            --Bitwise.and (z80env.sp - 2) 0xFFFF
+            z80env.sp |> decrement2
+
+        value =
+            v |> toInt
 
         env_2 =
             z80env
                 |> addCpuTimeEnv 1
-                |> setMem sp_minus_1 (shiftRightBy8 v)
+                |> setMem (sp_minus_1 |> toInt) (shiftRightBy8 value)
+                --|> setMem (sp_minus_1 |> toInt) (top8Bits v)
                 |> addCpuTimeEnv 3
-                |> setMem new_sp (Bitwise.and v 0xFF)
+                |> setMem (new_sp |> toInt) (Bitwise.and value 0xFF)
+                --|> setMem (new_sp |> toInt) (lower8Bits v)
                 |> addCpuTimeEnv 3
     in
     { env_2 | sp = new_sp }
@@ -567,9 +575,10 @@ z80_pop : Z80ROM -> Z80Env -> CpuTimeSpAndValue
 z80_pop z80rom z80_env =
     let
         v =
-            z80_env |> mem16 z80_env.sp z80rom
+            z80_env |> mem16 (z80_env.sp |> toInt) z80rom
 
         time =
             v.time |> addCpuTimeTime 6
     in
-    CpuTimeSpAndValue time (Bitwise.and (z80_env.sp + 2) 0xFFFF) v.value
+    --CpuTimeSpAndValue time (Bitwise.and (z80_env.sp + 2) 0xFFFF) v.value
+    CpuTimeSpAndValue time (z80_env.sp |> incrementBy2) (v.value |> fromInt)

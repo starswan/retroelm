@@ -1,8 +1,8 @@
 module SingleNoParams exposing (..)
 
-import Bitwise
 import CpuTimeCTime exposing (CpuTimeCTime, addCpuTimeTime)
 import Dict exposing (Dict)
+import Z80Address exposing (fromInt, incrementBy1, toInt)
 import Z80Env exposing (z80_pop, z80_push)
 import Z80Flags exposing (set_af)
 import Z80Rom exposing (Z80ROM)
@@ -87,7 +87,8 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             z80.env
 
         pc =
-            Bitwise.and (z80.pc + 1) 0xFFFF
+            --Bitwise.and (z80.pc + 1) 0xFFFF
+            z80.pc |> incrementBy1
     in
     case z80changeData of
         NoOp ->
@@ -111,7 +112,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             in
             { z80
                 | pc = pc
-                , main = z80.main |> set_bc_main v.value
+                , main = z80.main |> set_bc_main (v.value |> toInt)
                 , env = { env1 | time = v.time, sp = v.sp }
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
@@ -191,7 +192,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             in
             { z80
                 | pc = pc
-                , flags = set_af v.value
+                , flags = set_af (v.value |> toInt)
                 , env = { env1 | time = v.time, sp = v.sp }
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
@@ -207,7 +208,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             in
             { z80
                 | pc = pc
-                , main = z80.main |> set_de_main v.value
+                , main = z80.main |> set_de_main (v.value |> toInt)
                 , env = { env1 | time = v.time, sp = v.sp }
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
@@ -273,10 +274,11 @@ rst value cpu_time z80 =
             z80.env
 
         pc =
-            Bitwise.and (z80.pc + 1) 0xFFFF
+            --Bitwise.and (z80.pc + 1) 0xFFFF
+            z80.pc |> incrementBy1
     in
     { z80
-        | pc = value - 199
+        | pc = value - 199 |> fromInt
         , env = { old_env | time = cpu_time } |> z80_push pc
         , interrupts = { interrupts | r = interrupts.r + 1 }
     }

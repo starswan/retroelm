@@ -3,11 +3,9 @@ module Z80Screen exposing (..)
 import Array exposing (Array)
 import Bitwise exposing (shiftRightBy)
 import Byte exposing (Byte, getBit)
-import Dict exposing (Dict)
 import Maybe
 import ScreenStorage exposing (RawScreenData, Z80Screen, rawScreenData)
 import SpectrumColour exposing (SpectrumColour, spectrumColour)
-import Vector32
 
 
 type alias ScreenData =
