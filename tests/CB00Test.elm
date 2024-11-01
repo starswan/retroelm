@@ -1,4 +1,4 @@
-module CBTest exposing (..)
+module CB00Test exposing (..)
 
 import Expect exposing (Expectation)
 import Test exposing (..)
