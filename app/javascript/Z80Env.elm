@@ -293,10 +293,10 @@ mem16 addr rom48k z80env =
         else
             let
                 low =
-                    getRamValue 0xBFFF z80env.ram
+                    z80env.ram |> getRamValue 0xBFFF
 
                 high =
-                    getRamValue 0 z80env.ram
+                    rom48k |> getROMValue 0
             in
             CpuTimeAndValue { z80env_time | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
 
