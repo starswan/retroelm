@@ -104,8 +104,8 @@ c_F53 =
 --}
 
 
-flags : FlagRegisters -> Int
-flags the_flags =
+get_flags : FlagRegisters -> Int
+get_flags the_flags =
     let
         f1 =
             the_flags.ff
@@ -255,8 +255,8 @@ sbc b flagRegs =
     { flagRegs | fa = fa, fb = fb, ff = ff, fr = fr, a = fr }
 
 
-cp : Int -> FlagRegisters -> FlagRegisters
-cp b flagRegs =
+z80_cp : Int -> FlagRegisters -> FlagRegisters
+z80_cp b flagRegs =
     let
         fa =
             flagRegs.a
@@ -356,11 +356,8 @@ inc v flagRegs =
 
         vv =
             Bitwise.and (v + 1) 0xFF
-
-        new_flags =
-            { flagRegs | ff = Bitwise.or ff vv, fb = 1, fa = v, fr = vv }
     in
-    IntWithFlags vv new_flags
+    IntWithFlags vv { flagRegs | ff = Bitwise.or ff vv, fb = 1, fa = v, fr = vv }
 
 
 dec : Int -> FlagRegisters -> IntWithFlags
@@ -615,3 +612,7 @@ set_af v =
             Bitwise.and v 0xFF
     in
     set_flags flagRegs a
+
+get_af : FlagRegisters -> Int
+get_af z80_flags =
+    Bitwise.or (shiftLeftBy8 z80_flags.a) (get_flags z80_flags)
