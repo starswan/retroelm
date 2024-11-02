@@ -17,7 +17,7 @@ import Z80 exposing (execute, get_ei, interrupt)
 import Z80Debug exposing (debugLog)
 import Z80Delta exposing (Z80Delta)
 import Z80Env exposing (mem, mem16, reset_cpu_time)
-import Z80Flags exposing (c_FC, c_FZ, flags, set_flags)
+import Z80Flags exposing (c_FC, c_FZ, get_flags, set_flags)
 import Z80Ram exposing (c_FRSTART, c_FRTIME)
 import Z80Rom exposing (Z80ROM, make_spectrum_rom)
 import Z80Tape exposing (Z80Tape)
@@ -1151,7 +1151,7 @@ doLoad cpu z80rom tape =
                                 aTapfile.block.dataLength
 
                             startState =
-                                { p = tape.tapePos.position, ix = cpu.main.ix, de = cpu.main |> get_de, h = h1, l = cpu.main |> get_l HL, a = cpu.flags.a, f = cpu.flags |> flags, rf = -1, data = Dict.empty, break = False }
+                                { p = tape.tapePos.position, ix = cpu.main.ix, de = cpu.main |> get_de, h = h1, l = cpu.main |> get_l HL, a = cpu.flags.a, f = cpu.flags |> get_flags, rf = -1, data = Dict.empty, break = False }
 
                             new_data =
                                 --		for(;;) {

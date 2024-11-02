@@ -28,12 +28,12 @@ import SingleWith8BitParameter exposing (singleWith8BitParam)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString)
 import Z80Debug exposing (debugTodo)
 import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..), jp_delta, rst_delta)
-import Z80Env exposing (Z80Env, addCpuTimeEnv, m1, mem, mem16, out, pop, z80_in, z80_push, z80env_constructor)
+import Z80Env exposing (Z80Env, addCpuTimeEnv, m1, mem, mem16, out, z80_in, z80_pop, z80_push, z80env_constructor)
 import Z80Execute exposing (DeltaWithChanges(..), apply_delta)
-import Z80Flags exposing (FlagRegisters, IntWithFlags, c_FC, c_FS, cp, set_af, z80_or, z80_sub)
+import Z80Flags exposing (FlagRegisters, IntWithFlags, c_FC, c_FS, get_af, set_af, z80_cp, z80_or, z80_sub)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, get_af, get_de, imm8, inc_pc, jp_z80, rst_z80, set_de_main, set_iff)
+import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, get_de, imm8, inc_pc, jp_z80, rst_z80, set_de_main, set_iff)
 
 constructor: Z80
 constructor =
@@ -139,31 +139,6 @@ set_pc pc z80 =
 --	void ei(boolean v) {IFF = v ? 3 : 0;}
 --
 --
---	private void adc_hl(int b)
---	{
---		int a,r;
---		r = (a=HL) + b + (Ff>>>8 & FC);
---		Ff = r>>>8;
---		Fa = a>>>8; Fb = b>>>8;
---		HL = r = (char)r;
---		Fr = r>>>8 | r<<8;
---		MP = a+1;
---		time += 7;
---	}
-adc_hl: Int -> Z80 -> Z80
-adc_hl b z80 =
-   let
-      a = z80.main.hl
-      r1 = a + b + (and (shiftRightBy8 z80.flags.ff) c_FC)
-      ff = shiftRightBy8 r1
-      fa = shiftRightBy8 a
-      fb = shiftRightBy8 b
-      r = char r1
-      fr = or (shiftRightBy8 r) (shiftLeftBy8 r)
-      main = z80.main
-      flags = z80.flags
-   in
-      { z80 | main = { main | hl = r }, flags = { flags | ff = ff, fa = fa, fb = fb, fr = fr} } |> add_cpu_time 7
 --
 --
 --	private void rrd()
@@ -437,7 +412,7 @@ execute_0xD0 rom48k z80 =
   in
     if (and z80.flags.ff 0x100) == 0 then
       let
-        popped = z80.env |> pop rom48k
+        popped = z80.env |> z80_pop rom48k
         --x = debug_log "ret nc" (popped.value |> subName) Nothing
       in
         --{ z80_1 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
@@ -450,7 +425,7 @@ execute_0xD1: Z80ROM -> Z80 -> Z80Delta
 execute_0xD1 rom48k z80 =
    -- case 0xD1: v=pop(); D=v>>>8; E=v&0xFF; break;
    let
-      v = z80.env |> pop rom48k
+      v = z80.env |> z80_pop rom48k
       --env = z80.env
       --z80_1 = { z80 | env = { env | time = v.time, sp = v.sp } }
    in
@@ -514,7 +489,7 @@ execute_0xD8 rom48k z80 =
     if and z80.flags.ff 0x100 /= 0 then
       let
         env = z80.env
-        v = { env | time = z80_1_time } |> pop rom48k
+        v = { env | time = z80_1_time } |> z80_pop rom48k
       in
         --debug_log "ret c" (v.value |> subName) ret
         --{ z80_1 | env = { env | time = v.time, sp = v.sp }, pc = v.value }
@@ -564,7 +539,7 @@ execute_0xF1: Z80ROM -> Z80 -> Z80Delta
 execute_0xF1 rom48k z80 =
     -- case 0xF1: af(pop()); break;
    let
-      v = z80.env |> pop rom48k
+      v = z80.env |> z80_pop rom48k
       --env = z80.env
       --z80_1 = { z80 | env = { env | time = v.time, sp = v.sp } }
    in
@@ -586,7 +561,7 @@ execute_0xF5: Z80ROM -> Z80 -> Z80Delta
 execute_0xF5 _ z80 =
    -- case 0xF5: push(A<<8|flags()); break;
    let
-      a = z80 |> get_af
+      a = z80.flags |> get_af
       --pushed = z80.env |> z80_push a
    in
       --{ z80 | env = pushed }
@@ -616,7 +591,7 @@ execute_0xF8 rom48k z80 =
        z80_2 = if (and z80.flags.ff c_FS) /= 0 then
                    let
                        env = z80.env
-                       popped = { env | time = z80_1_time } |> pop rom48k
+                       popped = { env | time = z80_1_time } |> z80_pop rom48k
                    in
                        --{ z80 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
                        CpuTimeWithSpAndPc popped.time popped.sp popped.value
@@ -649,7 +624,7 @@ execute_0xFE rom48k z80 =
    -- case 0xFE: cp(imm8()); break;
    let
       v = imm8 z80.pc z80.env.time rom48k z80.env.ram
-      flags = z80.flags |> cp v.value
+      flags = z80.flags |> z80_cp v.value
       env_1 = z80.env
    in
       { z80 | flags = flags, env = { env_1 | time = v.time }, pc = v.pc }

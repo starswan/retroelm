@@ -4,7 +4,7 @@ import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import GroupCB exposing (group_cb, group_xy_cb)
 import Z80Delta exposing (Z80Delta(..), jp, jp_delta, rst_delta)
-import Z80Env exposing (addCpuTimeEnv, pop)
+import Z80Env exposing (addCpuTimeEnv, z80_pop)
 import Z80Flags exposing (adc, z80_add)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIY(..), IXIYHL(..), Z80, call_if, get_bc, imm16, imm8, set_bc_main)
@@ -48,7 +48,7 @@ execute_0xC0 rom48k z80 =
     if z80.flags.fr /= 0 then
         let
             result =
-                env |> pop rom48k
+                env |> z80_pop rom48k
 
             --   env = z80_1.env
             --   --x = debug_log "ret nz" (result.value |> subName) Nothing
@@ -67,7 +67,7 @@ execute_0xC1 rom48k z80 =
     -- case 0xC1: v=pop(); B=v>>>8; C=v&0xFF; break;
     let
         v =
-            z80.env |> pop rom48k
+            z80.env |> z80_pop rom48k
 
         --env = z80.env
         --z80_1 = { z80 | env = { env | time = v.time, sp = v.sp } }
@@ -120,7 +120,7 @@ execute_0xC5 _ z80 =
     --z80 |> push (z80 |> get_bc)
     let
         bc =
-            z80 |> get_bc
+            z80.main |> get_bc
 
         --pushed = z80.env |> z80_push bc
     in
@@ -167,7 +167,7 @@ retz_0xC8 rom48k z80 =
     if z80.flags.fr == 0 then
         let
             popped =
-                { env | time = z80_1_time } |> pop rom48k
+                { env | time = z80_1_time } |> z80_pop rom48k
         in
         --{ z80_1 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
         CpuTimeWithSpAndPc popped.time popped.sp popped.value
@@ -182,7 +182,7 @@ execute_0xC9 rom48k z80 =
     -- case 0xC9: MP=PC=pop(); break;
     let
         a =
-            z80.env |> pop rom48k
+            z80.env |> z80_pop rom48k
 
         --b = debug_log "ret" (a.value |> subName) Nothing
         --env = z80.env

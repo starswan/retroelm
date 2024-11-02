@@ -3,7 +3,7 @@ module Group0x40 exposing (..)
 import Dict exposing (Dict)
 import Z80Delta exposing (Z80Delta(..), delta_noop)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY, IXIYHL, Z80, get_h, get_h_ixiy, get_l, get_l_ixiy, hl_deref_with_z80)
+import Z80Types exposing (IXIY, IXIYHL, Z80, get_h_ixiy, get_l_ixiy, hl_deref_with_z80)
 
 
 miniDict40 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)

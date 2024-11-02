@@ -6,7 +6,7 @@
 module Z80Env exposing (..)
 
 import Bitwise exposing (and, or, shiftRightBy)
-import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimePcAndValue, CpuTimeSpAndValue, addCpuTimeTime, c_NOCONT, cont, cont1, cont_port)
+import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimeIncrement, CpuTimePcAndValue, CpuTimeSpAndValue, addCpuTimeTime, c_NOCONT, cont, cont1, cont_port)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (shiftLeftBy8, shiftRightBy8, toHexString2)
 import Z80Debug exposing (debugLog)
@@ -19,9 +19,8 @@ import Z80Rom exposing (Z80ROM, getROMValue)
 
 
 type alias Z80Env =
-    {
-    --rom48k : Z80ROM
-     ram : Z80Ram
+    { --rom48k : Z80ROM
+      ram : Z80Ram
     , keyboard : Keyboard
     , time : CpuTimeCTime
     , sp : Int
@@ -32,6 +31,7 @@ type alias Z80EnvWithValue =
     { env : Z80Env
     , value : Int
     }
+
 
 type alias Z80EnvWithPC =
     { env : Z80Env
@@ -49,6 +49,7 @@ z80env_constructor =
     Z80Env Z80Ram.constructor Keyboard.constructor (CpuTimeCTime c_FRSTART 0) 0
 
 
+
 --set_rom : Array Int -> Z80Env -> Z80Env
 --set_rom romdata z80env =
 --    let
@@ -56,9 +57,6 @@ z80env_constructor =
 --            make_spectrum_rom romdata
 --    in
 --    { z80env | rom48k = rommy }
-
-
-
 --public final int m1(int addr, int ir) {
 --	int n = cpu.time - ctime;
 --	if(n>0) cont(n);
@@ -208,7 +206,7 @@ mem base_addr time rom48k ram =
 
 
 mem16 : Int -> Z80ROM -> Z80Env -> CpuTimeAndValue
-mem16 addr rom48k z80env  =
+mem16 addr rom48k z80env =
     let
         n =
             z80env.time.cpu_time - z80env.time.ctime
@@ -232,7 +230,7 @@ mem16 addr rom48k z80env  =
                 high =
                     getROMValue (addr1 + 0x4000) rom48k
             in
-            CpuTimeAndValue (CpuTimeCTime z80env_time.cpu_time c_NOCONT) (Bitwise.or low (shiftLeftBy8 high))
+            CpuTimeAndValue { z80env_time | ctime = c_NOCONT } (Bitwise.or low (shiftLeftBy8 high))
 
         else
             let
@@ -247,7 +245,7 @@ mem16 addr rom48k z80env  =
                         z80env_time |> cont1 0 |> cont1 3 |> addCpuTimeTime 6
 
                     else
-                        CpuTimeCTime z80env_time.cpu_time c_NOCONT
+                        { z80env_time | ctime = c_NOCONT }
             in
             CpuTimeAndValue z80env_1_time (Bitwise.or low (shiftLeftBy8 high))
 
@@ -290,17 +288,17 @@ mem16 addr rom48k z80env  =
                 high =
                     getRamValue addr1 z80env.ram
             in
-            CpuTimeAndValue (CpuTimeCTime z80env_time.cpu_time c_NOCONT) (or low (shiftLeftBy8 high))
+            CpuTimeAndValue { z80env_time | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
 
         else
             let
                 low =
-                    getRamValue 0xBFFF z80env.ram
+                    z80env.ram |> getRamValue 0xBFFF
 
                 high =
-                    getRamValue 0 z80env.ram
+                    rom48k |> getROMValue 0
             in
-            CpuTimeAndValue (CpuTimeCTime z80env_time.cpu_time c_NOCONT) (or low (shiftLeftBy8 high))
+            CpuTimeAndValue { z80env_time | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
 
 
 
@@ -498,7 +496,7 @@ z80_in portnum env_in =
 
         x =
             if value /= 0xFF then
-                debugLog "keyboard value" ((portnum |> toHexString2) ++ " " ++ (toHexString2 value)) value
+                debugLog "keyboard value" ((portnum |> toHexString2) ++ " " ++ toHexString2 value) value
 
             else
                 value
@@ -509,6 +507,11 @@ z80_in portnum env_in =
 addCpuTimeEnv : Int -> Z80Env -> Z80Env
 addCpuTimeEnv value z80env =
     { z80env | time = z80env.time |> addCpuTimeTime value }
+
+
+--addCpuTimeEnvInc : CpuTimeIncrement -> Z80Env -> Z80Env
+--addCpuTimeEnvInc value z80env =
+--    { z80env | time = z80env.time |> addCpuTimeTimeInc value }
 
 
 reset_cpu_time : Z80Env -> Z80Env
@@ -548,8 +551,8 @@ z80_push v z80env =
     { env_2 | sp = new_sp }
 
 
-pop : Z80ROM -> Z80Env -> CpuTimeSpAndValue
-pop z80rom z80_env  =
+z80_pop : Z80ROM -> Z80Env -> CpuTimeSpAndValue
+z80_pop z80rom z80_env =
     let
         v =
             z80_env |> mem16 z80_env.sp z80rom
@@ -558,4 +561,3 @@ pop z80rom z80_env  =
             v.time |> addCpuTimeTime 6
     in
     CpuTimeSpAndValue time (Bitwise.and (z80_env.sp + 2) 0xFFFF) v.value
-
