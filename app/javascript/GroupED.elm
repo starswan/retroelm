@@ -349,6 +349,8 @@ execute_ED48 _ z80 =
 
 execute_ED4A : Z80ROM -> Z80 -> Z80Delta
 execute_ED4A _ z80 =
+    -- case 0x4A: adc_hl(B<<8|C); break;
+    --0x4A -> z80 |> adc_hl (z80 |> get_bc)
     z80 |> adc_hl (z80.main |> get_bc)
 
 
@@ -411,8 +413,6 @@ group_ed rom48k z80_0 =
             --0x6A -> z80 |> adc_hl z80.main.hl
             ---- case 0x5A: adc_hl(D<<8|E); break;
             --0x5A -> z80 |> adc_hl (z80 |> get_de)
-            ---- case 0x4A: adc_hl(B<<8|C); break;
-            --0x4A -> z80 |> adc_hl (z80 |> get_bc)
             --else if List.member c.value [0x44, 0x4C, 0x54, 0x5C, 0x64, 0x6C, 0x74, 0x7C] then
             --   -- case 0x44:
             --   -- case 0x4C:
@@ -674,6 +674,8 @@ set_i v z80 =
     --{ z80 | interrupts = { interrupts | ir = ir } }
     { interrupts | ir = ir }
 
+
+
 --	private void adc_hl(int b)
 --	{
 --		int a,r;
@@ -685,18 +687,37 @@ set_i v z80 =
 --		MP = a+1;
 --		time += 7;
 --	}
-adc_hl: Int -> Z80 -> Z80Delta
+
+
+adc_hl : Int -> Z80 -> Z80Delta
 adc_hl b z80 =
-   let
-      a = z80.main.hl
-      r1 = a + b + (Bitwise.and (shiftRightBy8 z80.flags.ff) c_FC)
-      ff = shiftRightBy8 r1
-      fa = shiftRightBy8 a
-      fb = shiftRightBy8 b
-      r = char r1
-      fr = Bitwise.or (shiftRightBy8 r) (shiftLeftBy8 r)
-      main = z80.main
-      flags = z80.flags
-   in
-      --{ z80 | main = { main | hl = r }, flags = { flags | ff = ff, fa = fa, fb = fb, fr = fr} } |> add_cpu_time 7
-      FlagsWithMainAndTime { flags | ff = ff, fa = fa, fb = fb, fr = fr } { main | hl = r } 7
+    let
+        a =
+            z80.main.hl
+
+        r1 =
+            a + b + Bitwise.and (shiftRightBy8 z80.flags.ff) c_FC
+
+        ff =
+            shiftRightBy8 r1
+
+        fa =
+            shiftRightBy8 a
+
+        fb =
+            shiftRightBy8 b
+
+        r =
+            char r1
+
+        fr =
+            Bitwise.or (shiftRightBy8 r) (shiftLeftBy8 r)
+
+        main =
+            z80.main
+
+        flags =
+            z80.flags
+    in
+    --{ z80 | main = { main | hl = r }, flags = { flags | ff = ff, fa = fa, fb = fb, fr = fr} } |> add_cpu_time 7
+    FlagsWithMainAndTime { flags | ff = ff, fa = fa, fb = fb, fr = fr } { main | hl = r } 7
