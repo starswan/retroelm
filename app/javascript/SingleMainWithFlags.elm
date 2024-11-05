@@ -1,82 +1,88 @@
 module SingleMainWithFlags exposing (..)
 
 import Bitwise
-import CpuTimeCTime exposing (CpuTimeIncrement(..), increment3)
+import CpuTimeCTime exposing (CpuTimeIncrement(..), increment0, increment3)
 import Dict exposing (Dict)
 import Utils exposing (shiftLeftBy8, shiftRightBy8)
 import Z80Change exposing (Z80Change(..))
-import Z80Flags exposing (FlagRegisters, adc, add16, dec, inc, sbc, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
+import Z80Flags exposing (FlagRegisters, adc, add16, dec, inc, sbc, shifter0, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
 import Z80Types exposing (MainWithIndexRegisters, get_bc, get_de)
 
 
-singleByteMainAndFlagRegisters : Dict Int (MainWithIndexRegisters -> FlagRegisters -> Z80Change)
+singleByteMainAndFlagRegisters : Dict Int ( MainWithIndexRegisters -> FlagRegisters -> Z80Change, Int )
 singleByteMainAndFlagRegisters =
     Dict.fromList
-        [ ( 0x02, ld_indirect_bc_a )
-        , ( 0x04, inc_b )
-        , ( 0x05, dec_b )
-        , ( 0x09, add_hl_bc )
-        , ( 0x0C, inc_c )
-        , ( 0x0D, dec_c )
-        , ( 0x12, ld_indirect_de_a )
-        , ( 0x14, inc_d )
-        , ( 0x15, dec_d )
-        , ( 0x19, add_hl_de )
-        , ( 0x1C, inc_e )
-        , ( 0x1D, dec_e )
-        , ( 0x24, inc_h )
-        , ( 0x25, dec_h )
-        , ( 0x29, add_hl_hl )
-        , ( 0x2C, inc_l )
-        , ( 0x2D, dec_l )
-        , ( 0x80, add_a_b )
-        , ( 0x81, add_a_c )
-        , ( 0x82, add_a_d )
-        , ( 0x83, add_a_e )
-        , ( 0x84, add_a_h )
-        , ( 0x85, add_a_l )
-        , ( 0x88, adc_a_b )
-        , ( 0x89, adc_a_c )
-        , ( 0x8A, adc_a_d )
-        , ( 0x8B, adc_a_e )
-        , ( 0x8C, adc_a_h )
-        , ( 0x8D, adc_a_l )
-        , ( 0x90, sub_b )
-        , ( 0x91, sub_c )
-        , ( 0x92, sub_d )
-        , ( 0x93, sub_e )
-        , ( 0x94, sub_h )
-        , ( 0x95, sub_l )
-        , ( 0x98, sbc_b )
-        , ( 0x99, sbc_c )
-        , ( 0x9A, sbc_d )
-        , ( 0x9B, sbc_e )
-        , ( 0x9C, sbc_h )
-        , ( 0x9D, sbc_l )
-        , ( 0xA0, and_b )
-        , ( 0xA1, and_c )
-        , ( 0xA2, and_d )
-        , ( 0xA3, and_e )
-        , ( 0xA4, and_h )
-        , ( 0xA5, and_l )
-        , ( 0xA8, xor_b )
-        , ( 0xA9, xor_c )
-        , ( 0xAA, xor_d )
-        , ( 0xAB, xor_e )
-        , ( 0xAC, xor_h )
-        , ( 0xAD, xor_l )
-        , ( 0xB0, or_b )
-        , ( 0xB1, or_c )
-        , ( 0xB2, or_d )
-        , ( 0xB3, or_e )
-        , ( 0xB4, or_h )
-        , ( 0xB5, or_l )
-        , ( 0xB8, cp_b )
-        , ( 0xB9, cp_c )
-        , ( 0xBA, cp_d )
-        , ( 0xBB, cp_e )
-        , ( 0xBC, cp_h )
-        , ( 0xBD, cp_l )
+        [ ( 0x02, ( ld_indirect_bc_a, 1 ) )
+        , ( 0x04, ( inc_b, 1 ) )
+        , ( 0x05, ( dec_b, 1 ) )
+        , ( 0x09, ( add_hl_bc, 1 ) )
+        , ( 0x0C, ( inc_c, 1 ) )
+        , ( 0x0D, ( dec_c, 1 ) )
+        , ( 0x12, ( ld_indirect_de_a, 1 ) )
+        , ( 0x14, ( inc_d, 1 ) )
+        , ( 0x15, ( dec_d, 1 ) )
+        , ( 0x19, ( add_hl_de, 1 ) )
+        , ( 0x1C, ( inc_e, 1 ) )
+        , ( 0x1D, ( dec_e, 1 ) )
+        , ( 0x24, ( inc_h, 1 ) )
+        , ( 0x25, ( dec_h, 1 ) )
+        , ( 0x29, ( add_hl_hl, 1 ) )
+        , ( 0x2C, ( inc_l, 1 ) )
+        , ( 0x2D, ( dec_l, 1 ) )
+        , ( 0x80, ( add_a_b, 1 ) )
+        , ( 0x81, ( add_a_c, 1 ) )
+        , ( 0x82, ( add_a_d, 1 ) )
+        , ( 0x83, ( add_a_e, 1 ) )
+        , ( 0x84, ( add_a_h, 1 ) )
+        , ( 0x85, ( add_a_l, 1 ) )
+        , ( 0x88, ( adc_a_b, 1 ) )
+        , ( 0x89, ( adc_a_c, 1 ) )
+        , ( 0x8A, ( adc_a_d, 1 ) )
+        , ( 0x8B, ( adc_a_e, 1 ) )
+        , ( 0x8C, ( adc_a_h, 1 ) )
+        , ( 0x8D, ( adc_a_l, 1 ) )
+        , ( 0x90, ( sub_b, 1 ) )
+        , ( 0x91, ( sub_c, 1 ) )
+        , ( 0x92, ( sub_d, 1 ) )
+        , ( 0x93, ( sub_e, 1 ) )
+        , ( 0x94, ( sub_h, 1 ) )
+        , ( 0x95, ( sub_l, 1 ) )
+        , ( 0x98, ( sbc_b, 1 ) )
+        , ( 0x99, ( sbc_c, 1 ) )
+        , ( 0x9A, ( sbc_d, 1 ) )
+        , ( 0x9B, ( sbc_e, 1 ) )
+        , ( 0x9C, ( sbc_h, 1 ) )
+        , ( 0x9D, ( sbc_l, 1 ) )
+        , ( 0xA0, ( and_b, 1 ) )
+        , ( 0xA1, ( and_c, 1 ) )
+        , ( 0xA2, ( and_d, 1 ) )
+        , ( 0xA3, ( and_e, 1 ) )
+        , ( 0xA4, ( and_h, 1 ) )
+        , ( 0xA5, ( and_l, 1 ) )
+        , ( 0xA8, ( xor_b, 1 ) )
+        , ( 0xA9, ( xor_c, 1 ) )
+        , ( 0xAA, ( xor_d, 1 ) )
+        , ( 0xAB, ( xor_e, 1 ) )
+        , ( 0xAC, ( xor_h, 1 ) )
+        , ( 0xAD, ( xor_l, 1 ) )
+        , ( 0xB0, ( or_b, 1 ) )
+        , ( 0xB1, ( or_c, 1 ) )
+        , ( 0xB2, ( or_d, 1 ) )
+        , ( 0xB3, ( or_e, 1 ) )
+        , ( 0xB4, ( or_h, 1 ) )
+        , ( 0xB5, ( or_l, 1 ) )
+        , ( 0xB8, ( cp_b, 1 ) )
+        , ( 0xB9, ( cp_c, 1 ) )
+        , ( 0xBA, ( cp_d, 1 ) )
+        , ( 0xBB, ( cp_e, 1 ) )
+        , ( 0xBC, ( cp_h, 1 ) )
+        , ( 0xBD, ( cp_l, 1 ) )
+        , ( 0xCB00, ( rlc_b, 2 ) )
+        , ( 0xCB01, ( rlc_c, 2 ) )
+        , ( 0xCB02, ( rlc_d, 2 ) )
+        , ( 0xCB03, ( rlc_e, 2 ) )
+        , ( 0xCB04, ( rlc_h, 2 ) )
+        , ( 0xCB05, ( rlc_l, 2 ) )
         ]
 
 
@@ -177,7 +183,7 @@ inc_h z80_main z80_flags =
         new_xy =
             Bitwise.or (Bitwise.and z80_main.hl 0xFF) (shiftLeftBy8 value.value)
     in
-    FlagsWithHLRegister value.flags new_xy 0
+    FlagsWithHLRegister value.flags new_xy increment0
 
 
 dec_h : MainWithIndexRegisters -> FlagRegisters -> Z80Change
@@ -191,7 +197,7 @@ dec_h z80_main z80_flags =
         new_xy =
             Bitwise.or (Bitwise.and z80_main.hl 0xFF) (shiftLeftBy8 value.value)
     in
-    FlagsWithHLRegister value.flags new_xy 0
+    FlagsWithHLRegister value.flags new_xy increment0
 
 
 inc_l : MainWithIndexRegisters -> FlagRegisters -> Z80Change
@@ -630,3 +636,69 @@ ld_indirect_de_a z80_main z80_flags =
     --z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3 |> OnlyEnv
     --SetMem8WithTime addr z80.flags.a 3
     Z80ChangeSetMem8WithTime addr z80_flags.a increment3
+
+
+rlc_b : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+rlc_b z80_main z80_flags =
+    -- case 0x00: B=shifter(o,B); break;
+    let
+        value =
+            shifter0 z80_main.b z80_flags
+    in
+    FlagsWithBRegister value.flags value.value
+
+
+rlc_c : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+rlc_c z80_main z80_flags =
+    -- case 0x01: C=shifter(o,C); break;
+    let
+        value =
+            shifter0 z80_main.c z80_flags
+    in
+    FlagsWithCRegister value.flags value.value
+
+
+rlc_d : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+rlc_d z80_main z80_flags =
+    -- case 0x02: D=shifter(o,D); break;
+    let
+        value =
+            shifter0 z80_main.d z80_flags
+    in
+    FlagsWithDRegister value.flags value.value
+
+
+rlc_e : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+rlc_e z80_main z80_flags =
+    -- case 0x03: E=shifter(o,E); break;
+    let
+        value =
+            shifter0 z80_main.e z80_flags
+    in
+    FlagsWithERegister value.flags value.value
+
+
+rlc_h : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+rlc_h z80_main z80_flags =
+    --case 0x04: HL=HL&0xFF|shifter(o,HL>>>8)<<8; break
+    let
+        value =
+            shifter0 (z80_main.hl |> shiftRightBy8) z80_flags
+
+        new_hl =
+            Bitwise.or (value.value |> shiftLeftBy8) (Bitwise.and z80_main.hl 0xFF)
+    in
+    FlagsWithHLRegister value.flags new_hl increment0
+
+
+rlc_l : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+rlc_l z80_main z80_flags =
+    -- case 0x05: HL=HL&0xFF00|shifter(o,HL&0xFF); break;
+    let
+        value =
+            shifter0 (Bitwise.and z80_main.hl 0xFF) z80_flags
+
+        new_hl =
+            Bitwise.or value.value (Bitwise.and z80_main.hl 0xFF00)
+    in
+    FlagsWithHLRegister value.flags new_hl increment0

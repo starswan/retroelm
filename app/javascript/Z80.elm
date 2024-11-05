@@ -419,10 +419,18 @@ execute_delta rom48k tmp_z80 =
    --switch(c) {
    let
       interrupts = tmp_z80.interrupts
-      c = tmp_z80.env |> m1 tmp_z80.pc (Bitwise.or interrupts.ir (Bitwise.and interrupts.r 0x7F)) rom48k
-      instr_code = c.value
+      ct = tmp_z80.env |> m1 tmp_z80.pc (Bitwise.or interrupts.ir (Bitwise.and interrupts.r 0x7F)) rom48k
+
+      -- CB is just another lookup (hopefully) as they are all quite different
+      (instrCode, instrTime) = if ct.value == 0xCB then
+                                   let
+                                      param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ct.time rom48k tmp_z80.env.ram
+                                   in
+                                      (Bitwise.or 0xCB00 param.value, param.time)
+                                 else
+                                    (ct.value,ct.time)
    in
-   case triple16WithFlags |> Dict.get instr_code of
+   case triple16WithFlags |> Dict.get instrCode of
        Just f ->
          let
             doubleParam = tmp_z80.env |> mem16 (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) rom48k
@@ -430,7 +438,7 @@ execute_delta rom48k tmp_z80 =
            -- duplicate of code in imm16 - add 6 to the cpu_time
            TripleFlagDelta (doubleParam.time |> addCpuTimeTime 6) (f doubleParam.value tmp_z80.flags)
        Nothing ->
-           case tripleByteWith16BitParam |> Dict.get instr_code of
+           case tripleByteWith16BitParam |> Dict.get instrCode of
               Just f ->
                  let
                     doubleParam = tmp_z80.env |> mem16 (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) rom48k
@@ -438,25 +446,25 @@ execute_delta rom48k tmp_z80 =
                    -- duplicate of code in imm16 - add 6 to the cpu_time
                    TripleChangeDelta (doubleParam.time |> addCpuTimeTime 6) (f doubleParam.value)
               Nothing ->
-                case maybeRelativeJump |> Dict.get instr_code of
+                case maybeRelativeJump |> Dict.get instrCode of
                    Just f ->
                        let
-                          param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) c.time rom48k tmp_z80.env.ram
+                          param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) instrTime rom48k tmp_z80.env.ram
                        in
                        -- duplicate of code in imm8 - add 3 to the cpu_time
                        JumpChangeDelta (param.time |> addCpuTimeTime 3) (f param.value tmp_z80.flags)
                    Nothing ->
-                       case doubleWithRegisters |> Dict.get instr_code of
+                       case doubleWithRegisters |> Dict.get instrCode of
                            Just f ->
                                let
-                                  param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) c.time rom48k tmp_z80.env.ram
+                                  param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) instrTime rom48k tmp_z80.env.ram
                                in
                                -- duplicate of code in imm8 - add 3 to the cpu_time
                                DoubleWithRegistersDelta (param.time |> addCpuTimeTime 3) (f tmp_z80.main param.value)
                            Nothing ->
-                              case singleByte c.time instr_code tmp_z80 rom48k of
+                              case singleByte instrTime instrCode tmp_z80 rom48k of
                                   Just deltaThing -> deltaThing
-                                  Nothing -> oldDelta c interrupts tmp_z80 rom48k
+                                  Nothing -> oldDelta ct interrupts tmp_z80 rom48k
 -- case 0xD4: call((Ff&0x100)==0); break;
 -- case 0xE4: call((flags()&FP)==0); break;
 -- case 0xEC: call((flags()&FP)!=0); break;
@@ -488,7 +496,7 @@ singleByte ctime instr_code tmp_z80 rom48k =
                                         Just flagFunc -> Just (FlagDelta ctime (flagFunc tmp_z80.flags))
                                         Nothing ->
                                           case singleByteMainAndFlagRegisters |> Dict.get instr_code of
-                                              Just f -> Just (PureDelta ctime (f tmp_z80.main tmp_z80.flags))
+                                              Just (f, pcInc) -> Just (PureDelta pcInc ctime (f tmp_z80.main tmp_z80.flags))
                                               Nothing -> Nothing
 
 

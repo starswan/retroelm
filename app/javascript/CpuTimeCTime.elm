@@ -62,6 +62,9 @@ cpuTimeIncrement4 =
 increment2 =
     CpuTimeIncrement 2
 
+increment0 =
+    CpuTimeIncrement 0
+
 
 
 --	private final void cont1(int t) {

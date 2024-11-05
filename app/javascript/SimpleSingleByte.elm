@@ -18,8 +18,7 @@ singleByteMainRegs =
         , ( 0x23, inc_hl )
         , ( 0x2B, dec_hl )
         , ( 0x34, inc_indirect_hl )
-        ,( 0x35, dec_indirect_hl )
-
+        , ( 0x35, dec_indirect_hl )
         , ( 0x41, ld_b_c )
         , ( 0x42, ld_b_d )
         , ( 0x43, ld_b_e )
@@ -450,14 +449,16 @@ inc_indirect_hl z80_main =
     -- case 0x34: {int a; v=inc(env.mem(a=getd(xy))); time+=4; env.mem(a,v); time+=3;} break;
     IncrementIndirect z80_main.hl increment7
 
-dec_indirect_hl :  MainWithIndexRegisters -> RegisterChange
+
+dec_indirect_hl : MainWithIndexRegisters -> RegisterChange
 dec_indirect_hl z80_main =
     -- case 0x35: v=dec(env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
     -- case 0x35: {int a; v=dec(env.mem(a=getd(xy))); time+=4; env.mem(a,v); time+=3;} break;
     DecrementIndirect z80_main.hl increment7
 
+
 jp_hl : MainWithIndexRegisters -> RegisterChange
-jp_hl  z80_main =
+jp_hl z80_main =
     -- case 0xE9: PC=HL; break;
     -- case 0xE9: PC=xy; break;
     RegisterChangeJump z80_main.hl

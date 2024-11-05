@@ -12,7 +12,7 @@ type Z80Change
     | FlagsWithDRegister FlagRegisters Int
     | FlagsWithERegister FlagRegisters Int
     | HLRegister Int
-    | FlagsWithHLRegister FlagRegisters Int Int
+    | FlagsWithHLRegister FlagRegisters Int CpuTimeIncrement
     | Z80RegisterB Int
     | Z80RegisterC Int
     | Z80ChangeFlags FlagRegisters
@@ -76,7 +76,7 @@ applyZ80Change change z80 =
                     z80.main
 
                 env =
-                    z80.env |> addCpuTimeEnv time
+                    z80.env |> addCpuTimeEnvInc time
             in
             { z80 | env = env, flags = flagRegisters, main = { main | hl = int } }
 

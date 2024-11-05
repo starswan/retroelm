@@ -1,7 +1,7 @@
 module Group0x20 exposing (..)
 
 import Bitwise
-import CpuTimeCTime exposing (CpuTimeAndPc, addCpuTimeTime)
+import CpuTimeCTime exposing (CpuTimeAndPc, addCpuTimeTime, increment0)
 import Dict exposing (Dict)
 import Utils exposing (char, shiftLeftBy8, shiftRightBy8)
 import Z80Delta exposing (Z80Delta(..))
@@ -114,7 +114,7 @@ execute_0x24 ixiyhl rom48k z80 =
             set_xy_ixiy new_xy ixiyhl z80.main
     in
     --{ z80_1 | main = main }
-    FlagsWithPCMainAndTime value.flags z80.pc main 0
+    FlagsWithPCMainAndTime value.flags z80.pc main increment0
 
 
 execute_0x25 : IXIY -> Z80ROM -> Z80 -> Z80Delta
@@ -138,7 +138,7 @@ execute_0x25 ixiyhl rom48k z80 =
             set_xy_ixiy new_xy ixiyhl z80_1.main
     in
     --{ z80_1 | main = main }
-    FlagsWithPCMainAndTime value.flags z80.pc main 0
+    FlagsWithPCMainAndTime value.flags z80.pc main increment0
 
 
 ld_h_n : IXIY -> Z80ROM -> Z80 -> Z80Delta
@@ -246,7 +246,7 @@ execute_0x2C ixiyhl rom48k z80 =
             set_xy_ixiy new_xy ixiyhl z80.main
     in
     --{ z80_1 | main = main }
-    FlagsWithPCMainAndTime l.flags z80.pc main 0
+    FlagsWithPCMainAndTime l.flags z80.pc main increment0
 
 
 execute_0x2D : IXIY -> Z80ROM -> Z80 -> Z80Delta
@@ -275,7 +275,7 @@ execute_0x2D ixiyhl rom48k z80 =
             set_xy_ixiy new_xy ixiyhl z80.main
     in
     --{ new_z80 | main = main }
-    FlagsWithPCMainAndTime l.flags z80.pc main 0
+    FlagsWithPCMainAndTime l.flags z80.pc main increment0
 
 
 ld_l_n : IXIY -> Z80ROM -> Z80 -> Z80Delta

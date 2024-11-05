@@ -63,63 +63,6 @@ execute_CB0007 raw z80 =
     IntWithFlagsTimeAndPC value.value value.flags raw.time raw.pc
 
 
-execute_CB00 : Z80 -> Z80Delta
-execute_CB00 z80 =
-    let
-        x =
-            z80 |> execute_CB0007 (z80 |> b_with_z80)
-
-        main =
-            z80.main
-    in
-    FlagsWithPCMainAndCpuTime x.flags x.pc { main | b = x.value } x.time
-
-
-execute_CB01 : Z80 -> Z80Delta
-execute_CB01 z80 =
-    let
-        x =
-            z80 |> execute_CB0007 (z80 |> c_with_z80)
-
-        main =
-            z80.main
-    in
-    FlagsWithPCMainAndCpuTime x.flags x.pc { main | c = x.value } x.time
-
-
-execute_CB02 : Z80 -> Z80Delta
-execute_CB02 z80 =
-    let
-        x =
-            z80 |> execute_CB0007 (z80 |> d_with_z80)
-
-        main =
-            z80.main
-    in
-    FlagsWithPCMainAndCpuTime x.flags x.pc { main | d = x.value } x.time
-
-
-execute_CB03 : Z80 -> Z80Delta
-execute_CB03 z80 =
-    let
-        x =
-            z80 |> execute_CB0007 (z80 |> e_with_z80)
-
-        main =
-            z80.main
-    in
-    FlagsWithPCMainAndCpuTime x.flags x.pc { main | e = x.value } x.time
-
-
-execute_CB04 : Z80 -> Z80Delta
-execute_CB04 z80 =
-    let
-        x =
-            z80 |> execute_CB0007 (z80 |> h_with_z80 HL)
-    in
-    FlagsWithPCMainAndCpuTime x.flags x.pc (z80.main |> set_h x.value HL) x.time
-
-
 execute_CB05 : Z80 -> Z80Delta
 execute_CB05 z80 =
     let
