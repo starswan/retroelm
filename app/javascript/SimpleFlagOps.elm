@@ -5,46 +5,46 @@ import CpuTimeCTime exposing (CpuTimeIncrement(..))
 import Dict exposing (Dict)
 import Utils exposing (shiftRightBy8)
 import Z80Change exposing (FlagChange(..))
-import Z80Flags exposing (FlagRegisters, adc, c_FP, c_FS, cpl, daa, dec, get_af, get_flags, inc, rot, sbc, scf_ccf, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
-import Z80Types exposing (get_af_z80)
+import Z80Flags exposing (FlagRegisters, adc, c_FP, c_FS, cpl, daa, dec, get_af, get_flags, inc, rot, sbc, scf_ccf, shifter0, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
 
 
-singleByteFlags : Dict Int (FlagRegisters -> FlagChange)
+singleByteFlags : Dict Int ( FlagRegisters -> FlagChange, Int )
 singleByteFlags =
     Dict.fromList
-        [ ( 0x07, rlca )
-        , ( 0x0F, rrca )
-        , ( 0x17, rla )
-        , ( 0x1F, rra )
-        , ( 0x27, z80_daa )
-        , ( 0x2F, z80_cpl )
-        , ( 0x37, scf )
-        , ( 0x3C, inc_a )
-        , ( 0x3D, dec_a )
-        , ( 0x3F, ccf )
-        , ( 0x47, ld_b_a )
-        , ( 0x4F, ld_c_a )
-        , ( 0x57, ld_d_a )
-        , ( 0x5F, ld_e_a )
-        , ( 0x67, ld_h_a )
-        , ( 0x6F, ld_l_a )
-        , ( 0x87, add_a_a )
-        , ( 0x8F, adc_a_a )
-        , ( 0x97, sub_a )
-        , ( 0x9F, sbc_a )
-        , ( 0xA7, and_a )
-        , ( 0xAF, xor_a )
-        , ( 0xB7, or_a )
-        , ( 0xBF, cp_a )
-        , ( 0xC0, ret_nz )
-        , ( 0xC8, ret_z )
-        , ( 0xD0, ret_nc )
-        , ( 0xD8, ret_c )
-        , ( 0xE0, ret_po )
-        , ( 0xE8, ret_pe )
-        , ( 0xF0, ret_p )
-        , ( 0xF5, push_af )
-        , ( 0xF8, ret_m )
+        [ ( 0x07, ( rlca, 1 ) )
+        , ( 0x0F, ( rrca, 1 ) )
+        , ( 0x17, ( rla, 1 ) )
+        , ( 0x1F, ( rra, 1 ) )
+        , ( 0x27, ( z80_daa, 1 ) )
+        , ( 0x2F, ( z80_cpl, 1 ) )
+        , ( 0x37, ( scf, 1 ) )
+        , ( 0x3C, ( inc_a, 1 ) )
+        , ( 0x3D, ( dec_a, 1 ) )
+        , ( 0x3F, ( ccf, 1 ) )
+        , ( 0x47, ( ld_b_a, 1 ) )
+        , ( 0x4F, ( ld_c_a, 1 ) )
+        , ( 0x57, ( ld_d_a, 1 ) )
+        , ( 0x5F, ( ld_e_a, 1 ) )
+        , ( 0x67, ( ld_h_a, 1 ) )
+        , ( 0x6F, ( ld_l_a, 1 ) )
+        , ( 0x87, ( add_a_a, 1 ) )
+        , ( 0x8F, ( adc_a_a, 1 ) )
+        , ( 0x97, ( sub_a, 1 ) )
+        , ( 0x9F, ( sbc_a, 1 ) )
+        , ( 0xA7, ( and_a, 1 ) )
+        , ( 0xAF, ( xor_a, 1 ) )
+        , ( 0xB7, ( or_a, 1 ) )
+        , ( 0xBF, ( cp_a, 1 ) )
+        , ( 0xC0, ( ret_nz, 1 ) )
+        , ( 0xC8, ( ret_z, 1 ) )
+        , ( 0xD0, ( ret_nc, 1 ) )
+        , ( 0xD8, ( ret_c, 1 ) )
+        , ( 0xE0, ( ret_po, 1 ) )
+        , ( 0xE8, ( ret_pe, 1 ) )
+        , ( 0xF0, ( ret_p, 1 ) )
+        , ( 0xF5, ( push_af, 1 ) )
+        , ( 0xF8, ( ret_m, 1 ) )
+        , ( 0xCB07, ( rlc_a, 2 ) )
         ]
 
 
@@ -320,3 +320,16 @@ push_af z80_flags =
     --in
     ----{ z80 | env = pushed }
     FlagChangePush (z80_flags |> get_af)
+
+
+rlc_a : FlagRegisters -> FlagChange
+rlc_a z80_flags =
+    --case 0x07: A=shifter(o,A); break;
+    let
+        value =
+            shifter0 z80_flags.a z80_flags
+
+        new_flags =
+            value.flags
+    in
+    OnlyFlags { new_flags | a = value.value }

@@ -24,12 +24,12 @@ import SingleNoParams exposing (singleWithNoParam)
 import SingleWith8BitParameter exposing (doubleWithRegisters, maybeRelativeJump, singleWith8BitParam)
 import TripleByte exposing (tripleByteWith16BitParam)
 import TripleWithFlags exposing (triple16WithFlags)
-import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString)
+import Utils exposing (shiftLeftBy8, toHexString)
 import Z80Debug exposing (debugTodo)
 import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..), rst_delta)
-import Z80Env exposing (Z80Env, addCpuTimeEnv, m1, mem, mem16, out, z80_in, z80_pop, z80_push, z80env_constructor)
+import Z80Env exposing (Z80Env, addCpuTimeEnv, m1, mem, mem16, out, z80_in, z80_push, z80env_constructor)
 import Z80Execute exposing (DeltaWithChanges(..), apply_delta)
-import Z80Flags exposing (FlagRegisters, IntWithFlags, c_FC)
+import Z80Flags exposing (FlagRegisters, IntWithFlags)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, imm8, inc_pc)
@@ -493,7 +493,7 @@ singleByte ctime instr_code tmp_z80 rom48k =
                                 Just mainRegFunc ->  Just (RegisterChangeDelta ctime (mainRegFunc tmp_z80.main))
                                 Nothing ->
                                     case singleByteFlags |> Dict.get instr_code of
-                                        Just flagFunc -> Just (FlagDelta ctime (flagFunc tmp_z80.flags))
+                                        Just (flagFunc, t) -> Just (FlagDelta t ctime (flagFunc tmp_z80.flags))
                                         Nothing ->
                                           case singleByteMainAndFlagRegisters |> Dict.get instr_code of
                                               Just (f, pcInc) -> Just (PureDelta pcInc ctime (f tmp_z80.main tmp_z80.flags))

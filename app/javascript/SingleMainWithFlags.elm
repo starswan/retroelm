@@ -702,3 +702,4 @@ rlc_l z80_main z80_flags =
             Bitwise.or value.value (Bitwise.and z80_main.hl 0xFF00)
     in
     FlagsWithHLRegister value.flags new_hl increment0
+

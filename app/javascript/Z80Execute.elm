@@ -20,7 +20,7 @@ import Z80Types exposing (IXIYHL(..), Z80, set_bc_main, set_de_main)
 type DeltaWithChanges
     = OldDeltaWithChanges DeltaWithChangesData
     | PureDelta Int CpuTimeCTime Z80Change
-    | FlagDelta CpuTimeCTime FlagChange
+    | FlagDelta Int CpuTimeCTime FlagChange
     | RegisterChangeDelta CpuTimeCTime RegisterChange
     | Simple8BitDelta CpuTimeCTime Single8BitChange
     | DoubleWithRegistersDelta CpuTimeCTime DoubleWithRegisterChange
@@ -40,8 +40,8 @@ apply_delta z80 rom48k z80delta =
         PureDelta cpuInc cpu_time z80ChangeData ->
             z80 |> applyPureDelta cpuInc cpu_time z80ChangeData
 
-        FlagDelta cpuTimeCTime flagRegisters ->
-            z80 |> applyFlagDelta cpuTimeCTime flagRegisters rom48k
+        FlagDelta pcInc cpuTimeCTime flagRegisters ->
+            z80 |> applyFlagDelta pcInc cpuTimeCTime flagRegisters rom48k
 
         RegisterChangeDelta cpuTimeCTime registerChange ->
             z80 |> applyRegisterDelta cpuTimeCTime registerChange rom48k
@@ -180,8 +180,8 @@ applySimple8BitDelta cpu_time z80changeData tmp_z80 =
     { z80 | pc = new_pc, main = main }
 
 
-applyFlagDelta : CpuTimeCTime -> FlagChange -> Z80ROM -> Z80 -> Z80
-applyFlagDelta cpu_time z80_flags rom48k tmp_z80 =
+applyFlagDelta :Int -> CpuTimeCTime -> FlagChange -> Z80ROM -> Z80 -> Z80
+applyFlagDelta pcInc cpu_time z80_flags rom48k tmp_z80 =
     let
         interrupts =
             tmp_z80.interrupts
@@ -190,7 +190,7 @@ applyFlagDelta cpu_time z80_flags rom48k tmp_z80 =
             tmp_z80.env
 
         new_pc =
-            Bitwise.and (tmp_z80.pc + 1) 0xFFFF
+            Bitwise.and (tmp_z80.pc + pcInc) 0xFFFF
 
         z80 =
             { tmp_z80 | pc = new_pc, env = { env | time = cpu_time |> addCpuTimeTimeInc cpuTimeIncrement4 }, interrupts = { interrupts | r = interrupts.r + 1 } }
