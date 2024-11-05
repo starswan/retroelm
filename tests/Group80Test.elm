@@ -1,10 +1,9 @@
 module Group80Test exposing (..)
 
-import Bitwise exposing (shiftRightBy)
 import Expect exposing (Expectation)
 import Test exposing (..)
 import Z80 exposing (execute_instruction)
-import Z80Env exposing (mem, mem16, setMem, setMem16)
+import Z80Env exposing (setMem)
 import Z80Rom
 
 suite : Test
