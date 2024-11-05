@@ -29,6 +29,7 @@ singleByteMainAndFlagRegisters =
         , ( 0x29, ( add_hl_hl, 1 ) )
         , ( 0x2C, ( inc_l, 1 ) )
         , ( 0x2D, ( dec_l, 1 ) )
+        , ( 0x77, ( ld_indirect_hl_a, 1 ) )
         , ( 0x80, ( add_a_b, 1 ) )
         , ( 0x81, ( add_a_c, 1 ) )
         , ( 0x82, ( add_a_d, 1 ) )
@@ -623,7 +624,7 @@ ld_indirect_bc_a z80_main z80_flags =
     in
     --{ z80 | env = z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3 }
     --SetMem8WithTime addr z80.flags.a 3
-    Z80ChangeSetMem8WithTime addr z80_flags.a increment3
+    Z80ChangeSetIndirect addr z80_flags.a increment3
 
 
 ld_indirect_de_a : MainWithIndexRegisters -> FlagRegisters -> Z80Change
@@ -635,7 +636,7 @@ ld_indirect_de_a z80_main z80_flags =
     in
     --z80.env |> set_mem addr z80.flags.a |> add_cpu_time_env 3 |> OnlyEnv
     --SetMem8WithTime addr z80.flags.a 3
-    Z80ChangeSetMem8WithTime addr z80_flags.a increment3
+    Z80ChangeSetIndirect addr z80_flags.a increment3
 
 
 rlc_b : MainWithIndexRegisters -> FlagRegisters -> Z80Change
@@ -703,3 +704,9 @@ rlc_l z80_main z80_flags =
     in
     FlagsWithHLRegister value.flags new_hl increment0
 
+
+ld_indirect_hl_a : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+ld_indirect_hl_a z80_main z80_flags =
+    -- case 0x77: env.mem(HL,A); time+=3; break;
+    -- case 0x77: env.mem(getd(xy),A); time+=3; break;
+    Z80ChangeSetIndirect z80_main.hl z80_flags.a increment3

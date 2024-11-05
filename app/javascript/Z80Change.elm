@@ -16,7 +16,7 @@ type Z80Change
     | Z80RegisterB Int
     | Z80RegisterC Int
     | Z80ChangeFlags FlagRegisters
-    | Z80ChangeSetMem8WithTime Int Int CpuTimeIncrement
+    | Z80ChangeSetIndirect Int Int CpuTimeIncrement
 
 
 type FlagChange
@@ -97,7 +97,7 @@ applyZ80Change change z80 =
         Z80ChangeFlags flagRegisters ->
             { z80 | flags = flagRegisters }
 
-        Z80ChangeSetMem8WithTime addr int time ->
+        Z80ChangeSetIndirect addr int time ->
             let
                 env = z80.env |> setMem addr int |> addCpuTimeEnvInc time
             in

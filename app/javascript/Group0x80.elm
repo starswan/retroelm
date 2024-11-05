@@ -10,8 +10,8 @@ import Z80Types exposing (IXIY, IXIYHL, Z80, get_h, get_h_ixiy, get_l, get_l_ixi
 delta_dict_80 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_80 =
     Dict.fromList
-        [ ( 0x86, execute_0x86 )
-        , ( 0x8E, execute_0x8E )
+        [ ( 0x86, add_a_indirect_hl )
+        , ( 0x8E, adc_a_indirect_hl )
         ]
 
 
@@ -41,8 +41,8 @@ add_a_l ixiyhl rom z80 =
     FlagRegs (z80_add (get_l_ixiy ixiyhl z80.main) z80.flags)
 
 
-execute_0x86 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0x86 ixiyhl rom48k z80 =
+add_a_indirect_hl : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+add_a_indirect_hl ixiyhl rom48k z80 =
     -- case 0x86: add(env.mem(HL)); time+=3; break;
     -- case 0x86: add(env.mem(getd(xy))); time+=3; break;
     let
@@ -77,8 +77,8 @@ adc_a_l ixiyhl rom z80 =
     z80.flags |> adc (get_l_ixiy ixiyhl z80.main) |> FlagRegs
 
 
-execute_0x8E : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0x8E ixiyhl rom48k z80 =
+adc_a_indirect_hl : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+adc_a_indirect_hl ixiyhl rom48k z80 =
     -- case 0x8E: adc(env.mem(HL)); time+=3; break;
     -- case 0x8E: adc(env.mem(getd(xy))); time+=3; break;
     let
