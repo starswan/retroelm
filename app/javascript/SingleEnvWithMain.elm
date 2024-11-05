@@ -12,6 +12,7 @@ import Z80Types exposing (MainWithIndexRegisters)
 type SingleEnvMainChange
     = SingleEnvNewARegister Int CpuTimeCTime
     | SingleEnvNewBRegister Int CpuTimeCTime
+    | SingleEnvNewCRegister Int CpuTimeCTime
 
 
 singleEnvMainRegs : Dict Int (MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange)
@@ -20,6 +21,7 @@ singleEnvMainRegs =
         [ ( 0x0A, ld_a_indirect_bc )
         , ( 0x1A, ld_a_indirect_de )
         , ( 0x46, ld_b_indirect_hl )
+        , ( 0x4E, ld_c_indirect_hl )
         ]
 
 
@@ -52,14 +54,27 @@ ld_a_indirect_de z80_main rom48k z80_env =
     --CpuTimeWithFlags env_1 new_flags
     SingleEnvNewARegister new_a.value (new_a.time |> addCpuTimeTime 3)
 
+
 ld_b_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
 ld_b_indirect_hl z80_main rom48k z80_env =
     -- case 0x46: B=env.mem(HL); time+=3; break;
     -- case 0x46: B=env.mem(getd(xy)); time+=3; break;
     let
         value =
-                    mem z80_main.hl z80_env.time rom48k z80_env.ram
+            mem z80_main.hl z80_env.time rom48k z80_env.ram
     in
     --{ z80 | pc = value.pc, env = value.env } |> set_b value.value
     --MainRegsWithPcAndCpuTime { main | b = value.value } value.pc value.time
     SingleEnvNewBRegister value.value (value.time |> addCpuTimeTime 3)
+
+
+ld_c_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
+ld_c_indirect_hl z80_main rom48k z80_env =
+    -- case 0x4E: C=env.mem(HL); time+=3; break;
+    let
+        value =
+            mem z80_main.hl z80_env.time rom48k z80_env.ram
+    in
+    --{ z80 | pc = value.pc, env = value.env } |> set_c value.value
+    --MainRegsWithPcAndCpuTime { main | c = value.value } value.pc value.time
+    SingleEnvNewCRegister value.value (value.time |> addCpuTimeTime 3)
