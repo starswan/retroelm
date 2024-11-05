@@ -8,7 +8,7 @@ import Group0x10 exposing (miniDict10)
 import Group0x20 exposing (delta_dict_20, miniDict20)
 import Group0x30 exposing (delta_dict_30, miniDict30)
 import Group0x40 exposing (miniDict40)
-import Group0x50 exposing (delta_dict_50, miniDict50)
+import Group0x50 exposing (miniDict50)
 import Group0x60 exposing (delta_dict_60, miniDict60)
 import Group0x70 exposing (delta_dict_70, miniDict70)
 import Group0x80 exposing (delta_dict_80, miniDict80)
@@ -80,7 +80,6 @@ lt40_delta_dict =
         |> Dict.union delta_dict_20
         |> Dict.union delta_dict_30
         |> Dict.union delta_dict_B0
-        |> Dict.union delta_dict_50
         |> Dict.union delta_dict_60
         |> Dict.union delta_dict_70
         |> Dict.union delta_dict_C0

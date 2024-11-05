@@ -3,15 +3,7 @@ module Group0x50 exposing (..)
 import Dict exposing (Dict)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY, IXIYHL, Z80, get_h, get_h_ixiy, get_l, get_l_ixiy, hl_deref_with_z80)
-
-
-delta_dict_50 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
-delta_dict_50 =
-    Dict.fromList
-        [ ( 0x56, execute_0x56 )
-        , ( 0x5E, execute_0x5E )
-        ]
+import Z80Types exposing (IXIY, IXIYHL, Z80, get_h_ixiy, get_l_ixiy, hl_deref_with_z80_ixiy)
 
 
 miniDict50 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
@@ -19,8 +11,10 @@ miniDict50 =
     Dict.fromList
         [ ( 0x54, ld_d_h )
         , ( 0x55, ld_d_l )
+        , ( 0x56, ld_d_indirect_hl )
         , ( 0x5C, ld_e_h )
         , ( 0x5D, ld_e_l )
+        , ( 0x5E, ld_e_indirect_hl )
         ]
 
 
@@ -46,15 +40,15 @@ ld_d_l ixiyhl rom z80 =
     { main | d = get_l_ixiy ixiyhl z80.main } |> MainRegs
 
 
-execute_0x56 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0x56 ixiyhl rom48k z80 =
+ld_d_indirect_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
+ld_d_indirect_hl ixiyhl rom48k z80 =
     -- case 0x56: D=env.mem(HL); time+=3; break;
     let
         main =
             z80.main
 
         value =
-            z80 |> hl_deref_with_z80 ixiyhl rom48k
+            z80 |> hl_deref_with_z80_ixiy ixiyhl rom48k
     in
     --{ z80 | pc = value.pc, env = value.env } |> set_d value.value
     MainRegsWithPcAndCpuTime { main | d = value.value } value.pc value.time
@@ -82,12 +76,12 @@ ld_e_l ixiyhl rom z80 =
     { main | e = get_l_ixiy ixiyhl z80.main } |> MainRegs
 
 
-execute_0x5E : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0x5E ixiyhl rom48k z80 =
+ld_e_indirect_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
+ld_e_indirect_hl ixiyhl rom48k z80 =
     -- case 0x5E: E=env.mem(HL); time+=3; break;
     let
         value =
-            z80 |> hl_deref_with_z80 ixiyhl rom48k
+            z80 |> hl_deref_with_z80_ixiy ixiyhl rom48k
 
         main =
             z80.main
