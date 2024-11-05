@@ -507,3 +507,20 @@ applySingleEnvMainChange z80changeData z80 =
                 , env = env1
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
+
+        SingleEnvNewBRegister int cpuTimeCTime ->
+            let
+                new_pc =
+                    Bitwise.and (z80.pc + 1) 0xFFFF
+
+                env1 =
+                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
+
+                main = z80.main
+            in
+            { z80
+                | pc = new_pc
+                , main = { main | b = int }
+                , env = env1
+                , interrupts = { interrupts | r = interrupts.r + 1 }
+            }
