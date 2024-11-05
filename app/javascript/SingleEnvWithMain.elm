@@ -1,12 +1,12 @@
 module SingleEnvWithMain exposing (..)
 
 import Bitwise
-import CpuTimeCTime exposing (CpuTimeCTime, addCpuTimeTime)
+import CpuTimeCTime exposing (CpuTimeCTime, addCpuTimeTime, cpuTimeIncrement4)
 import Dict exposing (Dict)
 import Utils exposing (shiftLeftBy8)
-import Z80Env exposing (Z80Env, mem)
+import Z80Env exposing (Z80Env, addCpuTimeEnvInc, mem)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (MainWithIndexRegisters)
+import Z80Types exposing (MainWithIndexRegisters, Z80)
 
 
 type SingleEnvMainChange
@@ -78,3 +78,68 @@ ld_c_indirect_hl z80_main rom48k z80_env =
     --{ z80 | pc = value.pc, env = value.env } |> set_c value.value
     --MainRegsWithPcAndCpuTime { main | c = value.value } value.pc value.time
     SingleEnvNewCRegister value.value (value.time |> addCpuTimeTime 3)
+
+
+applySingleEnvMainChange : SingleEnvMainChange -> Z80 -> Z80
+applySingleEnvMainChange z80changeData z80 =
+    let
+        interrupts =
+            z80.interrupts
+
+        env =
+            z80.env
+    in
+    case z80changeData of
+        SingleEnvNewARegister int cpuTimeCTime ->
+            let
+                new_pc =
+                    Bitwise.and (z80.pc + 1) 0xFFFF
+
+                env1 =
+                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
+
+                flags =
+                    z80.flags
+            in
+            { z80
+                | pc = new_pc
+                , flags = { flags | a = int }
+                , env = env1
+                , interrupts = { interrupts | r = interrupts.r + 1 }
+            }
+
+        SingleEnvNewBRegister int cpuTimeCTime ->
+            let
+                new_pc =
+                    Bitwise.and (z80.pc + 1) 0xFFFF
+
+                env1 =
+                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
+
+                main =
+                    z80.main
+            in
+            { z80
+                | pc = new_pc
+                , main = { main | b = int }
+                , env = env1
+                , interrupts = { interrupts | r = interrupts.r + 1 }
+            }
+
+        SingleEnvNewCRegister int cpuTimeCTime ->
+            let
+                new_pc =
+                    Bitwise.and (z80.pc + 1) 0xFFFF
+
+                env1 =
+                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
+
+                main =
+                    z80.main
+            in
+            { z80
+                | pc = new_pc
+                , main = { main | c = int }
+                , env = env1
+                , interrupts = { interrupts | r = interrupts.r + 1 }
+            }
