@@ -7,7 +7,6 @@ import Array exposing (Array)
 import Bitwise exposing (and, or, shiftRightBy)
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeAndValue, CpuTimeCTime, CpuTimePcAndValue, addCpuTimeTime)
 import Dict exposing (Dict)
-import Group0x10 exposing (delta_dict_lite_10)
 import Group0x20 exposing (delta_dict_lite_20)
 import Group0x30 exposing (delta_dict_lite_30)
 import Group0x70 exposing (delta_dict_lite_70)
@@ -311,8 +310,7 @@ lt40_delta_dict_lite = Dict.fromList
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xDF, execute_0xDF),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
-    ] |> Dict.union delta_dict_lite_10
-    |> Dict.union delta_dict_lite_20
+    ] |> Dict.union delta_dict_lite_20
     |> Dict.union delta_dict_lite_30
     |> Dict.union delta_dict_lite_C0
     |> Dict.union delta_dict_lite_E0
