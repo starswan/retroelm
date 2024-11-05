@@ -185,7 +185,7 @@ applySimple8BitDelta cpu_time z80changeData tmp_z80 =
     { z80 | pc = new_pc, main = main }
 
 
-applyFlagDelta :Int -> CpuTimeCTime -> FlagChange -> Z80ROM -> Z80 -> Z80
+applyFlagDelta : Int -> CpuTimeCTime -> FlagChange -> Z80ROM -> Z80 -> Z80
 applyFlagDelta pcInc cpu_time z80_flags rom48k tmp_z80 =
     let
         interrupts =
@@ -360,6 +360,12 @@ applyRegisterDelta cpu_time z80changeData rom48k z80 =
             in
             { z80 | pc = new_pc, env = env_3, flags = flags.flags, interrupts = { interrupts | r = interrupts.r + 1 } }
 
+        SetIndirectApplied addr value cpuTimeIncrement ->
+            let
+                env_1 =
+                    env |> setMem addr value |> addCpuTimeEnvInc cpuTimeIncrement
+            in
+            { z80 | pc = new_pc, env = env_1, interrupts = { interrupts | r = interrupts.r + 1 } }
 
 
 applyTripleChangeDelta : CpuTimeCTime -> TripleByteChange -> Z80 -> Z80
@@ -480,4 +486,3 @@ applyTripleFlagChange cpu_time z80changeData z80 =
                 , env = env1
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
-

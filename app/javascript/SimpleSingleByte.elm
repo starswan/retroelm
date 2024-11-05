@@ -49,6 +49,12 @@ singleByteMainRegs =
         , ( 0x6A, ld_l_d )
         , ( 0x6B, ld_l_e )
         , ( 0x6C, ld_l_h )
+        , ( 0x70, ld_indirect_hl_b )
+        , ( 0x71, ld_indirect_hl_c )
+        , ( 0x72, ld_indirect_hl_d )
+        , ( 0x73, ld_indirect_hl_e )
+        , ( 0x74, ld_indirect_hl_h )
+        , ( 0x75, ld_indirect_hl_l )
         , ( 0x78, ld_a_b )
         , ( 0x79, ld_a_c )
         , ( 0x7A, ld_a_d )
@@ -462,3 +468,45 @@ jp_hl z80_main =
     -- case 0xE9: PC=HL; break;
     -- case 0xE9: PC=xy; break;
     RegisterChangeJump z80_main.hl
+
+
+ld_indirect_hl_b : MainWithIndexRegisters -> RegisterChange
+ld_indirect_hl_b z80_main =
+    -- case 0x70: env.mem(HL,B); time+=3; break;
+    -- case 0x70: env.mem(getd(xy),B); time+=3; break;
+    SetIndirect z80_main.hl z80_main.b increment3
+
+
+ld_indirect_hl_c : MainWithIndexRegisters -> RegisterChange
+ld_indirect_hl_c z80_main =
+    -- case 0x71: env.mem(HL,C); time+=3; break;
+    -- case 0x71: env.mem(getd(xy),C); time+=3; break;
+    SetIndirect z80_main.hl z80_main.c increment3
+
+
+ld_indirect_hl_d : MainWithIndexRegisters -> RegisterChange
+ld_indirect_hl_d z80_main =
+    -- case 0x72: env.mem(HL,D); time+=3; break;
+    -- case 0x72: env.mem(getd(xy),D); time+=3; break;
+    SetIndirect z80_main.hl z80_main.d increment3
+
+
+ld_indirect_hl_e : MainWithIndexRegisters -> RegisterChange
+ld_indirect_hl_e z80_main =
+    -- case 0x73: env.mem(HL,E); time+=3; break;
+    -- case 0x73: env.mem(getd(xy),E); time+=3; break;
+    SetIndirect z80_main.hl z80_main.e increment3
+
+
+ld_indirect_hl_h : MainWithIndexRegisters -> RegisterChange
+ld_indirect_hl_h z80_main =
+    -- case 0x74: env.mem(HL,HL>>>8); time+=3; break;
+    -- case 0x74: env.mem(getd(xy),HL>>>8); time+=3; break;
+    SetIndirect z80_main.hl (z80_main.hl |> shiftRightBy8) increment3
+
+
+ld_indirect_hl_l : MainWithIndexRegisters -> RegisterChange
+ld_indirect_hl_l z80_main =
+    -- case 0x75: env.mem(HL,HL&0xFF); time+=3; break;
+    -- case 0x75: env.mem(getd(xy),HL&0xFF); time+=3; break;
+    SetIndirect z80_main.hl (z80_main.hl |> Bitwise.and 0xFF) increment3

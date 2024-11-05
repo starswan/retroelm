@@ -25,6 +25,7 @@ type RegisterChange
     | IncrementIndirect Int CpuTimeIncrement
     | DecrementIndirect Int CpuTimeIncrement
     | RegisterChangeJump Int
+    | SetIndirect Int Int CpuTimeIncrement
 
 
 type RegisterChangeApplied
@@ -36,6 +37,7 @@ type RegisterChangeApplied
     | IncrementIndirectApplied Int CpuTimeIncrement
     | DecrementIndirectApplied Int CpuTimeIncrement
     | JumpApplied Int
+    | SetIndirectApplied Int Int CpuTimeIncrement
 
 
 applyRegisterChange : RegisterChange -> FlagRegisters -> MainWithIndexRegisters -> RegisterChangeApplied
@@ -91,3 +93,7 @@ applyRegisterChange change z80_flags main =
 
         RegisterChangeJump int ->
             JumpApplied int
+
+        SetIndirect addr value cpuTimeIncrement ->
+            SetIndirectApplied addr value cpuTimeIncrement
+
