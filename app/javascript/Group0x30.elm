@@ -23,14 +23,14 @@ miniDict30 =
 delta_dict_30 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_30 =
     Dict.fromList
-        [ ( 0x39, add_hl_sp )
+        [ ( 0x39, add_hl_sp ) -- need single byte with env, main amd flags for this
         ]
 
 
 delta_dict_lite_30 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_30 =
     Dict.fromList
-        [ ( 0x3A, ld_a_indirect_nn )
+        [ ( 0x3A, ld_a_indirect_nn ) -- need triplebytewithenv for this
         ]
 
 
@@ -120,7 +120,7 @@ ld_indirect_hl_n ixiyhl rom48k z80 =
     --{ z80_2 | env = x, pc = new_pc } |> add_cpu_time 3
     EnvWithPc (x |> addCpuTimeEnv 3) new_pc
 
--- need single byte with env and main for this
+
 add_hl_sp : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
 add_hl_sp ixiyhl rom48k z80 =
     --case 0x39: HL=add16(HL,SP); break;
@@ -138,7 +138,11 @@ add_hl_sp ixiyhl rom48k z80 =
     --{ z80 | main = new_z80, flags = new_xy.flags }  |> add_cpu_time new_xy.time
     FlagsWithPCMainAndTime new_xy.flags z80.pc new_z80 new_xy.time
 
+
+
 -- need triplebytewithenv for this
+
+
 ld_a_indirect_nn : Z80ROM -> Z80 -> Z80Delta
 ld_a_indirect_nn rom48k z80 =
     -- case 0x3A: MP=(v=imm16())+1; A=env.mem(v); time+=3; break;
