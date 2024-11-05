@@ -4,15 +4,13 @@ import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY, IXIYHL(..), Z80, get_h, get_h_ixiy, get_l, get_l_ixiy, hl_deref_with_z80, set_h, set_h_ixiy, set_l, set_l_ixiy)
+import Z80Types exposing (IXIY, IXIYHL(..), Z80, get_h, get_h_ixiy, get_l, get_l_ixiy, hl_deref_with_z80, hl_deref_with_z80_ixiy, set_h, set_h_ixiy, set_l, set_l_ixiy)
 
 
 delta_dict_60 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_60 =
     Dict.fromList
-        [ ( 0x66, execute_0x66 )
-        , ( 0x6E, execute_0x6E )
-
+        [ ( 0x6E, execute_0x6E )
         ]
 
 
@@ -24,6 +22,7 @@ miniDict60 =
         , ( 0x62, ld_h_d )
         , ( 0x63, ld_h_e )
         , ( 0x65, ld_h_l )
+        , ( 0x66, ld_h_indirect_hl )
         , ( 0x67, ld_h_a )
         , ( 0x68, ld_l_b )
         , ( 0x69, ld_l_c )
@@ -94,13 +93,13 @@ ld_h_l ixiyhl rom z80 =
     MainRegsWithPc value z80.pc
 
 
-execute_0x66 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0x66 ixiyhl rom48k z80 =
+ld_h_indirect_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
+ld_h_indirect_hl ixiyhl rom48k z80 =
     -- case 0x66: HL=HL&0xFF|env.mem(HL)<<8; time+=3; break;
     -- case 0x66: HL=HL&0xFF|env.mem(getd(xy))<<8; time+=3; break;
     let
         value =
-            z80 |> hl_deref_with_z80 ixiyhl rom48k
+            z80 |> hl_deref_with_z80_ixiy ixiyhl rom48k
 
         main =
             z80.main
