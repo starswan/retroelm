@@ -10,8 +10,8 @@ import Z80Types exposing (IXIY, IXIYHL, Z80, get_h, get_h_ixiy, get_l, get_l_ixi
 delta_dict_90 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_90 =
     Dict.fromList
-        [ ( 0x96, execute_0x96 )
-        , ( 0x9E, execute_0x9E )
+        [ ( 0x96, sub_indirect_hl ) -- need single with main flags and env
+        , ( 0x9E, sbc_indirect_hl ) -- need single with main flags and env
         ]
 
 
@@ -41,8 +41,8 @@ sub_l ixiyhl _ z80 =
     z80.flags |> z80_sub (get_l_ixiy ixiyhl z80.main) |> FlagRegs
 
 
-execute_0x96 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0x96 ixiyhl rom48k z80 =
+sub_indirect_hl : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+sub_indirect_hl ixiyhl rom48k z80 =
     -- case 0x96: sub(env.mem(HL)); time+=3; break;
     -- case 0x96: sub(env.mem(getd(xy))); time+=3; break;
     let
@@ -71,8 +71,8 @@ sbc_l ixiyhl _ z80 =
     z80.flags |> sbc (get_l_ixiy ixiyhl z80.main) |> FlagRegs
 
 
-execute_0x9E : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0x9E ixiyhl rom48k z80 =
+sbc_indirect_hl : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+sbc_indirect_hl ixiyhl rom48k z80 =
     -- case 0x9E: sbc(env.mem(HL)); time+=3; break;
     -- case 0x9E: sbc(env.mem(getd(xy))); time+=3; break;
     let

@@ -27,28 +27,15 @@ delta_dict_C0 =
 delta_dict_lite_C0 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_C0 =
     Dict.fromList
-        [ ( 0xC4, execute_0xC4 )
-        , ( 0xC7, execute_0xC7 )
+        [ ( 0xC7, rst_00 )
         , ( 0xC9, ret )
-        , ( 0xCC, execute_0xCC )
         , ( 0xCD, call_0xCD )
         , ( 0xCF, execute_0xCF )
         ]
 
 
-execute_0xC4 : Z80ROM -> Z80 -> Z80Delta
-execute_0xC4 rom48k z80 =
-    -- case 0xC4: call(Fr!=0); break;
-    --call_z80 (z80.flags.fr /= 0) z80
-    let
-        result =
-            z80 |> call_if (z80.flags.fr /= 0) rom48k
-    in
-    EnvWithPc result.env result.pc
-
-
-execute_0xC7 : Z80ROM -> Z80 -> Z80Delta
-execute_0xC7 _ z80 =
+rst_00 : Z80ROM -> Z80 -> Z80Delta
+rst_00 _ z80 =
     --z80 |> rst_z80 0xC7
     --let
     --   result = z80 |> rst 0xC7
@@ -81,17 +68,6 @@ execute_0xCB ixiyhl rom48k z80 =
 
         HL ->
             z80 |> group_cb rom48k
-
-
-execute_0xCC : Z80ROM -> Z80 -> Z80Delta
-execute_0xCC rom48k z80 =
-    -- case 0xCC: call(Fr==0); break;
-    --call_z80 (z80.flags.fr == 0) z80
-    let
-        result =
-            z80 |> call_if (z80.flags.fr == 0) rom48k
-    in
-    EnvWithPc result.env result.pc
 
 
 call_0xCD : Z80ROM -> Z80 -> Z80Delta

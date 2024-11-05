@@ -486,3 +486,17 @@ applyTripleFlagChange cpu_time z80changeData z80 =
                 , env = env1
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
+
+        AbsoluteCall int ->
+            let
+                new_pc =
+                    Bitwise.and (z80.pc + 3) 0xFFFF
+
+                env_1 =
+                    env |> z80_push new_pc
+            in
+            { z80
+                | pc = int
+                , env = { env_1 | time = cpu_time |> addCpuTimeTimeInc cpuTimeIncrement4 }
+                , interrupts = { interrupts | r = interrupts.r + 1 }
+            }

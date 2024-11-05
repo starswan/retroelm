@@ -10,8 +10,8 @@ import Z80Types exposing (IXIY, IXIYHL, Z80, get_h, get_h_ixiy, get_l, get_l_ixi
 delta_dict_80 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_80 =
     Dict.fromList
-        [ ( 0x86, add_a_indirect_hl )
-        , ( 0x8E, adc_a_indirect_hl )
+        [ ( 0x86, add_a_indirect_hl ) -- need single with main flags and env
+        , ( 0x8E, adc_a_indirect_hl ) -- need single with main flags and env
         ]
 
 

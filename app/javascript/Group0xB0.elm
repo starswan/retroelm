@@ -10,8 +10,8 @@ import Z80Types exposing (IXIY, IXIYHL, Z80, get_h_ixiy, get_l_ixiy, hl_deref_wi
 delta_dict_B0 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_B0 =
     Dict.fromList
-        [ ( 0xB6, execute_0xB6 )
-        , ( 0xBE, execute_0xBE )
+        [ ( 0xB6, or_indirect_hl ) -- need single with main flags and env
+        , ( 0xBE, cp_indirect_hl ) -- need single with main flags and env
         ]
 
 
@@ -41,8 +41,8 @@ or_l ixiyhl _ z80 =
     z80.flags |> z80_or (get_l_ixiy ixiyhl z80.main) |> FlagRegs
 
 
-execute_0xB6 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0xB6 ixiyhl rom48k z80 =
+or_indirect_hl : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+or_indirect_hl ixiyhl rom48k z80 =
     -- case 0xB6: or(env.mem(HL)); time+=3; break;
     -- case 0xB6: or(env.mem(getd(xy))); time+=3; break;
     let
@@ -71,8 +71,8 @@ cp_l ixiyhl _ z80 =
     z80.flags |> z80_cp (get_l_ixiy ixiyhl z80.main) |> FlagRegs
 
 
-execute_0xBE : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0xBE ixiyhl rom48k z80 =
+cp_indirect_hl : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+cp_indirect_hl ixiyhl rom48k z80 =
     -- case 0xBE: cp(env.mem(HL)); time+=3; break;
     -- case 0xBE: cp(env.mem(getd(xy))); time+=3; break;
     let
