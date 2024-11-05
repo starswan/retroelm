@@ -122,6 +122,112 @@ suite =
                             }
                 in
                 Expect.equal ( addr + 1, 0x8766 ) ( new_z80.pc, new_z80.env.sp )
+        , describe "16 bit indirect"
+            [ test "0x34 INC (HL)" <|
+                \_ ->
+                    let
+                        new_env =
+                            z80env
+                                |> setMem addr 0x34
+                                |> setMem 0x6545 0x78
+
+                        new_z80 =
+                            execute_instruction z80rom
+                                { z80
+                                    | env = { new_env | sp = 0x8765 }
+                                    , main = { z80main | hl = 0x6545 }
+                                    , flags = { flags | a = 0x39 }
+                                }
+
+                        mem_value =
+                            mem 0x6545 new_z80.env.time z80rom new_z80.env.ram
+                    in
+                    Expect.equal ( addr + 1, 0x79 ) ( new_z80.pc, mem_value.value )
+            , test "0xDD 0x34 INC (IX)" <|
+                \_ ->
+                    let
+                        new_env =
+                            z80env
+                                |> setMem addr 0xDD
+                                |> setMem (addr + 1) 0x34
+                                |> setMem (addr + 2) 0xFF
+                                |> setMem 0x6544 0x78
+
+                        new_z80 =
+                            execute_instruction z80rom
+                                { z80
+                                    | env = { new_env | sp = 0x8765 }
+                                    , main = { z80main | ix = 0x6545, hl = 0x2545 }
+                                    , flags = { flags | a = 0x39 }
+                                }
+
+                        mem_value =
+                            mem 0x6544 new_z80.env.time z80rom new_z80.env.ram
+                    in
+                    Expect.equal ( addr + 3, 0x79 ) ( new_z80.pc, mem_value.value )
+            , test "0x35 DEC (HL)" <|
+                \_ ->
+                    let
+                        new_env =
+                            z80env
+                                |> setMem addr 0x35
+                                |> setMem 0x6545 0x78
+
+                        new_z80 =
+                            execute_instruction z80rom
+                                { z80
+                                    | env = { new_env | sp = 0x8765 }
+                                    , main = { z80main | hl = 0x6545 }
+                                    , flags = { flags | a = 0x39 }
+                                }
+
+                        mem_value =
+                            mem 0x6545 new_z80.env.time z80rom new_z80.env.ram
+                    in
+                    Expect.equal ( addr + 1, 0x77, 119 ) ( new_z80.pc, mem_value.value, new_z80.flags.fr )
+            , test "0x35 DEC (HL) going to zero" <|
+                \_ ->
+                    let
+                        new_env =
+                            z80env
+                                |> setMem addr 0x35
+                                |> setMem 0x6545 0x01
+
+                        new_z80 =
+                            execute_instruction z80rom
+                                { z80
+                                    | env = { new_env | sp = 0x8765 }
+                                    , main = { z80main | hl = 0x6545 }
+                                    , flags = { flags | a = 0x39 }
+                                }
+
+                        mem_value =
+                            mem 0x6545 new_z80.env.time z80rom new_z80.env.ram
+                    in
+                    Expect.equal ( addr + 1, 0x00, 0 ) ( new_z80.pc, mem_value.value, new_z80.flags.fr )
+            , test "0xFD 0x35 DEC (IY + n)" <|
+                \_ ->
+                    let
+                        new_env =
+                            z80env
+                                |> setMem addr 0xFD
+                                |> setMem (addr + 1) 0x35
+                                |> setMem (addr + 2) 0x01
+                                |> setMem 0x6546 0x78
+
+                        new_z80 =
+                            execute_instruction z80rom
+                                { z80
+                                    | env = { new_env | sp = 0x8765 }
+                                    , main = { z80main | iy = 0x6545, hl = 0x2545 }
+                                    , flags = { flags | a = 0x39 }
+                                }
+
+                        mem_value =
+                            mem 0x6546 new_z80.env.time z80rom new_z80.env.ram
+                    in
+                    Expect.equal ( addr + 3, 0x77, 0x2545 ) ( new_z80.pc, mem_value.value, new_z80.main.hl )
+            ]
         , describe "ADD HL, 16-bit"
             [ test "0x39 ADD HL,SP" <|
                 \_ ->
@@ -247,112 +353,6 @@ suite =
                                 }
                     in
                     Expect.equal ( addr + 3, 0x87 ) ( new_z80.pc, new_z80.flags.a )
-            ]
-        , describe "16 bit indirect"
-            [ test "0x34 INC (HL)" <|
-                \_ ->
-                    let
-                        new_env =
-                            z80env
-                                |> setMem addr 0x34
-                                |> setMem 0x6545 0x78
-
-                        new_z80 =
-                            execute_instruction z80rom
-                                { z80
-                                    | env = { new_env | sp = 0x8765 }
-                                    , main = { z80main | hl = 0x6545 }
-                                    , flags = { flags | a = 0x39 }
-                                }
-
-                        mem_value =
-                            mem 0x6545 new_z80.env.time z80rom new_z80.env.ram
-                    in
-                    Expect.equal ( addr + 1, 0x79 ) ( new_z80.pc, mem_value.value )
-            , test "0xDD 0x34 INC (IX)" <|
-                \_ ->
-                    let
-                        new_env =
-                            z80env
-                                |> setMem addr 0xDD
-                                |> setMem (addr + 1) 0x34
-                                |> setMem (addr + 2) 0xFF
-                                |> setMem 0x6544 0x78
-
-                        new_z80 =
-                            execute_instruction z80rom
-                                { z80
-                                    | env = { new_env | sp = 0x8765 }
-                                    , main = { z80main | ix = 0x6545, hl = 0x2545 }
-                                    , flags = { flags | a = 0x39 }
-                                }
-
-                        mem_value =
-                            mem 0x6544 new_z80.env.time z80rom new_z80.env.ram
-                    in
-                    Expect.equal ( addr + 3, 0x79 ) ( new_z80.pc, mem_value.value )
-            , test "0x35 DEC (HL)" <|
-                \_ ->
-                    let
-                        new_env =
-                            z80env
-                                |> setMem addr 0x35
-                                |> setMem 0x6545 0x78
-
-                        new_z80 =
-                            execute_instruction z80rom
-                                { z80
-                                    | env = { new_env | sp = 0x8765 }
-                                    , main = { z80main | hl = 0x6545 }
-                                    , flags = { flags | a = 0x39 }
-                                }
-
-                        mem_value =
-                            mem 0x6545 new_z80.env.time z80rom new_z80.env.ram
-                    in
-                    Expect.equal ( addr + 1, 0x77, 119 ) ( new_z80.pc, mem_value.value, new_z80.flags.fr )
-            , test "0x35 DEC (HL) going to zero" <|
-                \_ ->
-                    let
-                        new_env =
-                            z80env
-                                |> setMem addr 0x35
-                                |> setMem 0x6545 0x01
-
-                        new_z80 =
-                            execute_instruction z80rom
-                                { z80
-                                    | env = { new_env | sp = 0x8765 }
-                                    , main = { z80main | hl = 0x6545 }
-                                    , flags = { flags | a = 0x39 }
-                                }
-
-                        mem_value =
-                            mem 0x6545 new_z80.env.time z80rom new_z80.env.ram
-                    in
-                    Expect.equal ( addr + 1, 0x00, 0 ) ( new_z80.pc, mem_value.value, new_z80.flags.fr )
-            , test "0xFD 0x35 DEC (IY + n)" <|
-                \_ ->
-                    let
-                        new_env =
-                            z80env
-                                |> setMem addr 0xFD
-                                |> setMem (addr + 1) 0x35
-                                |> setMem (addr + 2) 0x01
-                                |> setMem 0x6546 0x78
-
-                        new_z80 =
-                            execute_instruction z80rom
-                                { z80
-                                    | env = { new_env | sp = 0x8765 }
-                                    , main = { z80main | iy = 0x6545, hl = 0x2545 }
-                                    , flags = { flags | a = 0x39 }
-                                }
-
-                        mem_value =
-                            mem 0x6546 new_z80.env.time z80rom new_z80.env.ram
-                    in
-                    Expect.equal ( addr + 3, 0x77, 0x2545 ) ( new_z80.pc, mem_value.value, new_z80.main.hl )
             ]
         , describe "Indirect indexed load"
             [ test "0x36 LD (HL),n" <|

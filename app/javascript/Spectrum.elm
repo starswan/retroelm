@@ -8,14 +8,13 @@ module Spectrum exposing (..)
 import Array exposing (Array)
 import Bitwise exposing (complement, shiftRightBy)
 import Dict
-import Group0x00 exposing (ex_af)
 import Keyboard exposing (KeyEvent, Keyboard, update_keyboard)
+import SingleNoParams exposing (ex_af)
 import Tapfile exposing (Tapfile)
 import Utils exposing (char)
 import Vector8
 import Z80 exposing (execute, get_ei, interrupt)
 import Z80Debug exposing (debugLog)
-import Z80Delta exposing (Z80Delta)
 import Z80Env exposing (mem, mem16, reset_cpu_time)
 import Z80Flags exposing (c_FC, c_FZ, get_flags, set_flags)
 import Z80Ram exposing (c_FRSTART, c_FRTIME)
@@ -1001,7 +1000,7 @@ pause m spectrum =
 -- our version returns the new Z80 value (ish) in a Just, or Nothing if it would have returned false
 
 
-checkLoad : Spectrum -> Maybe Z80Delta
+checkLoad : Spectrum -> Maybe Z80
 checkLoad spectrum =
     let
         cpu =
@@ -1047,7 +1046,7 @@ checkLoad spectrum =
                 new_cpu =
                     { cpu | env = new_env }
             in
-            Just (new_cpu |> ex_af spectrum.rom48k)
+            Just (new_cpu |> ex_af)
 
 
 

@@ -1,9 +1,9 @@
 module Group0x40 exposing (..)
 
 import Dict exposing (Dict)
-import Z80Delta exposing (Z80Delta(..), delta_noop)
+import Z80Delta exposing (Z80Delta(..))
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY, IXIYHL, Z80, get_h_ixiy, get_l_ixiy, hl_deref_with_z80)
+import Z80Types exposing (IXIY, IXIYHL, Z80, get_h_ixiy, get_l_ixiy, hl_deref_with_z80_ixiy)
 
 
 miniDict40 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
@@ -11,25 +11,10 @@ miniDict40 =
     Dict.fromList
         [ ( 0x44, execute_0x44 )
         , ( 0x45, execute_0x45 )
+        , ( 0x46, ld_b_indirect_hl )
         , ( 0x4C, ld_c_h )
         , ( 0x4D, ld_c_l )
-        ]
-
-delta_dict_40 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
-delta_dict_40 =
-    Dict.fromList
-        [ ( 0x46, execute_0x46 )
-        , ( 0x4E, execute_0x4E )
-        ]
-
-
-delta_dict_lite_40 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
-delta_dict_lite_40 =
-    Dict.fromList
-        [ -- case 0x40: break;
-          ( 0x40, delta_noop )
-        , -- case 0x49: break;
-          ( 0x49, delta_noop )
+        , ( 0x4E, ld_c_indirect_hl )
         ]
 
 
@@ -57,13 +42,13 @@ execute_0x45 ixiyhl rom z80 =
     MainRegsWithPc { main | b = get_l_ixiy ixiyhl z80.main } z80.pc
 
 
-execute_0x46 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0x46 ixiyhl rom48k z80 =
+ld_b_indirect_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
+ld_b_indirect_hl ixiyhl rom48k z80 =
     -- case 0x46: B=env.mem(HL); time+=3; break;
     -- case 0x46: B=env.mem(getd(xy)); time+=3; break;
     let
         value =
-            z80 |> hl_deref_with_z80 ixiyhl rom48k
+            z80 |> hl_deref_with_z80_ixiy ixiyhl rom48k
 
         main =
             z80.main
@@ -94,17 +79,15 @@ ld_c_l ixiyhl rom z80 =
     { main | c = get_l_ixiy ixiyhl z80.main } |> MainRegs
 
 
-execute_0x4E : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0x4E ixiyhl rom48k z80 =
+ld_c_indirect_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
+ld_c_indirect_hl ixiyhl rom48k z80 =
     -- case 0x4E: C=env.mem(HL); time+=3; break;
     let
         value =
-            z80 |> hl_deref_with_z80 ixiyhl rom48k
+            z80 |> hl_deref_with_z80_ixiy ixiyhl rom48k
 
         main =
             z80.main
     in
     --{ z80 | pc = value.pc, env = value.env } |> set_c value.value
     MainRegsWithPcAndCpuTime { main | c = value.value } value.pc value.time
-
-

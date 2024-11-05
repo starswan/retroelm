@@ -9,7 +9,7 @@ import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (addCpuTimeEnv, m1, mem, setMem)
 import Z80Flags exposing (IntWithFlags, bit, c_F53, shifter, shifter0)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY, IXIYHL(..), IntWithFlagsTimeAndPC, Z80, a_with_z80, add_cpu_time, b_with_z80, c_with_z80, d_with_z80, e_with_z80, get_ixiy_xy, h_with_z80, hl_deref_with_z80, inc_pc, inc_pc2, l_with_z80, set408bit, set_h, set_l)
+import Z80Types exposing (IXIY, IXIYHL(..), IntWithFlagsTimeAndPC, Z80, a_with_z80, add_cpu_time, b_with_z80, c_with_z80, d_with_z80, e_with_z80, get_ixiy_xy, h_with_z80, hl_deref_with_z80, inc_pc, inc_pc2, l_with_z80, set408bit)
 
 
 group_cb_dict : Dict Int (Z80 -> Z80Delta)
@@ -63,72 +63,6 @@ execute_CB0007 raw z80 =
     IntWithFlagsTimeAndPC value.value value.flags raw.time raw.pc
 
 
-execute_CB00 : Z80 -> Z80Delta
-execute_CB00 z80 =
-    let
-        x =
-            z80 |> execute_CB0007 (z80 |> b_with_z80)
-
-        main =
-            z80.main
-    in
-    FlagsWithPCMainAndCpuTime x.flags x.pc { main | b = x.value } x.time
-
-
-execute_CB01 : Z80 -> Z80Delta
-execute_CB01 z80 =
-    let
-        x =
-            z80 |> execute_CB0007 (z80 |> c_with_z80)
-
-        main =
-            z80.main
-    in
-    FlagsWithPCMainAndCpuTime x.flags x.pc { main | c = x.value } x.time
-
-
-execute_CB02 : Z80 -> Z80Delta
-execute_CB02 z80 =
-    let
-        x =
-            z80 |> execute_CB0007 (z80 |> d_with_z80)
-
-        main =
-            z80.main
-    in
-    FlagsWithPCMainAndCpuTime x.flags x.pc { main | d = x.value } x.time
-
-
-execute_CB03 : Z80 -> Z80Delta
-execute_CB03 z80 =
-    let
-        x =
-            z80 |> execute_CB0007 (z80 |> e_with_z80)
-
-        main =
-            z80.main
-    in
-    FlagsWithPCMainAndCpuTime x.flags x.pc { main | e = x.value } x.time
-
-
-execute_CB04 : Z80 -> Z80Delta
-execute_CB04 z80 =
-    let
-        x =
-            z80 |> execute_CB0007 (z80 |> h_with_z80 HL)
-    in
-    FlagsWithPCMainAndCpuTime x.flags x.pc (z80.main |> set_h x.value HL) x.time
-
-
-execute_CB05 : Z80 -> Z80Delta
-execute_CB05 z80 =
-    let
-        x =
-            z80 |> execute_CB0007 (z80 |> l_with_z80 HL)
-    in
-    FlagsWithPCMainAndCpuTime x.flags x.pc (z80.main |> set_l x.value HL) x.time
-
-
 execute_CB06 : Z80ROM -> Z80 -> Z80Delta
 execute_CB06 rom48k z80 =
     let
@@ -142,18 +76,6 @@ execute_CB06 rom48k z80 =
             { env | time = x.time } |> setMem z80.main.hl x.value
     in
     EnvWithFlagsAndPc env_1 x.flags x.pc
-
-
-execute_CB07 : Z80 -> Z80Delta
-execute_CB07 z80 =
-    let
-        x =
-            z80 |> execute_CB0007 (z80 |> a_with_z80)
-
-        flags =
-            x.flags
-    in
-    FlagsWithPcAndTime { flags | a = x.value } x.pc x.time
 
 
 group_cb : Z80ROM -> Z80 -> Z80Delta

@@ -7,33 +7,31 @@ import Array exposing (Array)
 import Bitwise exposing (and, or, shiftRightBy)
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeAndValue, CpuTimeCTime, CpuTimePcAndValue, addCpuTimeTime)
 import Dict exposing (Dict)
-import Group0x00 exposing (delta_dict_00, delta_dict_lite_00)
-import Group0x10 exposing (delta_dict_10, delta_dict_lite_10)
-import Group0x20 exposing (delta_dict_20, delta_dict_lite_20, miniDict20)
-import Group0x30 exposing (delta_dict_30, delta_dict_lite_30)
-import Group0x40 exposing (delta_dict_40, delta_dict_lite_40, miniDict40)
-import Group0x50 exposing (delta_dict_50, delta_dict_lite_50)
-import Group0x60 exposing (delta_dict_60, delta_dict_lite_60)
-import Group0x70 exposing (delta_dict_70, delta_dict_lite_70)
-import Group0x80 exposing (delta_dict_80, delta_dict_lite_80)
-import Group0x90 exposing (delta_dict_90, delta_dict_lite_90)
-import Group0xA0 exposing (delta_dict_A0, delta_dict_lite_A0)
-import Group0xB0 exposing (delta_dict_B0, delta_dict_lite_B0)
-import Group0xC0 exposing (delta_dict_C0, delta_dict_lite_C0)
-import Group0xE0 exposing (delta_dict_E0, delta_dict_lite_E0)
+import Group0x20 exposing (delta_dict_lite_20)
+import Group0x30 exposing (delta_dict_lite_30)
+import Group0x70 exposing (delta_dict_lite_70)
+import Group0xC0 exposing (delta_dict_lite_C0)
+import Group0xE0 exposing (delta_dict_lite_E0)
+import Group0xF0 exposing (delta_dict_lite_F0, list0255, lt40_array, lt40_dict_lite, xYDict)
 import Loop
 import SimpleFlagOps exposing (singleByteFlags)
-import SimpleSingleByte exposing (singleByteMainAndFlagRegisters, singleByteMainRegs)
-import SingleWith8BitParameter exposing (singleWith8BitParam)
-import Utils exposing (char, shiftLeftBy8, shiftRightBy8, toHexString)
+import SimpleSingleByte exposing (singleByteMainRegs)
+import SingleByteWithEnv exposing (singleByteZ80Env)
+import SingleEnvWithMain exposing (singleEnvMainRegs)
+import SingleMainWithFlags exposing (singleByteMainAndFlagRegisters)
+import SingleNoParams exposing (singleWithNoParam)
+import SingleWith8BitParameter exposing (doubleWithRegisters, maybeRelativeJump, singleWith8BitParam)
+import TripleByte exposing (tripleByteWith16BitParam)
+import TripleWithFlags exposing (triple16WithFlags)
+import Utils exposing (shiftLeftBy8, toHexString)
 import Z80Debug exposing (debugTodo)
-import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..), jp_delta, rst_delta)
-import Z80Env exposing (Z80Env, addCpuTimeEnv, m1, mem, mem16, out, z80_in, z80_pop, z80_push, z80env_constructor)
+import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..), rst_delta)
+import Z80Env exposing (Z80Env, addCpuTimeEnv, m1, mem, mem16, out, z80_in, z80_push, z80env_constructor)
 import Z80Execute exposing (DeltaWithChanges(..), apply_delta)
-import Z80Flags exposing (FlagRegisters, IntWithFlags, c_FC, c_FS, get_af, set_af, z80_cp, z80_or, z80_sub)
+import Z80Flags exposing (FlagRegisters, IntWithFlags)
 import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, get_de, imm8, inc_pc, jp_z80, rst_z80, set_de_main, set_iff)
+import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, imm8, inc_pc)
 
 constructor: Z80
 constructor =
@@ -275,13 +273,6 @@ z80_halt z80 =
       { z80_1 | interrupts = { interrupts | halted = True } }
 
 
-
-
-lt40_array_lite: Array (Maybe (Z80ROM -> Z80 -> Z80Delta))
-lt40_array_lite = makeLiteArray
-
-list0255 = List.range 0 255
-
 z80_to_delta: Maybe (Z80ROM -> Z80 -> Z80) -> Maybe (Z80ROM -> Z80 -> Z80Delta)
 z80_to_delta z80func =
     case z80func of
@@ -302,73 +293,29 @@ mergeFuncList afunc bfunc =
                         Just b -> Just b
                         Nothing -> Nothing
 
-makeLiteArray: Array (Maybe (Z80ROM -> Z80 -> Z80Delta))
-makeLiteArray =
+lt40_array_lite: Array (Maybe (Z80ROM -> Z80 -> Z80Delta))
+lt40_array_lite =
     let
        z80_funcs = list0255 |> List.map (\index -> lt40_dict_lite |> Dict.get index |> z80_to_delta)
        delta_funcs = list0255 |> List.map (\index -> lt40_delta_dict_lite |> Dict.get index)
     in
        List.map2 mergeFuncList z80_funcs delta_funcs |> Array.fromList
 
-lt40_array: Array (Maybe ((IXIYHL -> Z80ROM -> Z80 -> Z80Delta)))
-lt40_array = makeLt40Array
-
-makeLt40Array: Array (Maybe ((IXIYHL -> Z80ROM -> Z80 -> Z80Delta)))
-makeLt40Array =
-    let
-       delta_funcs = list0255 |> List.map (\index -> lt40_delta_dict |> Dict.get index)
-    in
-       delta_funcs |> Array.fromList
-
 lt40_delta_dict_lite: Dict Int (Z80ROM -> Z80 -> Z80Delta)
 lt40_delta_dict_lite = Dict.fromList
     [
-          (0xD0, execute_0xD0),
-          (0xD1, execute_0xD1),
-          (0xD2, execute_0xD2),
           (0xD3, execute_0xD3),
-          (0xD5, execute_0xD5),
-          (0xD6, execute_0xD6),
           (0xD7, execute_0xD7),
-          (0xD8, execute_0xD8),
-          -- case 0xD9: exx(); break;
-          (0xD9, exx),
-          (0xDA, execute_0xDA),
           (0xDB, execute_0xDB),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xDF, execute_0xDF),
-          (0xF1, execute_0xF1),
-          (0xF2, execute_0xF2),
-          (0xF3, execute_0xF3),
-          (0xF5, execute_0xF5),
-          (0xF6, execute_0xF6),
-          (0xF7, execute_0xF7),
-          (0xF8, execute_0xF8),
-          (0xFB, execute_0xFB),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
-    ] |> Dict.union delta_dict_lite_00
-    |> Dict.union delta_dict_lite_80
-    |> Dict.union delta_dict_lite_90
-    |> Dict.union delta_dict_lite_A0
-    |> Dict.union delta_dict_lite_10
-    |> Dict.union delta_dict_lite_20
+    ] |> Dict.union delta_dict_lite_20
     |> Dict.union delta_dict_lite_30
-    |> Dict.union delta_dict_lite_40
-    |> Dict.union delta_dict_lite_50
-    |> Dict.union delta_dict_lite_B0
     |> Dict.union delta_dict_lite_C0
     |> Dict.union delta_dict_lite_E0
-    |> Dict.union delta_dict_lite_60
     |> Dict.union delta_dict_lite_70
-
-lt40_dict_lite: Dict Int (Z80ROM -> Z80 -> Z80)
-lt40_dict_lite = Dict.fromList
-    [
-          (0xF9, execute_0xF9),
-          (0xFA, execute_0xFA),
-          (0xFE, execute_0xFE),
-          (0xFF, execute_0xFF)
-    ]
+    |> Dict.union delta_dict_lite_F0
 
 -- case 0xC7:
 -- case 0xCF:
@@ -378,69 +325,6 @@ lt40_dict_lite = Dict.fromList
 -- case 0xEF:
 -- case 0xF7:
 -- case 0xFF: push(PC); PC=c-199; break;
-
-execute_0xFF: Z80ROM -> Z80 -> Z80
-execute_0xFF _ z80 =
-    z80 |> rst_z80 0xFF
-
-xYDict: Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
-xYDict = miniDict40
-    |> Dict.union miniDict20
-
-lt40_delta_dict: Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
-lt40_delta_dict = delta_dict_00
-    |> Dict.union delta_dict_80
-    |> Dict.union delta_dict_90
-    |> Dict.union delta_dict_A0
-    |> Dict.union delta_dict_10
-    |> Dict.union delta_dict_20
-    |> Dict.union delta_dict_30
-    |> Dict.union delta_dict_B0
-    |> Dict.union delta_dict_40
-    |> Dict.union delta_dict_50
-    |> Dict.union delta_dict_60
-    |> Dict.union delta_dict_70
-    |> Dict.union delta_dict_C0
-    |> Dict.union delta_dict_E0
-
-execute_0xD0: Z80ROM -> Z80 -> Z80Delta
-execute_0xD0 rom48k z80 =
-  -- case 0xD0: time++; if((Ff&0x100)==0) MP=PC=pop(); break;
-  let
-    z80_1_time = z80.env.time |> addCpuTimeTime 1
-    --env = z80.env
-  in
-    if (and z80.flags.ff 0x100) == 0 then
-      let
-        popped = z80.env |> z80_pop rom48k
-        --x = debug_log "ret nc" (popped.value |> subName) Nothing
-      in
-        --{ z80_1 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
-        CpuTimeWithSpAndPc popped.time popped.sp popped.value
-    else
-      --z80_1
-      OnlyTime z80_1_time
-
-execute_0xD1: Z80ROM -> Z80 -> Z80Delta
-execute_0xD1 rom48k z80 =
-   -- case 0xD1: v=pop(); D=v>>>8; E=v&0xFF; break;
-   let
-      v = z80.env |> z80_pop rom48k
-      --env = z80.env
-      --z80_1 = { z80 | env = { env | time = v.time, sp = v.sp } }
-   in
-      --z80_1 |> set_de v.value
-      MainRegsWithSpAndTime (z80.main |> set_de_main v.value) v.sp v.time
-
-execute_0xD2: Z80ROM -> Z80 -> Z80Delta
-execute_0xD2 rom48k z80 =
-   -- case 0xD2: jp((Ff&0x100)==0); break;
-   --z80 |> jp_z80 ((Bitwise.and z80.flags.ff 0x100) == 0)
-  --let
-  --  result = z80 |> jp ((Bitwise.and z80.flags.ff 0x100) == 0)
-  --in
-  --  CpuTimeWithPc result.time result.pc
-  z80 |> jp_delta ((Bitwise.and z80.flags.ff 0x100) == 0) rom48k
 
 execute_0xD3: Z80ROM -> Z80 -> Z80Delta
 execute_0xD3 rom48k z80 =
@@ -454,67 +338,9 @@ execute_0xD3 rom48k z80 =
   in
     EnvWithPc env value.pc
 
-execute_0xD5: Z80ROM -> Z80 -> Z80Delta
-execute_0xD5 _ z80 =
-  -- case 0xD5: push(D<<8|E); break;
-  --z80 |> push (z80 |> get_de)
-  let
-    de = z80.main |> get_de
-    --pushed = z80.env |> z80_push de
-  in
-    --{ z80 | env = pushed }
-    OnlyPush de
-
-execute_0xD6: Z80ROM -> Z80 -> Z80Delta
-execute_0xD6 rom48k z80 =
-   -- case 0xD6: sub(imm8()); break;
-  let
-    v = imm8 z80.pc z80.env.time rom48k z80.env.ram
-    flags = z80.flags |> z80_sub v.value
-    --env_1 = z80.env
-  in
-      --{ z80 | flags = flags, env = { env_1 | time = v.time }, pc = v.pc }
-    FlagsWithPcAndTime flags v.pc v.time
-
 execute_0xD7: Z80ROM -> Z80 -> Z80Delta
 execute_0xD7 _ z80 =
     z80 |> rst_delta 0xD7
-
-execute_0xD8: Z80ROM -> Z80 -> Z80Delta
-execute_0xD8 rom48k z80 =
-  -- case 0xD8: time++; if((Ff&0x100)!=0) MP=PC=pop(); break;
-  let
-    z80_1_time = z80.env.time |> addCpuTimeTime 1
-  in
-    if and z80.flags.ff 0x100 /= 0 then
-      let
-        env = z80.env
-        v = { env | time = z80_1_time } |> z80_pop rom48k
-      in
-        --debug_log "ret c" (v.value |> subName) ret
-        --{ z80_1 | env = { env | time = v.time, sp = v.sp }, pc = v.value }
-        CpuTimeWithSpAndPc v.time v.sp v.value
-    else
-        --z80_1
-      OnlyTime z80_1_time
-
-exx: Z80ROM -> Z80 -> Z80Delta
-exx _ z80 =
-    let
-        main = z80.main
-        alt = z80.alt_main
-        new_main = { main | b = alt.b, c = alt.c, d = alt.d, e = alt.e, hl = alt.hl }
-        alt_main = { alt | b = main.b, c = main.c, d = main.d, e = main.e, hl = main.hl }
-   in
-   MainRegsWithAltRegs new_main alt_main
-      --{ z80 | main = { main | b = alt.b, c = alt.c, d = alt.d, e = alt.e, hl = alt.hl },
-      --        alt_main = { alt | b = main.b, c = main.c, d = main.d, e = main.e, hl = main.hl } }
-
-execute_0xDA: Z80ROM -> Z80 -> Z80Delta
-execute_0xDA rom48k z80 =
-    -- case 0xDA: jp((Ff&0x100)!=0); break;
-    --z80 |> jp_z80 ((Bitwise.and z80.flags.ff 0x100) /= 0)
-    z80 |> jp_delta ((Bitwise.and z80.flags.ff 0x100) /= 0) rom48k
 
 execute_0xDB: Z80ROM -> Z80 -> Z80Delta
 execute_0xDB rom48k z80 =
@@ -535,99 +361,6 @@ execute_0xDF: Z80ROM -> Z80 -> Z80Delta
 execute_0xDF _ z80 =
     z80 |> rst_delta 0xDF
 
-execute_0xF1: Z80ROM -> Z80 -> Z80Delta
-execute_0xF1 rom48k z80 =
-    -- case 0xF1: af(pop()); break;
-   let
-      v = z80.env |> z80_pop rom48k
-      --env = z80.env
-      --z80_1 = { z80 | env = { env | time = v.time, sp = v.sp } }
-   in
-      --z80_1 |> set_af v.value
-      FlagsWithSpTimeAndPc (set_af v.value) v.sp v.time z80.pc
-
-execute_0xF2: Z80ROM -> Z80 -> Z80Delta
-execute_0xF2 rom48k z80 =
-   -- case 0xF2: jp((Ff&FS)==0); break;
-   --z80 |> jp_z80 (Bitwise.and z80.flags.ff c_FS == 0)
-   z80 |> jp_delta (Bitwise.and z80.flags.ff c_FS == 0) rom48k
-
-execute_0xF3: Z80ROM -> Z80 -> Z80Delta
-execute_0xF3 _ z80 =
-   -- case 0xF3: IFF=0; break;
-   z80 |> set_iff 0 |> OnlyInterrupts
-
-execute_0xF5: Z80ROM -> Z80 -> Z80Delta
-execute_0xF5 _ z80 =
-   -- case 0xF5: push(A<<8|flags()); break;
-   let
-      a = z80.flags |> get_af
-      --pushed = z80.env |> z80_push a
-   in
-      --{ z80 | env = pushed }
-      OnlyPush a
-
-execute_0xF6: Z80ROM -> Z80 -> Z80Delta
-execute_0xF6 rom48k z80 =
-   -- case 0xF6: or(imm8()); break;
-   let
-      a = imm8 z80.pc z80.env.time rom48k z80.env.ram
-      --env_1 = z80.env
-      --z80_1 = { z80 | env = { env_1 | time = a.time }, pc = a.pc }
-      flags = z80.flags |> z80_or a.value
-   in
-      --{ z80_1 | flags = flags }
-      FlagsWithPcAndTime flags a.pc a.time
-
-execute_0xF7: Z80ROM -> Z80 -> Z80Delta
-execute_0xF7 _ z80 =
-    z80 |> rst_delta 0xF7
-
-execute_0xF8: Z80ROM -> Z80 -> Z80Delta
-execute_0xF8 rom48k z80 =
-    -- case 0xF8: time++; if((Ff&FS)!=0) MP=PC=pop(); break;
-    let
-       z80_1_time = z80.env.time |> addCpuTimeTime 1
-       z80_2 = if (and z80.flags.ff c_FS) /= 0 then
-                   let
-                       env = z80.env
-                       popped = { env | time = z80_1_time } |> z80_pop rom48k
-                   in
-                       --{ z80 | env = { env | time = popped.time, sp = popped.sp }, pc = popped.value }
-                       CpuTimeWithSpAndPc popped.time popped.sp popped.value
-               else
-                   --z80
-                   OnlyTime z80_1_time
-    in
-       z80_2
-
-execute_0xF9: Z80ROM -> Z80 -> Z80
-execute_0xF9 _ z80 =
-   -- case 0xF9: SP=HL; time+=2; break;
-   let
-       env = z80.env
-   in
-   { z80 | env = { env | sp = z80.main.hl } |> addCpuTimeEnv 2 }
-
-execute_0xFA: Z80ROM -> Z80 -> Z80
-execute_0xFA rom48k z80 =
-   -- case 0xFA: jp((Ff&FS)!=0); break;
-   z80 |> jp_z80 (Bitwise.and z80.flags.ff c_FS /= 0) rom48k
-
-execute_0xFB: Z80ROM -> Z80 -> Z80Delta
-execute_0xFB _ z80 =
-    -- case 0xFB: IFF=3; break;
-   z80 |> set_iff 3 |> OnlyInterrupts
-
-execute_0xFE: Z80ROM -> Z80 -> Z80
-execute_0xFE rom48k z80 =
-   -- case 0xFE: cp(imm8()); break;
-   let
-      v = imm8 z80.pc z80.env.time rom48k z80.env.ram
-      flags = z80.flags |> z80_cp v.value
-      env_1 = z80.env
-   in
-      { z80 | flags = flags, env = { env_1 | time = v.time }, pc = v.pc }
 
 --execute_gtc0: Int -> IXIYHL -> Z80 -> Z80Delta
 --execute_gtc0 c ixiyhl z80 =
@@ -683,61 +416,128 @@ execute_delta rom48k tmp_z80 =
    --switch(c) {
    let
       interrupts = tmp_z80.interrupts
-      c = tmp_z80.env |> m1 tmp_z80.pc (Bitwise.or interrupts.ir (Bitwise.and interrupts.r 0x7F)) rom48k
+      ct = tmp_z80.env |> m1 tmp_z80.pc (Bitwise.or interrupts.ir (Bitwise.and interrupts.r 0x7F)) rom48k
+
+      -- CB is just another lookup (hopefully) as they are all quite different
+      (instrCode, instrTime) = if ct.value == 0xCB then
+                                   let
+                                      param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ct.time rom48k tmp_z80.env.ram
+                                   in
+                                      (Bitwise.or 0xCB00 param.value, param.time)
+                                 else
+                                    (ct.value,ct.time)
    in
-   case singleWith8BitParam |> Dict.get c.value of
+   case triple16WithFlags |> Dict.get instrCode of
        Just f ->
-           let
-              param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) c.time rom48k tmp_z80.env.ram
-           in
-           -- duplicate of code in imm8 - add 3 to the cpu_time
-           Simple8BitDelta (param.time |> addCpuTimeTime 3) (f param.value)
+         let
+            doubleParam = tmp_z80.env |> mem16 (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) rom48k
+         in
+           -- duplicate of code in imm16 - add 6 to the cpu_time
+           TripleFlagDelta (doubleParam.time |> addCpuTimeTime 6) (f doubleParam.value tmp_z80.flags)
        Nothing ->
-           case singleByteMainRegs  |> Dict.get c.value of
-                Just mainRegFunc ->  RegisterChangeDelta c.time (mainRegFunc tmp_z80.main)
-                Nothing ->
-                    case singleByteFlags |> Dict.get c.value of
-                        Just flagFunc -> FlagDelta c.time (flagFunc tmp_z80.flags)
-                        Nothing ->
-                          case singleByteMainAndFlagRegisters |> Dict.get c.value of
-                              Just f -> PureDelta c.time (f tmp_z80.main tmp_z80.flags)
-                              Nothing ->
-                                  let
-                                     env = tmp_z80.env
-                                     old_z80 = { tmp_z80 | env = { env | time = c.time }, interrupts = { interrupts | r = interrupts.r + 1 } }
-                                     new_pc = Bitwise.and (old_z80.pc + 1) 0xFFFF
-                                     z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
-                                     new_time = z80.env.time
-                                  in
-                                 case z80 |> execute_ltC0 c.value rom48k of
-                                   Just z80delta -> OldDeltaWithChanges (DeltaWithChangesData z80delta interrupts new_pc new_time)
-                                   Nothing ->
-                                        --case c.value of
-                                            --0xDD -> DeltaWithChanges (group_xy IXIY_IX z80) interrupts new_pc new_time
-                                            --0xFD -> DeltaWithChanges (group_xy IXIY_IY z80) interrupts new_pc new_time
-                                            --0xED -> DeltaWithChanges (Whole (group_ed z80)) interrupts new_pc new_time
-                                            --0xCD -> DeltaWithChanges (execute_0xCD z80) interrupts new_pc new_time
-                                            --_ ->
-                                     let
-                                       delta = debugTodo "execute" (c.value |> toHexString) z80  |> Whole
-                                     in
-                                       OldDeltaWithChanges (DeltaWithChangesData delta interrupts new_pc new_time)
+           case tripleByteWith16BitParam |> Dict.get instrCode of
+              Just f ->
+                 let
+                    doubleParam = tmp_z80.env |> mem16 (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) rom48k
+                 in
+                   -- duplicate of code in imm16 - add 6 to the cpu_time
+                   TripleChangeDelta (doubleParam.time |> addCpuTimeTime 6) (f doubleParam.value)
+              Nothing ->
+                case maybeRelativeJump |> Dict.get instrCode of
+                   Just f ->
+                       let
+                          param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) instrTime rom48k tmp_z80.env.ram
+                       in
+                       -- duplicate of code in imm8 - add 3 to the cpu_time
+                       JumpChangeDelta (param.time |> addCpuTimeTime 3) (f param.value tmp_z80.flags)
+                   Nothing ->
+                       case doubleWithRegisters |> Dict.get instrCode of
+                           Just f ->
+                               let
+                                  param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) instrTime rom48k tmp_z80.env.ram
+                               in
+                               -- duplicate of code in imm8 - add 3 to the cpu_time
+                               DoubleWithRegistersDelta (param.time |> addCpuTimeTime 3) (f tmp_z80.main param.value)
+                           Nothing ->
+                              case singleByte instrTime instrCode tmp_z80 rom48k of
+                                  Just deltaThing -> deltaThing
+                                  Nothing -> oldDelta ct interrupts tmp_z80 rom48k
 -- case 0xD4: call((Ff&0x100)==0); break;
--- case 0xE0: time++; if((flags()&FP)==0) MP=PC=pop(); break;
--- case 0xE2: jp((flags()&FP)==0); break;
 -- case 0xE4: call((flags()&FP)==0); break;
--- case 0xE8: time++; if((flags()&FP)!=0) MP=PC=pop(); break;
--- case 0xEA: jp((flags()&FP)!=0); break;
 -- case 0xEC: call((flags()&FP)!=0); break;
--- case 0xF0: time++; if((Ff&FS)==0) MP=PC=pop(); break;
 -- case 0xF4: call((Ff&FS)==0); break;
 -- case 0xFC: call((Ff&FS)!=0); break;
--- case 0xDE: sbc(imm8()); break;
 -- case 0xF3: IFF=0; break;
+
+singleByte: CpuTimeCTime -> Int -> Z80 -> Z80ROM -> Maybe DeltaWithChanges
+singleByte ctime instr_code tmp_z80 rom48k =
+    case singleEnvMainRegs |> Dict.get instr_code of
+        Just f ->
+            Just (MainWithEnvDelta (f tmp_z80.main rom48k tmp_z80.env))
+        Nothing ->
+            case singleByteZ80Env |> Dict.get instr_code of
+                Just f ->
+                   Just (SingleEnvDelta ctime (f tmp_z80.env))
+                Nothing ->
+                   case singleWithNoParam |> Dict.get instr_code of
+                       Just f ->
+                           Just (NoParamsDelta ctime f)
+                       Nothing ->
+                           case singleWith8BitParam |> Dict.get instr_code of
+                               Just f ->
+                                   let
+                                      param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ctime rom48k tmp_z80.env.ram
+                                   in
+                                   -- duplicate of code in imm8 - add 3 to the cpu_time
+                                   Just (Simple8BitDelta (param.time |> addCpuTimeTime 3) (f param.value))
+                               Nothing ->
+                                   case singleByteMainRegs  |> Dict.get instr_code of
+                                        Just mainRegFunc ->  Just (RegisterChangeDelta ctime (mainRegFunc tmp_z80.main))
+                                        Nothing ->
+                                            case singleByteFlags |> Dict.get instr_code of
+                                                Just (flagFunc, t) -> Just (FlagDelta t ctime (flagFunc tmp_z80.flags))
+                                                Nothing ->
+                                                  case singleByteMainAndFlagRegisters |> Dict.get instr_code of
+                                                      Just (f, pcInc) -> Just (PureDelta pcInc ctime (f tmp_z80.main tmp_z80.flags))
+                                                      Nothing -> Nothing
+
+
+oldDelta: CpuTimeAndValue -> InterruptRegisters -> Z80 -> Z80ROM -> DeltaWithChanges
+oldDelta c interrupts tmp_z80 rom48k =
+  let
+     env = tmp_z80.env
+     old_z80 = { tmp_z80 | env = { env | time = c.time }, interrupts = { interrupts | r = interrupts.r + 1 } }
+     new_pc = Bitwise.and (old_z80.pc + 1) 0xFFFF
+     z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
+     new_time = z80.env.time
+  in
+  --z80
+  --   |> execute_ltC0 c.value rom48k
+  --   |> Maybe.map (\z80delta ->  OldDeltaWithChanges (DeltaWithChangesData z80delta interrupts new_pc new_time))
+  --   |> withDefaultLazy (\() ->
+  --       let
+  --            delta = debugTodo "execute" (c.value |> toHexString) z80  |> Whole
+  --       in
+  --       OldDeltaWithChanges (DeltaWithChangesData delta interrupts new_pc new_time)
+  --       )
+ case z80 |> execute_ltC0 c.value rom48k of
+   Just z80delta -> OldDeltaWithChanges (DeltaWithChangesData z80delta interrupts new_pc new_time)
+   Nothing ->
+        --case c.value of
+            --0xDD -> DeltaWithChanges (group_xy IXIY_IX z80) interrupts new_pc new_time
+            --0xFD -> DeltaWithChanges (group_xy IXIY_IY z80) interrupts new_pc new_time
+            --0xED -> DeltaWithChanges (Whole (group_ed z80)) interrupts new_pc new_time
+            --0xCD -> DeltaWithChanges (execute_0xCD z80) interrupts new_pc new_time
+            --_ ->
+     let
+       delta = debugTodo "execute" (c.value |> toHexString) z80  |> Whole
+     in
+       OldDeltaWithChanges (DeltaWithChangesData delta interrupts new_pc new_time)
+
 
 execute_instruction: Z80ROM -> Z80 -> Z80
 execute_instruction rom48k z80 =
-   z80 |> execute_delta rom48k |> apply_delta z80
+   z80 |> execute_delta rom48k |> apply_delta z80 rom48k
 
 execute: Z80ROM -> Z80 -> Z80
 execute rom48k z80 =
