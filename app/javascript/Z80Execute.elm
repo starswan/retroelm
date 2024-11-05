@@ -4,6 +4,7 @@ import Bitwise
 import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeIncrement(..), addCpuTimeTime, addCpuTimeTimeInc, cpuTimeIncrement4)
 import RegisterChange exposing (RegisterChange, RegisterChangeApplied(..), applyRegisterChange)
 import SingleByteWithEnv exposing (SingleByteEnvChange(..))
+import SingleEnvWithMain exposing (SingleEnvMainChange(..))
 import SingleNoParams exposing (NoParamChange(..), applyNoParamsDelta)
 import SingleWith8BitParameter exposing (DoubleWithRegisterChange(..), JumpChange(..), Single8BitChange, applySimple8BitChange)
 import TripleByte exposing (TripleByteChange(..))
@@ -29,6 +30,7 @@ type DeltaWithChanges
     | TripleChangeDelta CpuTimeCTime TripleByteChange
     | SingleEnvDelta CpuTimeCTime SingleByteEnvChange
     | TripleFlagDelta CpuTimeCTime TripleWithFlagsChange
+    | MainWithEnvDelta SingleEnvMainChange
 
 
 apply_delta : Z80 -> Z80ROM -> DeltaWithChanges -> Z80
@@ -66,6 +68,9 @@ apply_delta z80 rom48k z80delta =
 
         TripleFlagDelta cpuTimeCTime tripleWithFlagsChange ->
             z80 |> applyTripleFlagChange cpuTimeCTime tripleWithFlagsChange
+
+        MainWithEnvDelta singleEnvMainChange ->
+            z80 |> applySingleEnvMainChange singleEnvMainChange
 
 
 applyJumpChangeDelta : CpuTimeCTime -> JumpChange -> Z80 -> Z80
@@ -472,6 +477,33 @@ applyTripleFlagChange cpu_time z80changeData z80 =
             in
             { z80
                 | pc = new_pc
+                , env = env1
+                , interrupts = { interrupts | r = interrupts.r + 1 }
+            }
+
+applySingleEnvMainChange : SingleEnvMainChange -> Z80 -> Z80
+applySingleEnvMainChange z80changeData z80 =
+    let
+        interrupts =
+            z80.interrupts
+
+        env =
+            z80.env
+    in
+    case z80changeData of
+        SingleEnvNewARegister int cpuTimeCTime ->
+            let
+                new_pc =
+                    Bitwise.and (z80.pc + 1) 0xFFFF
+
+                env1 =
+                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
+
+                flags = z80.flags
+            in
+            { z80
+                | pc = new_pc
+                , flags = { flags | a = int }
                 , env = env1
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }

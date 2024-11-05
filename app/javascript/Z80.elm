@@ -7,7 +7,6 @@ import Array exposing (Array)
 import Bitwise exposing (and, or, shiftRightBy)
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeAndValue, CpuTimeCTime, CpuTimePcAndValue, addCpuTimeTime)
 import Dict exposing (Dict)
-import Group0x00 exposing (delta_dict_lite_00)
 import Group0x10 exposing (delta_dict_lite_10)
 import Group0x20 exposing (delta_dict_lite_20)
 import Group0x30 exposing (delta_dict_lite_30)
@@ -19,6 +18,7 @@ import Loop
 import SimpleFlagOps exposing (singleByteFlags)
 import SimpleSingleByte exposing (singleByteMainRegs)
 import SingleByteWithEnv exposing (singleByteZ80Env)
+import SingleEnvWithMain exposing (singleEnvMainRegs)
 import SingleMainWithFlags exposing (singleByteMainAndFlagRegisters)
 import SingleNoParams exposing (singleWithNoParam)
 import SingleWith8BitParameter exposing (doubleWithRegisters, maybeRelativeJump, singleWith8BitParam)
@@ -311,8 +311,7 @@ lt40_delta_dict_lite = Dict.fromList
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xDF, execute_0xDF),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
-    ] |> Dict.union delta_dict_lite_00
-    |> Dict.union delta_dict_lite_10
+    ] |> Dict.union delta_dict_lite_10
     |> Dict.union delta_dict_lite_20
     |> Dict.union delta_dict_lite_30
     |> Dict.union delta_dict_lite_C0
@@ -471,33 +470,38 @@ execute_delta rom48k tmp_z80 =
 -- case 0xF4: call((Ff&FS)==0); break;
 -- case 0xFC: call((Ff&FS)!=0); break;
 -- case 0xF3: IFF=0; break;
+
 singleByte: CpuTimeCTime -> Int -> Z80 -> Z80ROM -> Maybe DeltaWithChanges
 singleByte ctime instr_code tmp_z80 rom48k =
-    case singleByteZ80Env |> Dict.get instr_code of
+    case singleEnvMainRegs |> Dict.get instr_code of
         Just f ->
-           Just (SingleEnvDelta ctime (f tmp_z80.env))
+            Just (MainWithEnvDelta (f tmp_z80.main rom48k tmp_z80.env))
         Nothing ->
-           case singleWithNoParam |> Dict.get instr_code of
-               Just f ->
-                   Just (NoParamsDelta ctime f)
-               Nothing ->
-                   case singleWith8BitParam |> Dict.get instr_code of
+            case singleByteZ80Env |> Dict.get instr_code of
+                Just f ->
+                   Just (SingleEnvDelta ctime (f tmp_z80.env))
+                Nothing ->
+                   case singleWithNoParam |> Dict.get instr_code of
                        Just f ->
-                           let
-                              param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ctime rom48k tmp_z80.env.ram
-                           in
-                           -- duplicate of code in imm8 - add 3 to the cpu_time
-                           Just (Simple8BitDelta (param.time |> addCpuTimeTime 3) (f param.value))
+                           Just (NoParamsDelta ctime f)
                        Nothing ->
-                           case singleByteMainRegs  |> Dict.get instr_code of
-                                Just mainRegFunc ->  Just (RegisterChangeDelta ctime (mainRegFunc tmp_z80.main))
-                                Nothing ->
-                                    case singleByteFlags |> Dict.get instr_code of
-                                        Just (flagFunc, t) -> Just (FlagDelta t ctime (flagFunc tmp_z80.flags))
+                           case singleWith8BitParam |> Dict.get instr_code of
+                               Just f ->
+                                   let
+                                      param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ctime rom48k tmp_z80.env.ram
+                                   in
+                                   -- duplicate of code in imm8 - add 3 to the cpu_time
+                                   Just (Simple8BitDelta (param.time |> addCpuTimeTime 3) (f param.value))
+                               Nothing ->
+                                   case singleByteMainRegs  |> Dict.get instr_code of
+                                        Just mainRegFunc ->  Just (RegisterChangeDelta ctime (mainRegFunc tmp_z80.main))
                                         Nothing ->
-                                          case singleByteMainAndFlagRegisters |> Dict.get instr_code of
-                                              Just (f, pcInc) -> Just (PureDelta pcInc ctime (f tmp_z80.main tmp_z80.flags))
-                                              Nothing -> Nothing
+                                            case singleByteFlags |> Dict.get instr_code of
+                                                Just (flagFunc, t) -> Just (FlagDelta t ctime (flagFunc tmp_z80.flags))
+                                                Nothing ->
+                                                  case singleByteMainAndFlagRegisters |> Dict.get instr_code of
+                                                      Just (f, pcInc) -> Just (PureDelta pcInc ctime (f tmp_z80.main tmp_z80.flags))
+                                                      Nothing -> Nothing
 
 
 oldDelta: CpuTimeAndValue -> InterruptRegisters -> Z80 -> Z80ROM -> DeltaWithChanges
