@@ -28,6 +28,7 @@ singleEnvMainRegs =
         , ( 0x56, ld_d_indirect_hl )
         , ( 0x5E, ld_e_indirect_hl )
         , ( 0x66, ld_h_indirect_hl )
+        , ( 0x6E, ld_l_indirect_hl )
         ]
 
 
@@ -226,5 +227,17 @@ ld_h_indirect_hl z80_main rom48k z80_env =
             (z80_main.hl |> Bitwise.and 0xFF) |> Bitwise.or (value.value |> shiftLeftBy8)
     in
     --{ z80 | pc = value.pc, env = value.env } |> set_h_z80 value.value HL |> add_cpu_time 3
+    --MainRegsWithPcAndCpuTime (main |> set_h value.value HL) value.pc (value.time |> addCpuTimeTime 3)
+    SingleEnvNewHLRegister new_hl (value.time |> addCpuTimeTime 3)
+
+ld_l_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
+ld_l_indirect_hl z80_main rom48k z80_env =
+    -- case 0x6E: HL=HL&0xFF00|env.mem(HL); time+=3; break;
+    -- case 0x6E: HL=HL&0xFF00|env.mem(getd(xy)); time+=3; break;
+    let
+        value =
+            mem z80_main.hl z80_env.time rom48k z80_env.ram
+        new_hl = z80_main.hl |> Bitwise.and 0xFF00 |> Bitwise.or value.value
+    in
     --MainRegsWithPcAndCpuTime (main |> set_h value.value HL) value.pc (value.time |> addCpuTimeTime 3)
     SingleEnvNewHLRegister new_hl (value.time |> addCpuTimeTime 3)
