@@ -27,6 +27,7 @@ type NoParamChange
     | Rst28
     | Rst30
     | Rst38
+    | Ret
 
 
 singleWithNoParam : Dict Int NoParamChange
@@ -57,6 +58,7 @@ singleWithNoParam =
         , ( 0x7F, NoOp )
         , ( 0xC1, PopBC )
         , ( 0xC7, Rst00 )
+        , ( 0xC9, Ret )
         , ( 0xCF, Rst08 )
         , ( 0xD1, PopDE )
         , ( 0xD7, Rst10 )
@@ -242,6 +244,24 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             --case 0xFF:push(PC); PC=c-199; break;
             z80 |> rst 0xFF cpu_time
 
+        Ret ->
+            --ret : Z80ROM -> Z80 -> Z80Delta
+            --ret rom48k z80 =
+            -- case 0xC9: MP=PC=pop(); break;
+            let
+                a =
+                    z80.env |> z80_pop rom48k
+
+                --b = debug_log "ret" (a.value |> subName) Nothing
+                --env = z80.env
+                --    CpuTimeWithSpAndPc a.time a.sp a.value
+            in
+            { z80
+                | env = { old_env | time = a.time, sp = a.sp }
+                , pc = a.value
+                , interrupts = { interrupts | r = interrupts.r + 1 }
+            }
+
 
 rst : Int -> CpuTimeCTime -> Z80 -> Z80
 rst value cpu_time z80 =
@@ -255,13 +275,9 @@ rst value cpu_time z80 =
         pc =
             Bitwise.and (z80.pc + 1) 0xFFFF
     in
-    let
-        env1 =
-            { old_env | time = cpu_time } |> z80_push pc
-    in
     { z80
         | pc = value - 199
-        , env = env1
+        , env = { old_env | time = cpu_time } |> z80_push pc
         , interrupts = { interrupts | r = interrupts.r + 1 }
     }
 
