@@ -10,10 +10,6 @@ type alias Z80Ram =
         non_screen: Z80Memory
     }
 
-c_FRSTART = -14335
-c_FRTIME = 69888
---c_FRTIME = 14350
-
 constructor: Z80Ram
 constructor =
     let

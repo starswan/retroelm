@@ -2,10 +2,9 @@ module Group0xC0 exposing (..)
 
 import Dict exposing (Dict)
 import GroupCB exposing (group_cb, group_xy_cb)
-import Z80Delta exposing (Z80Delta(..), rst_delta)
-import Z80Env exposing (z80_pop)
+import Z80Delta exposing (Z80Delta(..))
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY(..), IXIYHL(..), Z80, call_if, imm16)
+import Z80Types exposing (IXIY(..), IXIYHL(..), Z80)
 
 
 delta_dict_C0 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)

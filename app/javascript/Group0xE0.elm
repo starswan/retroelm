@@ -2,7 +2,7 @@ module Group0xE0 exposing (..)
 
 import Dict exposing (Dict)
 import GroupED exposing (group_ed)
-import Z80Delta exposing (Z80Delta(..), rst_delta)
+import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (addCpuTimeEnv, z80_pop, z80_push)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIY(..), IXIYHL(..), Z80, get_de, get_xy, get_xy_ixiy, set_de_main)

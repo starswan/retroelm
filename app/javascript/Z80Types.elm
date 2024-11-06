@@ -3,11 +3,10 @@ module Z80Types exposing (..)
 import Bitwise exposing (complement)
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, addCpuTimeTime)
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8)
-import Z80Env exposing (Z80Env, Z80EnvWithPC, addCpuTimeEnv, mem, mem16, setMem, z80_push)
-import Z80Flags exposing (FlagRegisters, get_af, get_flags)
+import Z80Env exposing (Z80Env, Z80EnvWithPC, addCpuTimeEnv, mem, mem16, setMem)
+import Z80Flags exposing (FlagRegisters)
 import Z80Ram exposing (Z80Ram)
 import Z80Rom exposing (Z80ROM)
-
 
 type alias MainRegisters =
     { b : Int
@@ -47,7 +46,7 @@ type alias Z80 =
     , alt_main : MainRegisters
     , alt_flags : FlagRegisters
     , interrupts : InterruptRegisters
-    , time_limit : Int
+    --, time_limit : Int
     }
 
 
@@ -172,53 +171,53 @@ jp_z80 y rom48k z80 =
 --	}
 
 
-call_if : Bool -> Z80ROM -> Z80 -> Z80EnvWithPC
-call_if y rom48k z80 =
-    let
-        a =
-            z80 |> imm16 rom48k
-
-        env =
-            z80.env
-
-        --z80_2 =
-        --    { z80 | pc = a.pc, env = { env | time = a.time } }
-        new_env =
-            { env | time = a.time }
-    in
-    if y then
-        let
-            --b = debug_log "call" (a.value |> subName) Nothing
-            --z80_1 = z80_2 |> push z80_2.pc |> set_pc a.value
-            pushed =
-                new_env |> z80_push a.pc
-
-            --z80_1 = { z80_2 | env = pushed, pc = a.value }
-        in
-        Z80EnvWithPC pushed a.value
-
-    else
-        Z80EnvWithPC new_env a.pc
-
-
-rst_z80 : Int -> Z80 -> Z80
-rst_z80 c z80 =
-    --z80 |> push z80.pc |> set_pc (c - 199)
-    let
-        pushed =
-            z80.env |> z80_push z80.pc
-    in
-    { z80 | env = pushed, pc = c - 199 }
+--call_if : Bool -> Z80ROM -> Z80 -> Z80EnvWithPC
+--call_if y rom48k z80 =
+--    let
+--        a =
+--            z80 |> imm16 rom48k
+--
+--        env =
+--            z80.env
+--
+--        --z80_2 =
+--        --    { z80 | pc = a.pc, env = { env | time = a.time } }
+--        new_env =
+--            { env | time = a.time }
+--    in
+--    if y then
+--        let
+--            --b = debug_log "call" (a.value |> subName) Nothing
+--            --z80_1 = z80_2 |> push z80_2.pc |> set_pc a.value
+--            pushed =
+--                new_env |> z80_push a.pc
+--
+--            --z80_1 = { z80_2 | env = pushed, pc = a.value }
+--        in
+--        Z80EnvWithPC pushed a.value
+--
+--    else
+--        Z80EnvWithPC new_env a.pc
 
 
-rst : Int -> Z80 -> Z80EnvWithPC
-rst c z80 =
-    --z80 |> push z80.pc |> set_pc (c - 199)
-    let
-        pushed =
-            z80.env |> z80_push z80.pc
-    in
-    Z80EnvWithPC pushed (c - 199)
+--rst_z80 : Int -> Z80 -> Z80
+--rst_z80 c z80 =
+--    --z80 |> push z80.pc |> set_pc (c - 199)
+--    let
+--        pushed =
+--            z80.env |> z80_push z80.pc
+--    in
+--    { z80 | env = pushed, pc = c - 199 }
+
+
+--rst : Int -> Z80 -> Z80EnvWithPC
+--rst c z80 =
+--    --z80 |> push z80.pc |> set_pc (c - 199)
+--    let
+--        pushed =
+--            z80.env |> z80_push z80.pc
+--    in
+--    Z80EnvWithPC pushed (c - 199)
 
 
 a_with_z80 : Z80 -> CpuTimePcAndValue
@@ -509,19 +508,19 @@ set_de_main v z80_main =
 --	}
 
 
-jr : Z80ROM -> Z80 -> CpuTimeAndPc
-jr rom48k z80 =
-    let
-        mempc =
-            mem z80.pc z80.env.time rom48k z80.env.ram
-
-        d =
-            byte mempc.value
-
-        --x = Debug.log "jr" ((String.fromInt d.value) ++ " " ++ (String.fromInt (byte d.value)))
-    in
-    --z80 |> set_env mempc.env |> add_cpu_time 8 |> set_pc (z80.pc + d + 1)
-    CpuTimeAndPc (mempc.time |> addCpuTimeTime 8) (Bitwise.and (z80.pc + d + 1) 0xFFFF)
+--jr : Z80ROM -> Z80 -> CpuTimeAndPc
+--jr rom48k z80 =
+--    let
+--        mempc =
+--            mem z80.pc z80.env.time rom48k z80.env.ram
+--
+--        d =
+--            byte mempc.value
+--
+--        --x = Debug.log "jr" ((String.fromInt d.value) ++ " " ++ (String.fromInt (byte d.value)))
+--    in
+--    --z80 |> set_env mempc.env |> add_cpu_time 8 |> set_pc (z80.pc + d + 1)
+--    CpuTimeAndPc (mempc.time |> addCpuTimeTime 8) (Bitwise.and (z80.pc + d + 1) 0xFFFF)
 
 
 get_h : IXIYHL -> MainWithIndexRegisters -> Int
@@ -562,9 +561,9 @@ set_iff value z80 =
 --	int af() {return A<<8 | flags();}
 
 
-get_af_z80 : Z80 -> Int
-get_af_z80 z80 =
-    z80.flags |> get_af
+--get_af_z80 : Z80 -> Int
+--get_af_z80 z80 =
+--    z80.flags |> get_af
 
 
 set408bit : Int -> Int -> IXIYHL -> Z80 -> Z80

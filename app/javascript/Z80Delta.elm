@@ -3,7 +3,7 @@ module Z80Delta exposing (..)
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimeIncrement, addCpuTimeTime, addCpuTimeTimeInc)
 import Z80Env exposing (Z80Env, addCpuTimeEnv, setMem, setMem16, z80_push)
 import Z80Flags exposing (FlagRegisters)
-import Z80Types exposing (IXIYHL(..), InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, f_szh0n0p, rst, set408bit, set_flag_regs)
+import Z80Types exposing (IXIYHL(..), InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, f_szh0n0p, set408bit, set_flag_regs)
 
 
 type Z80Delta
@@ -137,11 +137,11 @@ applyDeltaWithChanges z80delta z80 =
             { z80_1 | flags = z80_1.flags |> f_szh0n0p result } |> add_cpu_time timeDelta
 
 
-rst_delta : Int -> Z80 -> Z80Delta
-rst_delta value z80 =
-    --z80 |> rst_z80 0xC7
-    let
-        result =
-            z80 |> rst value
-    in
-    EnvWithPc result.env result.pc
+--rst_delta : Int -> Z80 -> Z80Delta
+--rst_delta value z80 =
+--    --z80 |> rst_z80 0xC7
+--    let
+--        result =
+--            z80 |> rst value
+--    in
+--    EnvWithPc result.env result.pc
