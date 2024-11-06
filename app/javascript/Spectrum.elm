@@ -17,7 +17,6 @@ import Z80 exposing (execute, get_ei, interrupt)
 import Z80Debug exposing (debugLog)
 import Z80Env exposing (mem, mem16, reset_cpu_time)
 import Z80Flags exposing (c_FC, c_FZ, get_flags, set_flags)
-import Z80Ram exposing (c_FRSTART, c_FRTIME)
 import Z80Rom exposing (Z80ROM, make_spectrum_rom)
 import Z80Tape exposing (Z80Tape)
 import Z80Types exposing (IXIYHL(..), Z80, get_de, get_h, get_l)
@@ -290,8 +289,9 @@ frames keys speccy =
 
         cpu1 =
             { sz80
-                | time_limit = c_FRSTART + c_FRTIME
-                , env = { env | keyboard = keys |> update_keyboard }
+                -- time_limit is a constant
+                --| time_limit = c_FRSTART + c_FRTIME
+                | env = { env | keyboard = keys |> update_keyboard }
             }
 
         loading_z80 =

@@ -4,7 +4,7 @@ import Bitwise exposing (shiftRightBy)
 import CpuTimeCTime exposing (addCpuTimeTime)
 import Dict exposing (Dict)
 import Z80Delta exposing (Z80Delta(..))
-import Z80Env exposing (addCpuTimeEnv, setMem)
+import Z80Env exposing (addCpuTimeEnv, c_TIME_LIMIT, setMem)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIY, IXIYHL(..), Z80, env_mem_hl_ixiy, get_h, get_h_ixiy, get_l, get_l_ixiy, hl_deref_with_z80_ixiy)
 
@@ -154,8 +154,10 @@ execute_0x76_halt rom z80 =
         interrupts =
             z80.interrupts
 
+        --n =
+        --    shiftRightBy 2 (z80.time_limit - z80.env.time.cpu_time + 3)
         n =
-            shiftRightBy 2 (z80.time_limit - z80.env.time.cpu_time + 3)
+            shiftRightBy 2 (c_TIME_LIMIT - z80.env.time.cpu_time + 3)
 
         ( new_interrupts, time ) =
             if n > 0 then

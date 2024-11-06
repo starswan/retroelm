@@ -24,11 +24,10 @@ import TripleByte exposing (tripleByteWith16BitParam)
 import TripleWithFlags exposing (triple16WithFlags)
 import Utils exposing (shiftLeftBy8, toHexString)
 import Z80Debug exposing (debugTodo)
-import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..), rst_delta)
-import Z80Env exposing (Z80Env, addCpuTimeEnv, m1, mem, mem16, out, z80_in, z80_push, z80env_constructor)
+import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..))
+import Z80Env exposing (Z80Env, addCpuTimeEnv, c_TIME_LIMIT, m1, mem, mem16, out, z80_in, z80_push, z80env_constructor)
 import Z80Execute exposing (DeltaWithChanges(..), apply_delta)
 import Z80Flags exposing (FlagRegisters, IntWithFlags)
-import Z80Ram exposing (c_FRSTART)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, imm8, inc_pc)
 
@@ -41,7 +40,8 @@ constructor =
         alt_flags = FlagRegisters 0 0 0 0 0
         interrupts = InterruptRegisters 0 0 0 0 False
     in
-        Z80 z80env_constructor 0 main main_flags alternate alt_flags interrupts c_FRSTART
+        --Z80 z80env_constructor 0 main main_flags alternate alt_flags interrupts (c_FRSTART + c_FRTIME)
+        Z80 z80env_constructor 0 main main_flags alternate alt_flags interrupts
 --	int a() {return A;}
 --get_a: Z80 -> Int
 --get_a z80 =
@@ -262,7 +262,8 @@ z80_halt: Z80 -> Z80
 z80_halt z80 =
    let
       interrupts = z80.interrupts
-      n = shiftRightBy 2 (z80.time_limit - z80.env.time.cpu_time + 3)
+      --n = shiftRightBy 2 (z80.time_limit - z80.env.time.cpu_time + 3)
+      n = shiftRightBy 2 (c_TIME_LIMIT - z80.env.time.cpu_time + 3)
       z80_1 = if n > 0 then
                  -- turns out env.halt(n, r) just returns n...?
                  { z80 | interrupts = { interrupts | r = interrupts.r + n } } |> add_cpu_time (4 * n)
@@ -333,9 +334,9 @@ execute_0xD3 rom48k z80 =
   in
     EnvWithPc env value.pc
 
-rst_10: Z80ROM -> Z80 -> Z80Delta
-rst_10 _ z80 =
-    z80 |> rst_delta 0xD7
+--rst_10: Z80ROM -> Z80 -> Z80Delta
+--rst_10 _ z80 =
+--    z80 |> rst_delta 0xD7
 
 execute_0xDB: Z80ROM -> Z80 -> Z80Delta
 execute_0xDB rom48k z80 =
@@ -539,7 +540,7 @@ execute rom48k z80 =
         let
             execute_f = execute_instruction rom48k
         in
-        Loop.while (\x -> x.time_limit > x.env.time.cpu_time) execute_f z80
+        Loop.while (\x -> c_TIME_LIMIT > x.env.time.cpu_time) execute_f z80
 --	void execute()
 --	{
 --		if(halted) {

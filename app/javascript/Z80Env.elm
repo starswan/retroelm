@@ -10,9 +10,12 @@ import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimeIncrement, C
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (shiftLeftBy8, shiftRightBy8, toHexString2)
 import Z80Debug exposing (debugLog)
-import Z80Ram exposing (Z80Ram, c_FRSTART, getRamValue)
+import Z80Ram exposing (Z80Ram, getRamValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
 
+c_FRSTART = -14335
+c_FRTIME = 69888
+c_TIME_LIMIT = c_FRSTART + c_FRTIME
 
 
 -- changing this to an array results in a recursion error in the browser :-(
