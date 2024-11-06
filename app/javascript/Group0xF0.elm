@@ -34,14 +34,6 @@ lt40_dict_lite : Dict Int (Z80ROM -> Z80 -> Z80)
 lt40_dict_lite =
     Dict.fromList
         [ ( 0xFA, execute_0xFA )
-        , ( 0xFF, execute_0xFF )
-        ]
-
-
-delta_dict_lite_F0 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
-delta_dict_lite_F0 =
-    Dict.fromList
-        [ ( 0xF7, execute_0xF7 )
         ]
 
 
@@ -65,11 +57,6 @@ execute_0xFA : Z80ROM -> Z80 -> Z80
 execute_0xFA rom48k z80 =
     -- case 0xFA: jp((Ff&FS)!=0); break;
     z80 |> jp_z80 (Bitwise.and z80.flags.ff c_FS /= 0) rom48k
-
-
-execute_0xFF : Z80ROM -> Z80 -> Z80
-execute_0xFF _ z80 =
-    z80 |> rst_z80 0xFF
 
 
 lt40_delta_dict : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
@@ -113,8 +100,3 @@ xYDict =
         |> Dict.union miniDictE0
         |> Dict.union miniDictF0
         |> Dict.union miniDict30
-
-
-execute_0xF7 : Z80ROM -> Z80 -> Z80Delta
-execute_0xF7 _ z80 =
-    z80 |> rst_delta 0xF7

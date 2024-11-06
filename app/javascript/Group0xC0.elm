@@ -27,20 +27,9 @@ delta_dict_C0 =
 delta_dict_lite_C0 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_C0 =
     Dict.fromList
-        [ ( 0xC7, rst_00 )
-        , ( 0xC9, ret )
+        [ ( 0xC9, ret )
         , ( 0xCD, call_0xCD )
-        , ( 0xCF, execute_0xCF )
         ]
-
-
-rst_00 : Z80ROM -> Z80 -> Z80Delta
-rst_00 _ z80 =
-    --z80 |> rst_z80 0xC7
-    --let
-    --   result = z80 |> rst 0xC7
-    --in
-    z80 |> rst_delta 0xC7
 
 
 ret : Z80ROM -> Z80 -> Z80Delta
@@ -83,11 +72,3 @@ call_0xCD rom48k z80 =
     in
     --{ z80_1 | env = pushed, pc = v.value }
     PushWithCpuTimeAndPc v.pc v.time v.value
-
-
-execute_0xCF : Z80ROM -> Z80 -> Z80Delta
-execute_0xCF _ z80 =
-    --let
-    --   result = z80 |> rst 0xCF
-    --in
-    z80 |> rst_delta 0xCF
