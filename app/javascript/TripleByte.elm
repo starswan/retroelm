@@ -9,6 +9,7 @@ type TripleByteChange
     | NewHLRegister Int
     | NewSPRegister Int
     | NewPCRegister Int
+    | CallImmediate Int
 
 
 tripleByteWith16BitParam : Dict Int (Int -> TripleByteChange)
@@ -19,6 +20,7 @@ tripleByteWith16BitParam =
         , ( 0x21, ld_hl_nn )
         , ( 0x31, ld_sp_nn )
         , ( 0xC3, jp_nn )
+        , ( 0xCD, call_0xCD )
         ]
 
 
@@ -89,3 +91,18 @@ jp_nn param16 =
     --in
     ----z80_1 |> set_pc v.value
     NewPCRegister param16
+
+call_0xCD : Int -> TripleByteChange
+call_0xCD param16 =
+    -- case 0xCD: v=imm16(); push(PC); MP=PC=v; break;
+    --let
+    --    v =
+    --        z80 |> imm16 rom48k
+    --
+    --    --env = z80.env
+    --    --d = debug_log "call" ("from " ++ (v.z80.pc |> toHexString) ++ " to " ++ (v.value |> subName)) Nothing
+    --    --pushed = { env | time = v.time } |> z80_push v.pc
+    --in
+    ----{ z80_1 | env = pushed, pc = v.value }
+    --PushWithCpuTimeAndPc v.pc v.time v.value
+   CallImmediate param16

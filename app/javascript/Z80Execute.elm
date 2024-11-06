@@ -423,6 +423,9 @@ applyTripleChangeDelta cpu_time z80changeData z80 =
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
 
+        CallImmediate int ->
+            z80 |> z80_call int cpu_time
+
 
 applyEnvChangeDelta : CpuTimeCTime -> SingleByteEnvChange -> Z80 -> Z80
 applyEnvChangeDelta cpu_time z80changeData z80 =
@@ -443,6 +446,25 @@ applyEnvChangeDelta cpu_time z80changeData z80 =
                 , env = { env | time = cpu_time |> addCpuTimeTimeInc time |> addCpuTimeTimeInc cpuTimeIncrement4, sp = int }
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
+
+
+z80_call : Int -> CpuTimeCTime -> Z80 -> Z80
+z80_call addr cpu_time z80 =
+    let
+        interrupts =
+            z80.interrupts
+
+        new_pc =
+            Bitwise.and (z80.pc + 3) 0xFFFF
+
+        env_1 =
+            z80.env |> z80_push new_pc
+    in
+    { z80
+        | pc = addr
+        , env = { env_1 | time = cpu_time |> addCpuTimeTimeInc cpuTimeIncrement4 }
+        , interrupts = { interrupts | r = interrupts.r + 1 }
+    }
 
 
 applyTripleFlagChange : CpuTimeCTime -> TripleWithFlagsChange -> Z80 -> Z80
@@ -488,15 +510,4 @@ applyTripleFlagChange cpu_time z80changeData z80 =
             }
 
         AbsoluteCall int ->
-            let
-                new_pc =
-                    Bitwise.and (z80.pc + 3) 0xFFFF
-
-                env_1 =
-                    env |> z80_push new_pc
-            in
-            { z80
-                | pc = int
-                , env = { env_1 | time = cpu_time |> addCpuTimeTimeInc cpuTimeIncrement4 }
-                , interrupts = { interrupts | r = interrupts.r + 1 }
-            }
+            z80 |> z80_call int cpu_time

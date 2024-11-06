@@ -29,7 +29,7 @@ delta_dict_lite_70 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_70 =
     Dict.fromList
         [ -- case 0x76: halt(); break;
-          ( 0x76, execute_0x76_halt )
+          ( 0x76, execute_0x76_halt ) -- needs time_limit moving (is it a constant?)
         ]
 
 

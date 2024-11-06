@@ -10,9 +10,8 @@ import Dict exposing (Dict)
 import Group0x20 exposing (delta_dict_lite_20)
 import Group0x30 exposing (delta_dict_lite_30)
 import Group0x70 exposing (delta_dict_lite_70)
-import Group0xC0 exposing (delta_dict_lite_C0)
 import Group0xE0 exposing (delta_dict_lite_E0)
-import Group0xF0 exposing (delta_dict_lite_F0, list0255, lt40_array, lt40_dict_lite, xYDict)
+import Group0xF0 exposing (list0255, lt40_array, lt40_dict_lite, xYDict)
 import Loop
 import SimpleFlagOps exposing (singleByteFlags)
 import SimpleSingleByte exposing (singleByteMainRegs)
@@ -305,17 +304,13 @@ lt40_delta_dict_lite: Dict Int (Z80ROM -> Z80 -> Z80Delta)
 lt40_delta_dict_lite = Dict.fromList
     [
           (0xD3, execute_0xD3),
-          (0xD7, execute_0xD7),
           (0xDB, execute_0xDB),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
-          (0xDF, execute_0xDF),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ] |> Dict.union delta_dict_lite_20
     |> Dict.union delta_dict_lite_30
-    |> Dict.union delta_dict_lite_C0
     |> Dict.union delta_dict_lite_E0
     |> Dict.union delta_dict_lite_70
-    |> Dict.union delta_dict_lite_F0
 
 -- case 0xC7:
 -- case 0xCF:
@@ -338,8 +333,8 @@ execute_0xD3 rom48k z80 =
   in
     EnvWithPc env value.pc
 
-execute_0xD7: Z80ROM -> Z80 -> Z80Delta
-execute_0xD7 _ z80 =
+rst_10: Z80ROM -> Z80 -> Z80Delta
+rst_10 _ z80 =
     z80 |> rst_delta 0xD7
 
 execute_0xDB: Z80ROM -> Z80 -> Z80Delta
@@ -357,9 +352,6 @@ execute_0xDB rom48k z80 =
       --{ z80_1 | env = a.env, flags = { flags | a = a.value } }
       CpuTimeWithFlagsAndPc imm8val.time new_flags imm8val.pc
 
-execute_0xDF: Z80ROM -> Z80 -> Z80Delta
-execute_0xDF _ z80 =
-    z80 |> rst_delta 0xDF
 
 
 --execute_gtc0: Int -> IXIYHL -> Z80 -> Z80Delta

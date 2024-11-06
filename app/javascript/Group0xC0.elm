@@ -24,39 +24,6 @@ delta_dict_C0 =
 --        ]
 
 
-delta_dict_lite_C0 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
-delta_dict_lite_C0 =
-    Dict.fromList
-        [ ( 0xC7, rst_00 )
-        , ( 0xC9, ret )
-        , ( 0xCD, call_0xCD )
-        , ( 0xCF, execute_0xCF )
-        ]
-
-
-rst_00 : Z80ROM -> Z80 -> Z80Delta
-rst_00 _ z80 =
-    --z80 |> rst_z80 0xC7
-    --let
-    --   result = z80 |> rst 0xC7
-    --in
-    z80 |> rst_delta 0xC7
-
-
-ret : Z80ROM -> Z80 -> Z80Delta
-ret rom48k z80 =
-    -- case 0xC9: MP=PC=pop(); break;
-    let
-        a =
-            z80.env |> z80_pop rom48k
-
-        --b = debug_log "ret" (a.value |> subName) Nothing
-        --env = z80.env
-    in
-    --{ z80 | env = { env | time = a.time, sp = a.sp }, pc = a.value }
-    CpuTimeWithSpAndPc a.time a.sp a.value
-
-
 execute_0xCB : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
 execute_0xCB ixiyhl rom48k z80 =
     case ixiyhl of
@@ -68,26 +35,3 @@ execute_0xCB ixiyhl rom48k z80 =
 
         HL ->
             z80 |> group_cb rom48k
-
-
-call_0xCD : Z80ROM -> Z80 -> Z80Delta
-call_0xCD rom48k z80 =
-    -- case 0xCD: v=imm16(); push(PC); MP=PC=v; break;
-    let
-        v =
-            z80 |> imm16 rom48k
-
-        --env = z80.env
-        --d = debug_log "call" ("from " ++ (v.z80.pc |> toHexString) ++ " to " ++ (v.value |> subName)) Nothing
-        --pushed = { env | time = v.time } |> z80_push v.pc
-    in
-    --{ z80_1 | env = pushed, pc = v.value }
-    PushWithCpuTimeAndPc v.pc v.time v.value
-
-
-execute_0xCF : Z80ROM -> Z80 -> Z80Delta
-execute_0xCF _ z80 =
-    --let
-    --   result = z80 |> rst 0xCF
-    --in
-    z80 |> rst_delta 0xCF

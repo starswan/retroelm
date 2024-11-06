@@ -21,17 +21,14 @@ delta_dict_E0 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_E0 =
     Dict.fromList
         [ ( 0xE3, execute_0xE3 )
-
         ]
 
 
 delta_dict_lite_E0 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_E0 =
     Dict.fromList
-        [ ( 0xE7, execute_0xE7 )
-        , ( 0xEB, execute_0xEB )
+        [ ( 0xEB, execute_0xEB )
         , ( 0xED, group_ed )
-        , ( 0xEF, execute_0xEF )
         ]
 
 
@@ -103,11 +100,6 @@ push_hl ixiyhl _ z80 =
     EnvWithPc pushed z80.pc
 
 
-execute_0xE7 : Z80ROM -> Z80 -> Z80Delta
-execute_0xE7 _ z80 =
-    z80 |> rst_delta 0xE7
-
-
 jp_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
 jp_hl ixiyhl _ z80 =
     -- case 0xE9: PC=HL; break;
@@ -141,8 +133,3 @@ execute_0xEB _ z80 =
     in
     --z80 |> set_de v |> set_hl de
     MainRegs { main | hl = de }
-
-
-execute_0xEF : Z80ROM -> Z80 -> Z80Delta
-execute_0xEF _ z80 =
-    z80 |> rst_delta 0xEF
