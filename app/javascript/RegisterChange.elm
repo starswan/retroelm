@@ -4,7 +4,7 @@ import Bitwise
 import CpuTimeCTime exposing (CpuTimeIncrement)
 import Utils exposing (shiftLeftBy8)
 import Z80Flags exposing (FlagRegisters)
-import Z80Types exposing (MainWithIndexRegisters, Z80)
+import Z80Types exposing (MainWithIndexRegisters, Z80, set_de, set_de_main)
 
 
 type RegisterChange
@@ -26,6 +26,7 @@ type RegisterChange
     | DecrementIndirect Int CpuTimeIncrement
     | RegisterChangeJump Int
     | SetIndirect Int Int CpuTimeIncrement
+    | ChangeRegisterDEAndHL Int Int
 
 
 type RegisterChangeApplied
@@ -96,4 +97,8 @@ applyRegisterChange change z80_flags main =
 
         SetIndirect addr value cpuTimeIncrement ->
             SetIndirectApplied addr value cpuTimeIncrement
+
+        ChangeRegisterDEAndHL de hl ->
+            MainRegsApplied ({ main | hl = hl } |> set_de_main de)
+
 

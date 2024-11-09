@@ -64,6 +64,7 @@ singleByteMainRegs =
         , ( 0xC5, push_bc )
         , ( 0xD5, push_de )
         , ( 0xE5, push_hl )
+        , ( 0xEB, ex_de_hl )
         , ( 0xE9, jp_hl )
         , ( 0xF9, ld_sp_hl )
         ]
@@ -510,3 +511,21 @@ ld_indirect_hl_l z80_main =
     -- case 0x75: env.mem(HL,HL&0xFF); time+=3; break;
     -- case 0x75: env.mem(getd(xy),HL&0xFF); time+=3; break;
     SetIndirect z80_main.hl (z80_main.hl |> Bitwise.and 0xFF) increment3
+
+ex_de_hl : MainWithIndexRegisters -> RegisterChange
+ex_de_hl z80_main =
+    -- case 0xEB: v=HL; HL=D<<8|E; D=v>>>8; E=v&0xFF; break;
+    let
+        hl =
+            z80_main.hl
+
+        de =
+            z80_main |> get_de
+
+        --x = debug_log "EX DE,HL" ("DE " ++ (v |> toHexString) ++ " HL " ++ (de |> toHexString)) Nothing
+        --main =
+        --    z80.main |> set_de_main v
+    in
+    --z80 |> set_de v |> set_hl de
+    --MainRegs { main | hl = de }
+    ChangeRegisterDEAndHL hl de

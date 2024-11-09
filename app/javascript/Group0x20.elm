@@ -37,7 +37,7 @@ delta_dict_20 =
 delta_dict_lite_20 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_20 =
     Dict.fromList
-        [ ( 0x22, ls_nn_indirect_hl )
+        [ ( 0x22, ls_nn_indirect_hl ) -- needs triple with env
         ]
 
 

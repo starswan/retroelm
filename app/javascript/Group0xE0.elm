@@ -14,21 +14,23 @@ miniDictE0 =
         [ ( 0xE1, pop_hl )
         , ( 0xE5, push_hl )
         , ( 0xE9, jp_hl )
+        , ( 0xEB, ex_de_hl )
         ]
 
 
 delta_dict_E0 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_E0 =
     Dict.fromList
-        [ ( 0xE3, execute_0xE3 )
+        [ ( 0xE3, ex_indirect_sp_hl )
+
+
         ]
 
 
 delta_dict_lite_E0 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_E0 =
     Dict.fromList
-        [ ( 0xEB, execute_0xEB )
-        , ( 0xED, group_ed )
+        [ ( 0xED, group_ed )
         ]
 
 
@@ -53,8 +55,8 @@ pop_hl ixiyhl rom48k z80 =
             MainRegsWithSpPcAndTime { main | iy = hl.value } hl.sp z80.pc hl.time
 
 
-execute_0xE3 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0xE3 ixiyhl rom48k z80 =
+ex_indirect_sp_hl : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+ex_indirect_sp_hl ixiyhl rom48k z80 =
     -- case 0xE3: v=pop(); push(HL); MP=HL=v; time+=2; break;
     -- case 0xE3: v=pop(); push(xy); MP=xy=v; time+=2; break;
     let
@@ -117,12 +119,12 @@ jp_hl ixiyhl _ z80 =
     OnlyPc xy
 
 
-execute_0xEB : Z80ROM -> Z80 -> Z80Delta
-execute_0xEB _ z80 =
+ex_de_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
+ex_de_hl ixiyhl _ z80 =
     -- case 0xEB: v=HL; HL=D<<8|E; D=v>>>8; E=v&0xFF; break;
     let
         v =
-            z80.main.hl
+            z80.main |> get_xy_ixiy ixiyhl
 
         de =
             z80.main |> get_de
@@ -132,4 +134,9 @@ execute_0xEB _ z80 =
             z80.main |> set_de_main v
     in
     --z80 |> set_de v |> set_hl de
-    MainRegs { main | hl = de }
+    case ixiyhl of
+        IXIY_IX ->
+            MainRegs { main | ix = de }
+
+        IXIY_IY ->
+            MainRegs { main | iy = de }
