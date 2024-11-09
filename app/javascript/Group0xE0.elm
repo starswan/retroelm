@@ -22,8 +22,6 @@ delta_dict_E0 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_E0 =
     Dict.fromList
         [ ( 0xE3, ex_indirect_sp_hl )
-
-
         ]
 
 
