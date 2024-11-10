@@ -30,7 +30,7 @@ delta_dict_30 =
 delta_dict_lite_30 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_30 =
     Dict.fromList
-        [ ( 0x3A, ld_a_indirect_nn ) -- need triplebytewithenv for this
+        [ ( 0x3A, ld_a_indirect_nn ) -- need triple byte with env for this
         ]
 
 
