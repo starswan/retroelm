@@ -30,13 +30,6 @@ miniDictF0 =
         ]
 
 
-lt40_dict_lite : Dict Int (Z80ROM -> Z80 -> Z80)
-lt40_dict_lite =
-    Dict.fromList
-        [ ( 0xFA, execute_0xFA )
-        ]
-
-
 ld_sp_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
 ld_sp_hl ixiyhl rom48k z80 =
     -- case 0xF9: SP=xy; time+=2; break;
@@ -51,12 +44,6 @@ ld_sp_hl ixiyhl rom48k z80 =
     in
     --{ z80 | env = { env | sp = v } |> addCpuTimeEnv 2 }
     SpAndCpuTime v 2
-
-
-execute_0xFA : Z80ROM -> Z80 -> Z80
-execute_0xFA rom48k z80 =
-    -- case 0xFA: jp((Ff&FS)!=0); break;
-    z80 |> jp_z80 (Bitwise.and z80.flags.ff c_FS /= 0) rom48k
 
 
 lt40_delta_dict : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)

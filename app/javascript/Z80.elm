@@ -10,7 +10,7 @@ import Dict exposing (Dict)
 import Group0x20 exposing (delta_dict_lite_20)
 import Group0x30 exposing (delta_dict_lite_30)
 import Group0xE0 exposing (delta_dict_lite_E0)
-import Group0xF0 exposing (list0255, lt40_array, lt40_dict_lite, xYDict)
+import Group0xF0 exposing (list0255, lt40_array, xYDict)
 import Loop
 import SimpleFlagOps exposing (singleByteFlags)
 import SimpleSingleByte exposing (singleByteMainRegs)
@@ -21,14 +21,14 @@ import SingleNoParams exposing (singleWithNoParam)
 import SingleWith8BitParameter exposing (doubleWithRegisters, maybeRelativeJump, singleWith8BitParam)
 import TripleByte exposing (tripleByteWith16BitParam)
 import TripleWithFlags exposing (triple16WithFlags)
-import Utils exposing (shiftLeftBy8, toHexString)
+import Utils exposing (toHexString)
 import Z80Debug exposing (debugTodo)
 import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..))
-import Z80Env exposing (Z80Env, addCpuTimeEnv, c_TIME_LIMIT, m1, mem, mem16, out, z80_in, z80_push, z80env_constructor)
+import Z80Env exposing (Z80Env, addCpuTimeEnv, c_TIME_LIMIT, m1, mem, mem16, z80_push, z80env_constructor)
 import Z80Execute exposing (DeltaWithChanges(..), apply_delta)
 import Z80Flags exposing (FlagRegisters, IntWithFlags)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, imm8, inc_pc)
+import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, inc_pc)
 
 constructor: Z80
 constructor =
@@ -272,39 +272,32 @@ z80_halt z80 =
       { z80_1 | interrupts = { interrupts | halted = True } }
 
 
-z80_to_delta: Maybe (Z80ROM -> Z80 -> Z80) -> Maybe (Z80ROM -> Z80 -> Z80Delta)
-z80_to_delta z80func =
-    case z80func of
-        Just f ->  Just (\rom48k z80  -> Whole (z80 |> f rom48k))
-        Nothing -> Nothing
-
---ixiyhl_z80_to_delta: Maybe (IXIYHL -> Z80ROM -> Z80 -> Z80) -> Maybe (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
---ixiyhl_z80_to_delta z80func =
+--z80_to_delta: Maybe (Z80ROM -> Z80 -> Z80) -> Maybe (Z80ROM -> Z80 -> Z80Delta)
+--z80_to_delta z80func =
 --    case z80func of
---        Just f ->  Just (\ixiyhl rom48k z80  -> Whole (z80 |> f ixiyhl rom48k))
+--        Just f ->  Just (\rom48k z80  -> Whole (z80 |> f rom48k))
 --        Nothing -> Nothing
 
-mergeFuncList:  Maybe (Z80ROM -> Z80 -> Z80Delta) -> Maybe (Z80ROM -> Z80 -> Z80Delta) -> Maybe (Z80ROM -> Z80 -> Z80Delta)
-mergeFuncList afunc bfunc =
-    case afunc of
-        Just a -> Just a
-        Nothing -> case bfunc of
-                        Just b -> Just b
-                        Nothing -> Nothing
+--mergeFuncList:  Maybe (Z80ROM -> Z80 -> Z80Delta) -> Maybe (Z80ROM -> Z80 -> Z80Delta) -> Maybe (Z80ROM -> Z80 -> Z80Delta)
+--mergeFuncList afunc bfunc =
+--    case afunc of
+--        Just a -> Just a
+--        Nothing -> case bfunc of
+--                        Just b -> Just b
+--                        Nothing -> Nothing
 
 lt40_array_lite: Array (Maybe (Z80ROM -> Z80 -> Z80Delta))
 lt40_array_lite =
     let
-       z80_funcs = list0255 |> List.map (\index -> lt40_dict_lite |> Dict.get index |> z80_to_delta)
+       --z80_funcs = []
        delta_funcs = list0255 |> List.map (\index -> lt40_delta_dict_lite |> Dict.get index)
     in
-       List.map2 mergeFuncList z80_funcs delta_funcs |> Array.fromList
+       --List.map2 mergeFuncList z80_funcs delta_funcs |> Array.fromList
+       delta_funcs |> Array.fromList
 
 lt40_delta_dict_lite: Dict Int (Z80ROM -> Z80 -> Z80Delta)
 lt40_delta_dict_lite = Dict.fromList
     [
-          (0xD3, execute_0xD3),
-          (0xDB, execute_0xDB),
           (0xDD, (\z80 -> group_xy IXIY_IX z80)),
           (0xFD, (\z80 -> group_xy IXIY_IY z80))
     ] |> Dict.union delta_dict_lite_20
@@ -319,39 +312,6 @@ lt40_delta_dict_lite = Dict.fromList
 -- case 0xEF:
 -- case 0xF7:
 -- case 0xFF: push(PC); PC=c-199; break;
-
-execute_0xD3: Z80ROM -> Z80 -> Z80Delta
-execute_0xD3 rom48k z80 =
-  -- case 0xD3: env.out(v=imm8()|A<<8,A); MP=v+1&0xFF|v&0xFF00; time+=4; break;
-  let
-    value = imm8 z80.pc z80.env.time rom48k z80.env.ram
-    env_1 = z80.env
-    env_2 = { env_1 | time = value.time }
-    v = Bitwise.or value.value (shiftLeftBy8 z80.flags.a)
-    env = out v z80.flags.a env_2 |> addCpuTimeEnv 4
-  in
-    EnvWithPc env value.pc
-
---rst_10: Z80ROM -> Z80 -> Z80Delta
---rst_10 _ z80 =
---    z80 |> rst_delta 0xD7
-
-execute_0xDB: Z80ROM -> Z80 -> Z80Delta
-execute_0xDB rom48k z80 =
-   -- case 0xDB: MP=(v=imm8()|A<<8)+1; A=env.in(v); time+=4; break;
-   let
-      imm8val = imm8 z80.pc z80.env.time rom48k z80.env.ram
-      env_1 = z80.env
-      z80_1 = { z80 | env = { env_1 | time = imm8val.time }, pc = imm8val.pc }
-      v = or imm8val.value (shiftLeftBy8 z80_1.flags.a)
-      a = z80_1.env |> z80_in v
-      flags = z80_1.flags
-      new_flags = { flags | a = a.value }
-   in
-      --{ z80_1 | env = a.env, flags = { flags | a = a.value } }
-      CpuTimeWithFlagsAndPc imm8val.time new_flags imm8val.pc
-
-
 
 --execute_gtc0: Int -> IXIYHL -> Z80 -> Z80Delta
 --execute_gtc0 c ixiyhl z80 =
