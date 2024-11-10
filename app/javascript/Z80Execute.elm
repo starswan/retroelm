@@ -3,7 +3,7 @@ module Z80Execute exposing (..)
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeIncrement(..), addCpuTimeTime, addCpuTimeTimeInc, cpuTimeIncrement4)
 import RegisterChange exposing (RegisterChange, RegisterChangeApplied(..), applyRegisterChange)
-import SingleByteWithEnv exposing (SingleByteEnvChange(..))
+import SingleByteWithEnv exposing (SingleByteEnvChange(..), applyEnvChangeDelta)
 import SingleEnvWithMain exposing (SingleEnvMainChange, applySingleEnvMainChange)
 import SingleNoParams exposing (NoParamChange(..), applyNoParamsDelta)
 import SingleWith8BitParameter exposing (DoubleWithRegisterChange(..), JumpChange(..), Single8BitChange, applySimple8BitChange)
@@ -425,27 +425,6 @@ applyTripleChangeDelta cpu_time z80changeData z80 =
 
         CallImmediate int ->
             z80 |> z80_call int cpu_time
-
-
-applyEnvChangeDelta : CpuTimeCTime -> SingleByteEnvChange -> Z80 -> Z80
-applyEnvChangeDelta cpu_time z80changeData z80 =
-    let
-        interrupts =
-            z80.interrupts
-
-        new_pc =
-            Bitwise.and (z80.pc + 1) 0xFFFF
-
-        env =
-            z80.env
-    in
-    case z80changeData of
-        NewSPValue int time ->
-            { z80
-                | pc = new_pc
-                , env = { env | time = cpu_time |> addCpuTimeTimeInc time |> addCpuTimeTimeInc cpuTimeIncrement4, sp = int }
-                , interrupts = { interrupts | r = interrupts.r + 1 }
-            }
 
 
 z80_call : Int -> CpuTimeCTime -> Z80 -> Z80

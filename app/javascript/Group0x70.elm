@@ -25,14 +25,6 @@ miniDict70 =
         ]
 
 
-delta_dict_lite_70 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
-delta_dict_lite_70 =
-    Dict.fromList
-        [ -- case 0x76: halt(); break;
-          ( 0x76, execute_0x76_halt ) -- needs time_limit moving (is it a constant?)
-        ]
-
-
 execute_0x7077_ixiy : IXIY -> Z80ROM -> Z80 -> Int -> Z80Delta
 execute_0x7077_ixiy ixiyhl rom48k z80 value =
     -- case 0x70: env.mem(HL,B); time+=3; break;
@@ -41,13 +33,13 @@ execute_0x7077_ixiy ixiyhl rom48k z80 value =
         mem_target =
             z80 |> env_mem_hl_ixiy ixiyhl rom48k
 
-        env_1 =
-            z80.env
+        --env_1 =
+        --    z80.env
 
-        new_env =
-            { env_1 | time = mem_target.time }
-                |> setMem mem_target.value value
-                |> addCpuTimeEnv 3
+        --new_env =
+        --    { env_1 | time = mem_target.time }
+        --        |> setMem mem_target.value value
+        --        |> addCpuTimeEnv 3
     in
     --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
     SetMem8WithCpuTimeIncrementAndPc mem_target.value value mem_target.time 3 mem_target.pc
@@ -133,45 +125,6 @@ ld_indirect_hl_l ixiyhl rom48k z80 =
     --in
     --   --{ z80 | pc = mem_target.pc } |> set_env new_env |> add_cpu_time 3
     execute_0x7077_ixiy ixiyhl rom48k z80 (get_l HL z80.main)
-
-
-
---
---	private void halt()
---	{
---		halted = true;
---		int n = time_limit-time+3 >> 2;
---		if(n>0) {
---			n = env.halt(n, IR|R&0x7F);
---			R+=n; time+=4*n;
---		}
---	}
-
-
-execute_0x76_halt : Z80ROM -> Z80 -> Z80Delta
-execute_0x76_halt rom z80 =
-    let
-        interrupts =
-            z80.interrupts
-
-        --n =
-        --    shiftRightBy 2 (z80.time_limit - z80.env.time.cpu_time + 3)
-        n =
-            shiftRightBy 2 (c_TIME_LIMIT - z80.env.time.cpu_time + 3)
-
-        ( new_interrupts, time ) =
-            if n > 0 then
-                -- turns out env.halt(n, r) just returns n...?
-                --{ z80 | interrupts = { interrupts | r = interrupts.r + n } } |> add_cpu_time (4 * n)
-                ( { interrupts | r = interrupts.r + n }, z80.env.time |> addCpuTimeTime (4 * n) )
-
-            else
-                ( interrupts, z80.env.time )
-
-        --z80
-    in
-    --{ z80_1 | interrupts = { interrupts | halted = True } }
-    InterruptsWithCpuTime { new_interrupts | halted = True } time
 
 
 ld_indirect_hl_a : IXIY -> Z80ROM -> Z80 -> Z80Delta
