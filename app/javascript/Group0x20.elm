@@ -30,14 +30,14 @@ miniDict20 =
 delta_dict_20 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_20 =
     Dict.fromList
-        [ ( 0x2A, ld_hl_indirect_nn )
+        [ ( 0x2A, ld_hl_indirect_nn ) -- needs triple with env
         ]
 
 
 delta_dict_lite_20 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_20 =
     Dict.fromList
-        [ ( 0x22, ls_nn_indirect_hl ) -- needs triple with env
+        [ ( 0x22, ld_nn_indirect_hl ) -- needs triple with env
         ]
 
 
@@ -58,9 +58,8 @@ ld_hl_nn ixiyhl rom48k z80 =
     MainRegsWithPcAndCpuTime main new_xy.pc new_xy.time
 
 
--- This would be TripleWithMain which we don't have (yet)
-ls_nn_indirect_hl : Z80ROM -> Z80 -> Z80Delta
-ls_nn_indirect_hl rom48k z80 =
+ld_nn_indirect_hl : Z80ROM -> Z80 -> Z80Delta
+ld_nn_indirect_hl rom48k z80 =
     -- oops we seem to have forgotten the IX IY version of this
     -- case 0x22: MP=(v=imm16())+1; env.mem16(v,HL); time+=6; break;
     -- case 0x22: MP=(v=imm16())+1; env.mem16(v,xy); time+=6; break;
@@ -181,7 +180,7 @@ add_hl_hl ixiyhl rom48k z80 =
     FlagsWithPCMainAndTime new_xy.flags z80.pc new_z80 new_xy.time
 
 
--- This would be TripleWithEnv which we don't have (yet)
+
 ld_hl_indirect_nn : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
 ld_hl_indirect_nn ixiyhl rom48k z80 =
     -- case 0x2A: MP=(v=imm16())+1; HL=env.mem16(v); time+=6; break;
