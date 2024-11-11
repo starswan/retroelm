@@ -1,11 +1,13 @@
 module Group0xE0 exposing (..)
 
+import Bitwise
 import Dict exposing (Dict)
 import GroupED exposing (group_ed)
+import Utils exposing (shiftLeftBy8)
 import Z80Delta exposing (Z80Delta(..))
-import Z80Env exposing (addCpuTimeEnv, z80_pop, z80_push)
+import Z80Env exposing (addCpuTimeEnv, out, z80_in, z80_pop, z80_push)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY(..), IXIYHL(..), Z80, get_de, get_xy, get_xy_ixiy, set_de_main)
+import Z80Types exposing (IXIY(..), IXIYHL(..), Z80, get_de, get_xy, get_xy_ixiy, imm8, set_de_main)
 
 
 miniDictE0 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
@@ -14,20 +16,22 @@ miniDictE0 =
         [ ( 0xE1, pop_hl )
         , ( 0xE5, push_hl )
         , ( 0xE9, jp_hl )
+        , ( 0xEB, ex_de_hl )
         ]
 
 
 delta_dict_E0 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
 delta_dict_E0 =
     Dict.fromList
-        [ ( 0xE3, execute_0xE3 )
+        [ ( 0xE3, ex_indirect_sp_hl )
         ]
 
 
 delta_dict_lite_E0 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
 delta_dict_lite_E0 =
     Dict.fromList
-        [ ( 0xEB, execute_0xEB )
+        [ ( 0xD3, execute_0xD3 )
+        , ( 0xDB, execute_0xDB )
         , ( 0xED, group_ed )
         ]
 
@@ -53,8 +57,8 @@ pop_hl ixiyhl rom48k z80 =
             MainRegsWithSpPcAndTime { main | iy = hl.value } hl.sp z80.pc hl.time
 
 
-execute_0xE3 : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-execute_0xE3 ixiyhl rom48k z80 =
+ex_indirect_sp_hl : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+ex_indirect_sp_hl ixiyhl rom48k z80 =
     -- case 0xE3: v=pop(); push(HL); MP=HL=v; time+=2; break;
     -- case 0xE3: v=pop(); push(xy); MP=xy=v; time+=2; break;
     let
@@ -117,12 +121,12 @@ jp_hl ixiyhl _ z80 =
     OnlyPc xy
 
 
-execute_0xEB : Z80ROM -> Z80 -> Z80Delta
-execute_0xEB _ z80 =
+ex_de_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
+ex_de_hl ixiyhl _ z80 =
     -- case 0xEB: v=HL; HL=D<<8|E; D=v>>>8; E=v&0xFF; break;
     let
         v =
-            z80.main.hl
+            z80.main |> get_xy_ixiy ixiyhl
 
         de =
             z80.main |> get_de
@@ -132,4 +136,60 @@ execute_0xEB _ z80 =
             z80.main |> set_de_main v
     in
     --z80 |> set_de v |> set_hl de
-    MainRegs { main | hl = de }
+    case ixiyhl of
+        IXIY_IX ->
+            MainRegs { main | ix = de }
+
+        IXIY_IY ->
+            MainRegs { main | iy = de }
+
+
+execute_0xD3 : Z80ROM -> Z80 -> Z80Delta
+execute_0xD3 rom48k z80 =
+    -- case 0xD3: env.out(v=imm8()|A<<8,A); MP=v+1&0xFF|v&0xFF00; time+=4; break;
+    let
+        value =
+            imm8 z80.pc z80.env.time rom48k z80.env.ram
+
+        env_1 =
+            z80.env
+
+        env_2 =
+            { env_1 | time = value.time }
+
+        v =
+            Bitwise.or value.value (shiftLeftBy8 z80.flags.a)
+
+        env =
+            out v z80.flags.a env_2 |> addCpuTimeEnv 4
+    in
+    EnvWithPc env value.pc
+
+
+execute_0xDB : Z80ROM -> Z80 -> Z80Delta
+execute_0xDB rom48k z80 =
+    -- case 0xDB: MP=(v=imm8()|A<<8)+1; A=env.in(v); time+=4; break;
+    let
+        imm8val =
+            imm8 z80.pc z80.env.time rom48k z80.env.ram
+
+        env_1 =
+            z80.env
+
+        z80_1 =
+            { z80 | env = { env_1 | time = imm8val.time }, pc = imm8val.pc }
+
+        v =
+            Bitwise.or imm8val.value (shiftLeftBy8 z80_1.flags.a)
+
+        a =
+            z80_1.env |> z80_in v
+
+        flags =
+            z80_1.flags
+
+        new_flags =
+            { flags | a = a.value }
+    in
+    --{ z80_1 | env = a.env, flags = { flags | a = a.value } }
+    CpuTimeWithFlagsAndPc imm8val.time new_flags imm8val.pc
