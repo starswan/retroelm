@@ -17,7 +17,7 @@ triple16WithEnv : Dict Int (Int -> Z80ROM -> Z80Env -> TripleWithEnvChange)
 triple16WithEnv =
     Dict.fromList
         [ ( 0x2A, ld_hl_indirect_nn )
-         ,( 0x3A, ld_a_indirect_nn )
+        , ( 0x3A, ld_a_indirect_nn )
         ]
 
 
@@ -51,7 +51,6 @@ applyTripleEnvMainChange change z80 =
             { z80 | pc = pc, flags = { flags | a = int }, env = { env | time = cpuTimeCTime } }
 
 
-
 ld_hl_indirect_nn : Int -> Z80ROM -> Z80Env -> TripleWithEnvChange
 ld_hl_indirect_nn param16 rom48k z80_env =
     -- case 0x2A: MP=(v=imm16())+1; HL=env.mem16(v); time+=6; break;
@@ -73,6 +72,7 @@ ld_hl_indirect_nn param16 rom48k z80_env =
     --MainRegsWithPcAndCpuTime main v.pc (new_xy.time |> addCpuTimeTime 6)
     NewHLRegister new_xy.value (new_xy.time |> addCpuTimeTime 6)
 
+
 ld_a_indirect_nn : Int -> Z80ROM -> Z80Env -> TripleWithEnvChange
 ld_a_indirect_nn param16 rom48k z80_env =
     -- case 0x3A: MP=(v=imm16())+1; A=env.mem(v); time+=3; break;
@@ -82,10 +82,8 @@ ld_a_indirect_nn param16 rom48k z80_env =
         --
         --v =
         --    z80 |> imm16 rom48k
-
         mem_value =
             mem param16 z80_env.time rom48k z80_env.ram
     in
     --CpuTimeWithFlagsAndPc (mem_value.time |> addCpuTimeTime 3) { z80_flags | a = mem_value.value } v.pc
     TripleEnvNewARegister mem_value.value (mem_value.time |> addCpuTimeTime 3)
-
