@@ -8,6 +8,7 @@ import SingleEnvWithMain exposing (SingleEnvMainChange, applySingleEnvMainChange
 import SingleNoParams exposing (NoParamChange(..), applyNoParamsDelta)
 import SingleWith8BitParameter exposing (DoubleWithRegisterChange(..), JumpChange(..), Single8BitChange, applySimple8BitChange)
 import TripleByte exposing (TripleByteChange(..))
+import TripleWithEnv exposing (TripleWithEnvChange, applyTripleEnvMainChange)
 import TripleWithFlags exposing (TripleWithFlagsChange(..))
 import Utils exposing (shiftLeftBy8)
 import Z80Change exposing (FlagChange(..), Z80Change, applyZ80Change)
@@ -31,6 +32,7 @@ type DeltaWithChanges
     | SingleEnvDelta CpuTimeCTime SingleByteEnvChange
     | TripleFlagDelta CpuTimeCTime TripleWithFlagsChange
     | MainWithEnvDelta SingleEnvMainChange
+    | TripleEnvDelta TripleWithEnvChange
 
 
 apply_delta : Z80 -> Z80ROM -> DeltaWithChanges -> Z80
@@ -71,6 +73,9 @@ apply_delta z80 rom48k z80delta =
 
         MainWithEnvDelta singleEnvMainChange ->
             z80 |> applySingleEnvMainChange singleEnvMainChange
+
+        TripleEnvDelta tripleWithEnvChange ->
+            z80 |> applyTripleEnvMainChange tripleWithEnvChange
 
 
 applyJumpChangeDelta : CpuTimeCTime -> JumpChange -> Z80 -> Z80

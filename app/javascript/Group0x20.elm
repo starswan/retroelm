@@ -20,17 +20,11 @@ miniDict20 =
         , ( 0x25, execute_0x25 )
         , ( 0x26, ld_h_n )
         , ( 0x29, add_hl_hl )
+        , ( 0x2A, ld_hl_indirect_nn )
         , ( 0x2B, execute_0x2B )
         , ( 0x2C, execute_0x2C )
         , ( 0x2D, execute_0x2D )
         , ( 0x2E, ld_l_n )
-        ]
-
-
-delta_dict_20 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
-delta_dict_20 =
-    Dict.fromList
-        [ ( 0x2A, ld_hl_indirect_nn ) -- needs triple with env
         ]
 
 
@@ -180,8 +174,7 @@ add_hl_hl ixiyhl rom48k z80 =
     FlagsWithPCMainAndTime new_xy.flags z80.pc new_z80 new_xy.time
 
 
-
-ld_hl_indirect_nn : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
+ld_hl_indirect_nn : IXIY -> Z80ROM -> Z80 -> Z80Delta
 ld_hl_indirect_nn ixiyhl rom48k z80 =
     -- case 0x2A: MP=(v=imm16())+1; HL=env.mem16(v); time+=6; break;
     -- case 0x2A: MP=(v=imm16())+1; xy=env.mem16(v); time+=6; break;
@@ -195,7 +188,7 @@ ld_hl_indirect_nn ixiyhl rom48k z80 =
 
         --z80_2 = { z80_1 | env = new_xy.env }
         main =
-            z80.main |> set_xy new_xy.value ixiyhl
+            z80.main |> set_xy_ixiy new_xy.value ixiyhl
     in
     --{ z80_2 | main = main } |> add_cpu_time 6
     MainRegsWithPcAndCpuTime main v.pc (new_xy.time |> addCpuTimeTime 6)

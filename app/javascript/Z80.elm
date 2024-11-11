@@ -20,6 +20,7 @@ import SingleMainWithFlags exposing (singleByteMainAndFlagRegisters)
 import SingleNoParams exposing (singleWithNoParam)
 import SingleWith8BitParameter exposing (doubleWithRegisters, maybeRelativeJump, singleWith8BitParam)
 import TripleByte exposing (tripleByteWith16BitParam)
+import TripleWithEnv exposing (triple16WithEnv)
 import TripleWithFlags exposing (triple16WithFlags)
 import Utils exposing (toHexString)
 import Z80Debug exposing (debugTodo)
@@ -378,41 +379,50 @@ execute_delta rom48k tmp_z80 =
                                  else
                                     (ct.value,ct.time)
    in
-   case triple16WithFlags |> Dict.get instrCode of
+   case triple16WithEnv |> Dict.get instrCode of
        Just f ->
          let
             doubleParam = tmp_z80.env |> mem16 (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) rom48k
+             -- duplicate of code in imm16 - add 6 to the cpu_time
+            env = tmp_z80.env |> addCpuTimeEnv 6
          in
-           -- duplicate of code in imm16 - add 6 to the cpu_time
-           TripleFlagDelta (doubleParam.time |> addCpuTimeTime 6) (f doubleParam.value tmp_z80.flags)
+           TripleEnvDelta (f doubleParam.value rom48k env)
        Nothing ->
-           case tripleByteWith16BitParam |> Dict.get instrCode of
-              Just f ->
+          case triple16WithFlags |> Dict.get instrCode of
+               Just f ->
                  let
                     doubleParam = tmp_z80.env |> mem16 (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) rom48k
                  in
                    -- duplicate of code in imm16 - add 6 to the cpu_time
-                   TripleChangeDelta (doubleParam.time |> addCpuTimeTime 6) (f doubleParam.value)
-              Nothing ->
-                case maybeRelativeJump |> Dict.get instrCode of
-                   Just f ->
-                       let
-                          param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) instrTime rom48k tmp_z80.env.ram
-                       in
-                       -- duplicate of code in imm8 - add 3 to the cpu_time
-                       JumpChangeDelta (param.time |> addCpuTimeTime 3) (f param.value tmp_z80.flags)
-                   Nothing ->
-                       case doubleWithRegisters |> Dict.get instrCode of
+                   TripleFlagDelta (doubleParam.time |> addCpuTimeTime 6) (f doubleParam.value tmp_z80.flags)
+               Nothing ->
+                   case tripleByteWith16BitParam |> Dict.get instrCode of
+                      Just f ->
+                         let
+                            doubleParam = tmp_z80.env |> mem16 (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) rom48k
+                         in
+                           -- duplicate of code in imm16 - add 6 to the cpu_time
+                           TripleChangeDelta (doubleParam.time |> addCpuTimeTime 6) (f doubleParam.value)
+                      Nothing ->
+                        case maybeRelativeJump |> Dict.get instrCode of
                            Just f ->
                                let
                                   param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) instrTime rom48k tmp_z80.env.ram
                                in
                                -- duplicate of code in imm8 - add 3 to the cpu_time
-                               DoubleWithRegistersDelta (param.time |> addCpuTimeTime 3) (f tmp_z80.main param.value)
+                               JumpChangeDelta (param.time |> addCpuTimeTime 3) (f param.value tmp_z80.flags)
                            Nothing ->
-                              case singleByte instrTime instrCode tmp_z80 rom48k of
-                                  Just deltaThing -> deltaThing
-                                  Nothing -> oldDelta ct interrupts tmp_z80 rom48k
+                               case doubleWithRegisters |> Dict.get instrCode of
+                                   Just f ->
+                                       let
+                                          param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) instrTime rom48k tmp_z80.env.ram
+                                       in
+                                       -- duplicate of code in imm8 - add 3 to the cpu_time
+                                       DoubleWithRegistersDelta (param.time |> addCpuTimeTime 3) (f tmp_z80.main param.value)
+                                   Nothing ->
+                                      case singleByte instrTime instrCode tmp_z80 rom48k of
+                                          Just deltaThing -> deltaThing
+                                          Nothing -> oldDelta ct interrupts tmp_z80 rom48k
 -- case 0xD4: call((Ff&0x100)==0); break;
 -- case 0xE4: call((flags()&FP)==0); break;
 -- case 0xEC: call((flags()&FP)!=0); break;

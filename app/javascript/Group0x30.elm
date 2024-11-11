@@ -8,7 +8,7 @@ import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (addCpuTimeEnv, mem, setMem)
 import Z80Flags exposing (add16, dec, inc)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY, IXIYHL(..), Z80, env_mem_hl_ixiy, get_xy, get_xy_ixiy, imm16, imm8, set_xy)
+import Z80Types exposing (IXIY, IXIYHL(..), Z80, env_mem_hl_ixiy, get_xy, get_xy_ixiy, imm16, set_xy)
 
 
 miniDict30 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
