@@ -1,7 +1,9 @@
 module Z80Change exposing (..)
 
+import Bitwise
 import CpuTimeCTime exposing (CpuTimeIncrement)
-import Z80Env exposing (addCpuTimeEnv, addCpuTimeEnvInc, setMem)
+import Utils exposing (shiftLeftBy8)
+import Z80Env exposing (addCpuTimeEnvInc, setMem)
 import Z80Flags exposing (FlagRegisters)
 import Z80Types exposing (Z80)
 
@@ -11,8 +13,9 @@ type Z80Change
     | FlagsWithCRegister FlagRegisters Int
     | FlagsWithDRegister FlagRegisters Int
     | FlagsWithERegister FlagRegisters Int
-    | HLRegister Int
     | FlagsWithHLRegister FlagRegisters Int CpuTimeIncrement
+    | FlagsWithHRegister FlagRegisters Int
+    | FlagsWithLRegister FlagRegisters Int
     | Z80RegisterB Int
     | Z80RegisterC Int
     | Z80ChangeFlags FlagRegisters
@@ -63,13 +66,6 @@ applyZ80Change change z80 =
             in
             { z80 | flags = flagRegisters, main = { main | e = int } }
 
-        HLRegister int ->
-            let
-                main =
-                    z80.main
-            in
-            { z80 | main = { main | hl = int } }
-
         FlagsWithHLRegister flagRegisters int time ->
             let
                 main =
@@ -102,4 +98,23 @@ applyZ80Change change z80 =
                 env = z80.env |> setMem addr int |> addCpuTimeEnvInc time
             in
             { z80 | env = env }
+
+        FlagsWithHRegister flagRegisters int ->
+            let
+                main =
+                    z80.main
+                new_hl =
+                    Bitwise.or (int |> shiftLeftBy8) (Bitwise.and main.hl 0xFF)
+            in
+            { z80 | flags = flagRegisters, main = { main | hl = new_hl } }
+
+        FlagsWithLRegister flagRegisters int ->
+            let
+                main =
+                    z80.main
+                new_hl =
+                    Bitwise.or int (Bitwise.and main.hl 0xFF00)
+            in
+            { z80 | flags = flagRegisters, main = { main | hl = new_hl } }
+
 

@@ -23,17 +23,18 @@ triple16WithEnv =
 
 applyTripleEnvMainChange : TripleWithEnvChange -> Z80 -> Z80
 applyTripleEnvMainChange change z80 =
+    let
+        env =
+            z80.env
+
+        pc =
+            Bitwise.and (z80.pc + 3) 0xFFFF
+    in
     case change of
         NewHLRegister int cpuTime ->
             let
                 main =
                     z80.main
-
-                env =
-                    z80.env
-
-                pc =
-                    Bitwise.and (z80.pc + 3) 0xFFFF
             in
             { z80 | pc = pc, main = { main | hl = int }, env = { env | time = cpuTime } }
 
@@ -41,12 +42,6 @@ applyTripleEnvMainChange change z80 =
             let
                 flags =
                     z80.flags
-
-                env =
-                    z80.env
-
-                pc =
-                    Bitwise.and (z80.pc + 3) 0xFFFF
             in
             { z80 | pc = pc, flags = { flags | a = int }, env = { env | time = cpuTimeCTime } }
 
