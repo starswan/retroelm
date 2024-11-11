@@ -5,7 +5,7 @@ import CpuTimeCTime exposing (CpuTimeIncrement(..), increment0, increment3)
 import Dict exposing (Dict)
 import Utils exposing (shiftLeftBy8, shiftRightBy8)
 import Z80Change exposing (Z80Change(..))
-import Z80Flags exposing (FlagRegisters, adc, add16, dec, inc, sbc, shifter0, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
+import Z80Flags exposing (FlagRegisters, adc, add16, dec, inc, sbc, shifter0, shifter1, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
 import Z80Types exposing (MainWithIndexRegisters, get_bc, get_de)
 
 
@@ -84,6 +84,12 @@ singleByteMainAndFlagRegisters =
         , ( 0xCB03, ( rlc_e, 2 ) )
         , ( 0xCB04, ( rlc_h, 2 ) )
         , ( 0xCB05, ( rlc_l, 2 ) )
+        , ( 0xCB08, ( rrc_b, 2 ) )
+        , ( 0xCB09, ( rrc_c, 2 ) )
+        , ( 0xCB0A, ( rrc_d, 2 ) )
+        , ( 0xCB0B, ( rrc_e, 2 ) )
+        , ( 0xCB0C, ( rrc_h, 2 ) )
+        , ( 0xCB0D, ( rrc_l, 2 ) )
         ]
 
 
@@ -710,3 +716,69 @@ ld_indirect_hl_a z80_main z80_flags =
     -- case 0x77: env.mem(HL,A); time+=3; break;
     -- case 0x77: env.mem(getd(xy),A); time+=3; break;
     Z80ChangeSetIndirect z80_main.hl z80_flags.a increment3
+
+
+rrc_b : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+rrc_b z80_main z80_flags =
+    -- case 0x08: B=shifter(o,B); break;
+    let
+        value =
+            shifter1 z80_main.b z80_flags
+    in
+    FlagsWithBRegister value.flags value.value
+
+
+rrc_c : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+rrc_c z80_main z80_flags =
+    -- case 0x09: C=shifter(o,C); break;
+    let
+        value =
+            shifter1 z80_main.c z80_flags
+    in
+    FlagsWithCRegister value.flags value.value
+
+
+rrc_d : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+rrc_d z80_main z80_flags =
+    -- case 0x0A: D=shifter(o,D); break;
+    let
+        value =
+            shifter1 z80_main.d z80_flags
+    in
+    FlagsWithDRegister value.flags value.value
+
+
+rrc_e : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+rrc_e z80_main z80_flags =
+    -- case 0x0B: E=shifter(o,E); break;
+    let
+        value =
+            shifter1 z80_main.e z80_flags
+    in
+    FlagsWithERegister value.flags value.value
+
+
+rrc_h : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+rrc_h z80_main z80_flags =
+    --case 0x0C: HL=HL&0xFF|shifter(o,HL>>>8)<<8; break
+    let
+        value =
+            shifter1 (z80_main.hl |> shiftRightBy8) z80_flags
+
+        new_hl =
+            Bitwise.or (value.value |> shiftLeftBy8) (Bitwise.and z80_main.hl 0xFF)
+    in
+    FlagsWithHLRegister value.flags new_hl increment0
+
+
+rrc_l : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+rrc_l z80_main z80_flags =
+    -- case 0x0D: HL=HL&0xFF00|shifter(o,HL&0xFF); break;
+    let
+        value =
+            shifter1 (Bitwise.and z80_main.hl 0xFF) z80_flags
+
+        new_hl =
+            Bitwise.or value.value (Bitwise.and z80_main.hl 0xFF00)
+    in
+    FlagsWithHLRegister value.flags new_hl increment0
