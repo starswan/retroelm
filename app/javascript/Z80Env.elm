@@ -6,16 +6,25 @@
 module Z80Env exposing (..)
 
 import Bitwise exposing (and, or, shiftRightBy)
-import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimeIncrement, CpuTimePcAndValue, CpuTimeSpAndValue, addCpuTimeTime, addCpuTimeTimeInc, c_NOCONT, cont, cont1, cont_port)
+import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimeIncrement, CpuTimePcAndValue, CpuTimeSpAndValue, addCpuTimeTime, addCpuTimeTimeInc, c_NOCONT, cont, cont1, cont_port, increment6)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (shiftLeftBy8, shiftRightBy8, toHexString2)
 import Z80Debug exposing (debugLog)
 import Z80Ram exposing (Z80Ram, getRamValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
 
-c_FRSTART = -14335
-c_FRTIME = 69888
-c_TIME_LIMIT = c_FRSTART + c_FRTIME
+
+c_FRSTART =
+    -14335
+
+
+c_FRTIME =
+    69888
+
+
+c_TIME_LIMIT =
+    c_FRSTART + c_FRTIME
+
 
 
 -- changing this to an array results in a recursion error in the browser :-(
@@ -100,12 +109,20 @@ m1 tmp_addr ir rom48k z80env =
         addr =
             tmp_addr - 0x4000
 
-        z80env_1_time =
+        z80env_1_time_inc =
             if and addr 0xC000 == 0 then
                 z80env_time |> cont1 0
 
             else
-                z80env_time
+                Nothing
+
+        z80env_1_time =
+            case z80env_1_time_inc of
+                Just a ->
+                    z80env_time |> addCpuTimeTimeInc a
+
+                Nothing ->
+                    z80env_time
 
         ctime =
             if and ir 0xC000 == 0x4000 then
@@ -122,7 +139,7 @@ m1 tmp_addr ir rom48k z80env =
                 -- not implementing IF1 switching for now
                 rom48k |> getROMValue tmp_addr
     in
-    CpuTimeAndValue (CpuTimeCTime z80env_1_time.cpu_time ctime) value
+    CpuTimeAndValue { z80env_1_time | ctime = ctime } value
 
 
 
@@ -164,7 +181,12 @@ mem base_addr time rom48k ram =
                 if addr < 0x4000 then
                     let
                         new_z80 =
-                            z80env_time |> cont1 0
+                            case z80env_time |> cont1 0 of
+                                Just a ->
+                                    z80env_time |> addCpuTimeTimeInc a
+
+                                Nothing ->
+                                    z80env_time
                     in
                     ( new_z80, new_z80.cpu_time + 3, ram |> getRamValue addr )
 
@@ -245,7 +267,25 @@ mem16 addr rom48k z80env =
 
                 z80env_1_time =
                     if addr1 < 0x4000 then
-                        z80env_time |> cont1 0 |> cont1 3 |> addCpuTimeTime 6
+                        let
+                            --z80env_time |> cont1 0 |> cont1 3 |> addCpuTimeTime 6
+                            time_1 =
+                                case z80env_time |> cont1 0 of
+                                    Just a ->
+                                        z80env_time |> addCpuTimeTimeInc a
+
+                                    Nothing ->
+                                        z80env_time
+
+                            time_2 =
+                                case time_1 |> cont1 3 of
+                                    Just a ->
+                                        time_1 |> addCpuTimeTimeInc a
+
+                                    Nothing ->
+                                        time_1
+                        in
+                        time_2 |> addCpuTimeTimeInc increment6
 
                     else
                         { z80env_time | ctime = c_NOCONT }
@@ -260,7 +300,12 @@ mem16 addr rom48k z80env =
         if addr1shift14 == 0 then
             let
                 new_z80_time =
-                    cont1 3 z80env_time
+                    case cont1 3 z80env_time of
+                        Just a ->
+                            z80env_time |> addCpuTimeTimeInc a
+
+                        Nothing ->
+                            z80env_time
 
                 low =
                     rom48k |> getROMValue addr
@@ -273,7 +318,12 @@ mem16 addr rom48k z80env =
         else if addr1shift14 == 1 then
             let
                 new_env_time =
-                    z80env_time |> cont1 0
+                    case z80env_time |> cont1 0 of
+                        Just a ->
+                            z80env_time |> addCpuTimeTimeInc a
+
+                        Nothing ->
+                            z80env_time
 
                 low =
                     getRamValue (addr - 0x4000) z80env.ram
@@ -361,7 +411,12 @@ setMem z80_addr value z80env =
                 else
                     let
                         z80env_1_time =
-                            z80env_time |> cont1 0
+                            case z80env_time |> cont1 0 of
+                                Just a ->
+                                    z80env_time |> addCpuTimeTimeInc a
+
+                                Nothing ->
+                                    z80env_time
 
                         new_time =
                             z80env_1_time.cpu_time + 3
@@ -378,7 +433,7 @@ setMem z80_addr value z80env =
             else
                 ( z80env |> setRam addr value, c_NOCONT )
     in
-    { new_env | time = CpuTimeCTime z80env_time.cpu_time ctime }
+    { new_env | time = { z80env_time | ctime = ctime } }
 
 
 
@@ -423,7 +478,7 @@ setMem16 addr value z80env =
                     z80env.time
 
             env_1 =
-                { z80env | time = CpuTimeCTime z80env_time.cpu_time c_NOCONT }
+                { z80env | time = { z80env_time | ctime = c_NOCONT } }
         in
         if addr1 < 0 then
             env_1

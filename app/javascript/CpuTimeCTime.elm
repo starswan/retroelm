@@ -62,8 +62,13 @@ cpuTimeIncrement4 =
 increment2 =
     CpuTimeIncrement 2
 
+
 increment0 =
     CpuTimeIncrement 0
+
+
+increment6 =
+    CpuTimeIncrement 6
 
 
 
@@ -76,23 +81,23 @@ increment0 =
 --	}
 
 
-cont1 : Int -> CpuTimeCTime -> CpuTimeCTime
+cont1 : Int -> CpuTimeCTime -> Maybe CpuTimeIncrement
 cont1 tmp_t z80 =
     let
         t =
             tmp_t + z80.cpu_time
     in
     if (t < 0) || (t >= c_SCRENDT) then
-        z80
+        Nothing
 
     else if Bitwise.and t 7 >= 6 then
-        z80
+        Nothing
 
     else if modBy 224 t < 126 then
-        z80 |> addCpuTimeTime (6 - Bitwise.and t 7)
+        (6 - Bitwise.and t 7) |> CpuTimeIncrement |> Just
 
     else
-        z80
+        Nothing
 
 
 
@@ -224,12 +229,20 @@ cont_port portn z80env =
         env2 =
             if Bitwise.and portn 0xC000 /= 0x4000 then
                 let
-                    env3 =
+                    env3_inc =
                         if Bitwise.and portn 0x01 == 0 then
                             env1_time |> cont1 1
 
                         else
-                            env1_time
+                            Nothing
+
+                    env3 =
+                        case env3_inc of
+                            Just a ->
+                                env1_time |> addCpuTimeTimeInc a
+
+                            Nothing ->
+                                env1_time
                 in
                 { env3 | ctime = c_NOCONT }
 
