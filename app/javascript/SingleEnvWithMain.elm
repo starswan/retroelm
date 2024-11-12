@@ -1,7 +1,7 @@
 module SingleEnvWithMain exposing (..)
 
 import Bitwise
-import CpuTimeCTime exposing (CpuTimeCTime, addCpuTimeTime, addCpuTimeTimeInc, cpuTimeIncrement4, increment3)
+import CpuTimeCTime exposing (CpuTimeCTime, addCpuTimeTime, addCpuTimeTimeInc, increment4, increment3)
 import Dict exposing (Dict)
 import Utils exposing (shiftLeftBy8)
 import Z80Env exposing (Z80Env, addCpuTimeEnvInc, mem)
@@ -49,7 +49,7 @@ applySingleEnvMainChange z80changeData z80 =
         SingleEnvNewARegister int cpuTimeCTime ->
             let
                 env1 =
-                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
+                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc increment4
 
                 flags =
                     z80.flags
@@ -64,7 +64,7 @@ applySingleEnvMainChange z80changeData z80 =
         SingleEnvNewBRegister int cpuTimeCTime ->
             let
                 env1 =
-                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
+                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc increment4
 
                 main =
                     z80.main
@@ -79,7 +79,7 @@ applySingleEnvMainChange z80changeData z80 =
         SingleEnvNewCRegister int cpuTimeCTime ->
             let
                 env1 =
-                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
+                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc increment4
 
                 main =
                     z80.main
@@ -94,7 +94,7 @@ applySingleEnvMainChange z80changeData z80 =
         SingleEnvNewDRegister int cpuTimeCTime ->
             let
                 env1 =
-                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
+                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc increment4
 
                 main =
                     z80.main
@@ -109,7 +109,7 @@ applySingleEnvMainChange z80changeData z80 =
         SingleEnvNewERegister int cpuTimeCTime ->
             let
                 env1 =
-                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
+                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc increment4
 
                 main =
                     z80.main
@@ -124,7 +124,7 @@ applySingleEnvMainChange z80changeData z80 =
         SingleEnvNewHLRegister int cpuTimeCTime ->
             let
                 env1 =
-                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
+                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc increment4
 
                 main =
                     z80.main

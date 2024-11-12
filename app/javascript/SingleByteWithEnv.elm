@@ -1,7 +1,7 @@
 module SingleByteWithEnv exposing (..)
 
 import Bitwise exposing (shiftRightBy)
-import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeIncrement(..), addCpuTimeTimeInc, cpuTimeIncrement4, increment2)
+import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeIncrement(..), addCpuTimeTimeInc, increment4, increment2)
 import Dict exposing (Dict)
 import Z80Env exposing (Z80Env, c_TIME_LIMIT)
 import Z80Types exposing (Z80)
@@ -37,14 +37,14 @@ applyEnvChangeDelta cpu_time z80changeData z80 =
         NewSPValue int time ->
             { z80
                 | pc = new_pc
-                , env = { env | time = cpu_time |> addCpuTimeTimeInc time |> addCpuTimeTimeInc cpuTimeIncrement4, sp = int }
+                , env = { env | time = cpu_time |> addCpuTimeTimeInc time |> addCpuTimeTimeInc increment4, sp = int }
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
 
         AddToInterrupts int cpuTimeIncrement ->
             { z80
                 | pc = new_pc
-                , env = { env | time = cpu_time |> addCpuTimeTimeInc cpuTimeIncrement |> addCpuTimeTimeInc cpuTimeIncrement4 }
+                , env = { env | time = cpu_time |> addCpuTimeTimeInc cpuTimeIncrement |> addCpuTimeTimeInc increment4 }
                 , interrupts = { interrupts | halted = True, r = interrupts.r + int }
             }
 

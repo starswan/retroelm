@@ -47,6 +47,12 @@ type CpuTimeIncrement
     = CpuTimeIncrement Int
 
 
+--imcrementToInt: CpuTimeIncrement -> Int
+--incrementToInt increment =
+--    case increment of
+--        CpuTimeIncrement int -> int
+
+
 increment3 =
     CpuTimeIncrement 3
 
@@ -55,7 +61,7 @@ increment7 =
     CpuTimeIncrement 7
 
 
-cpuTimeIncrement4 =
+increment4 =
     CpuTimeIncrement 4
 
 
@@ -275,3 +281,11 @@ addCpuTimeTimeInc value z80env =
     case value of
         CpuTimeIncrement int ->
             { z80env | cpu_time = z80env.cpu_time + int }
+
+addIncrements : CpuTimeIncrement -> CpuTimeIncrement -> CpuTimeIncrement
+addIncrements v1 v2 =
+    case v1 of
+        CpuTimeIncrement int1 ->
+            case v2 of
+                CpuTimeIncrement int2 ->
+                    CpuTimeIncrement (int1 + int2)
