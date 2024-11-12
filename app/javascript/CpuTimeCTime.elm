@@ -126,73 +126,67 @@ cont1 tmp_t z80 =
 --		if(k<n) n = k;
 --		cpu.time += t + 6*n;
 --	}
--- Helper implementation function for cont
-
-
-contimpl : Int -> Int -> CpuTimeCTime -> CpuTimeCTime
-contimpl tmp_n tmp_s z80env =
-    let
-        s =
-            modBy 224 tmp_s
-
-        ntk =
-            if s > 126 then
-                { n = s - 126, t = 6, k = 15, o = False }
-
-            else
-                let
-                    k2 =
-                        shiftRightBy 3 s
-
-                    s2 =
-                        Bitwise.and s 7
-
-                    ( s3, n2, override ) =
-                        if s2 == 7 then
-                            -- in (only) this branch we need to bale if n == 1
-                            ( s2 - 1, tmp_n - 1, tmp_n == 1 )
-
-                        else
-                            ( s2, tmp_n, False )
-                in
-                { n = n2, t = s3, k = k2, o = override }
-
-        n3 =
-            shiftRightBy 1 (ntk.n - 1)
-
-        n4 =
-            if ntk.k < n3 then
-                ntk.k
-
-            else
-                n3
-    in
-    if ntk.o then
-        z80env
-
-    else
-        { z80env | cpu_time = z80env.cpu_time + (ntk.t + 6 * n4) }
 
 
 cont : Int -> CpuTimeCTime -> CpuTimeCTime
-cont tmp_n z80env =
+cont n z80Time =
     let
-        tmp_t =
-            z80env.ctime
+        t =
+            z80Time.ctime
     in
-    if tmp_t + tmp_n <= 0 then
-        z80env
+    if t + n <= 0 then
+        z80Time
 
     else
         let
-            tmp_s =
-                c_SCRENDT - tmp_t
+            s =
+                c_SCRENDT - t
         in
-        if tmp_s < 0 then
-            z80env
+        if s < 0 then
+            z80Time
 
         else
-            z80env |> contimpl tmp_n tmp_s
+            let
+                s1 =
+                    modBy 224 s
+
+                ntk =
+                    if s1 > 126 then
+                        { n = s1 - 126, t = 6, k = 15, o = False }
+
+                    else
+                        let
+                            k2 =
+                                shiftRightBy 3 s1
+
+                            s2 =
+                                Bitwise.and s1 7
+
+                            ( s3, n2, override ) =
+                                if s2 == 7 then
+                                    -- in (only) this branch we need to bale if n == 1
+                                    ( s2 - 1, n - 1, n == 1 )
+
+                                else
+                                    ( s2, n, False )
+                        in
+                        { n = n2, t = s3, k = k2, o = override }
+
+                n3 =
+                    shiftRightBy 1 (ntk.n - 1)
+
+                n4 =
+                    if ntk.k < n3 then
+                        ntk.k
+
+                    else
+                        n3
+            in
+            if ntk.o then
+                z80Time
+
+            else
+                { z80Time | cpu_time = z80Time.cpu_time + (ntk.t + 6 * n4) }
 
 
 
