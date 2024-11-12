@@ -6,7 +6,7 @@
 module Z80Env exposing (..)
 
 import Bitwise exposing (and, or, shiftRightBy)
-import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimeIncrement, CpuTimePcAndValue, CpuTimeSpAndValue, addCpuTimeTime, addCpuTimeTimeInc, c_NOCONT, cont, cont1, cont_port, increment6)
+import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimeIncrement, CpuTimePcAndValue, CpuTimeSpAndValue, addCpuTimeTime, addCpuTimeTimeInc, c_NOCONT, cont, cont1, cont_port, increment6, maybeCont)
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (shiftLeftBy8, shiftRightBy8, toHexString2)
 import Z80Debug exposing (debugLog)
@@ -101,7 +101,12 @@ m1 tmp_addr ir rom48k z80env =
 
         z80env_time =
             if n > 0 then
-                z80env.time |> cont n
+                case z80env.time |> maybeCont n of
+                    Just a ->
+                        z80env.time |> addCpuTimeTimeInc a
+
+                    Nothing ->
+                        z80env.time
 
             else
                 z80env.time
@@ -109,20 +114,17 @@ m1 tmp_addr ir rom48k z80env =
         addr =
             tmp_addr - 0x4000
 
-        z80env_1_time_inc =
+        z80env_1_time =
             if and addr 0xC000 == 0 then
-                z80env_time |> cont1 0
+                case z80env_time |> cont1 0 of
+                    Just a ->
+                        z80env_time |> addCpuTimeTimeInc a
+
+                    Nothing ->
+                        z80env_time
 
             else
-                Nothing
-
-        z80env_1_time =
-            case z80env_1_time_inc of
-                Just a ->
-                    z80env_time |> addCpuTimeTimeInc a
-
-                Nothing ->
-                    z80env_time
+                z80env_time
 
         ctime =
             if and ir 0xC000 == 0x4000 then
