@@ -128,14 +128,14 @@ cont1 tmp_t z80 =
 --	}
 
 
-cont : Int -> CpuTimeCTime -> CpuTimeCTime
-cont n z80Time =
+maybeCont : Int -> CpuTimeCTime -> Maybe CpuTimeIncrement
+maybeCont n z80Time =
     let
         t =
             z80Time.ctime
     in
     if t + n <= 0 then
-        z80Time
+        Nothing
 
     else
         let
@@ -143,7 +143,7 @@ cont n z80Time =
                 c_SCRENDT - t
         in
         if s < 0 then
-            z80Time
+            Nothing
 
         else
             let
@@ -183,11 +183,16 @@ cont n z80Time =
                         n3
             in
             if ntk.o then
-                z80Time
+                Nothing
 
             else
-                { z80Time | cpu_time = z80Time.cpu_time + (ntk.t + 6 * n4) }
+                Just (CpuTimeIncrement (ntk.t + 6 * n4))
 
+cont : Int -> CpuTimeCTime -> CpuTimeCTime
+cont n z80Time =
+    case z80Time |> maybeCont n of
+        Just a -> z80Time |> addCpuTimeTimeInc a
+        Nothing -> z80Time
 
 
 --private void cont_port(int port)
