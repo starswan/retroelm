@@ -99,20 +99,21 @@ m1 tmp_addr ir rom48k z80env =
         n =
             z80env.time.cpu_time - z80env.time.ctime
 
-        z80env_time =
+        z80env_time_inc =
             if n > 0 then
-                case z80env.time |> maybeCont n of
-                    Just a ->
-                        z80env.time |> addCpuTimeTimeInc a
-
-                    Nothing ->
-                        z80env.time
-
+                z80env.time |> maybeCont n
             else
-                z80env.time
+                Nothing
 
         addr =
             tmp_addr - 0x4000
+
+        z80env_time = case z80env_time_inc of
+            Just a ->
+                z80env.time |> addCpuTimeTimeInc a
+
+            Nothing ->
+                z80env.time
 
         z80env_1_time =
             if and addr 0xC000 == 0 then
