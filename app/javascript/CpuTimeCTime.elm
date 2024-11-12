@@ -188,11 +188,16 @@ maybeCont n z80Time =
             else
                 Just (CpuTimeIncrement (ntk.t + 6 * n4))
 
+
 cont : Int -> CpuTimeCTime -> CpuTimeCTime
 cont n z80Time =
     case z80Time |> maybeCont n of
-        Just a -> z80Time |> addCpuTimeTimeInc a
-        Nothing -> z80Time
+        Just a ->
+            z80Time |> addCpuTimeTimeInc a
+
+        Nothing ->
+            z80Time
+
 
 
 --private void cont_port(int port)
@@ -220,45 +225,44 @@ cont_port portn z80Time =
 
         env1_time =
             if n > 0 then
-                z80Time |> cont n
+                case z80Time |> maybeCont n of
+                    Just a ->
+                        z80Time |> addCpuTimeTimeInc a
+
+                    Nothing ->
+                        z80Time
 
             else
                 z80Time
-
-        env2 =
-            if Bitwise.and portn 0xC000 /= 0x4000 then
-                let
-                    env3_inc =
-                        if Bitwise.and portn 0x01 == 0 then
-                            env1_time |> cont1 1
-
-                        else
-                            Nothing
-
-                    env3 =
-                        case env3_inc of
-                            Just a ->
-                                env1_time |> addCpuTimeTimeInc a
-
-                            Nothing ->
-                                env1_time
-                in
-                { env3 | ctime = c_NOCONT }
-
-            else
-                let
-                    env3 =
-                        CpuTimeCTime env1_time.cpu_time env1_time.cpu_time
-
-                    contval =
-                        Bitwise.and portn 1 |> shiftLeftBy 1
-
-                    env4 =
-                        env3 |> cont (2 + contval)
-                in
-                env4 |> addCpuTimeTime 4
     in
-    env2
+    if Bitwise.and portn 0xC000 /= 0x4000 then
+        let
+            env3 =
+                if Bitwise.and portn 0x01 == 0 then
+                    case env1_time |> cont1 1 of
+                        Just a ->
+                            env1_time |> addCpuTimeTimeInc a
+
+                        Nothing ->
+                            env1_time
+
+                else
+                    env1_time
+        in
+        { env3 | ctime = c_NOCONT }
+
+    else
+        let
+            env3 =
+                { env1_time | ctime = env1_time.cpu_time }
+
+            contval =
+                Bitwise.and portn 1 |> shiftLeftBy 1
+
+            env4 =
+                env3 |> cont (2 + contval)
+        in
+        env4 |> addCpuTimeTime 4
 
 
 addCpuTimeTime : Int -> CpuTimeCTime -> CpuTimeCTime
