@@ -213,17 +213,17 @@ cont n z80Time =
 
 
 cont_port : Int -> CpuTimeCTime -> CpuTimeCTime
-cont_port portn z80env =
+cont_port portn z80Time =
     let
         n =
-            z80env.cpu_time - z80env.ctime
+            z80Time.cpu_time - z80Time.ctime
 
         env1_time =
             if n > 0 then
-                z80env |> cont n
+                z80Time |> cont n
 
             else
-                z80env
+                z80Time
 
         env2 =
             if Bitwise.and portn 0xC000 /= 0x4000 then
