@@ -50,18 +50,22 @@ RSpec.describe "Spectrum Emulator" do
     it "loads the emulator", :js do
       # check that Elm is running
       expect(page).to have_content 'Refresh Interval'
-      sleep 14
+      # sleep 20
       # can't work out how to talk to spectrum via capybara
       # Selenium::WebDriver::Error::ElementNotInteractableError:
       # Element <div id="spectrum"> is not reachable by keyboard
+      # selector = 'spectrum'
       # x = find("#spectrum")
       # This doesn't error but nothing happens
-      # find("#spectrum").click
+      # x.click
+      # x.focus
       # x = page.driver.browser.switch_to.active_element
-      # x.send_keys "1"
-      # sleep 1
-      # x.send_keys "0"
-      # sleep 1
+      # page.evaluate_script("$('##{selector}').focus()")
+      # page.execute_script("document.getElementById('#{selector}').focus()")
+      # This now works, but the upstroke happens so quickly the Spectrum doesn't have time to
+      # respond to it (in Cuprite)
+      # x.send_keys "20eThis is a comment"
+      # sleep 10
       # x.send_keys "e"
       # sleep 1
       # x.send_keys :enter

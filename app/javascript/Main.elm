@@ -8,16 +8,16 @@ module Main exposing (..)
 import Array exposing (Array)
 import Bitwise exposing (complement)
 import Browser
-import Browser.Events exposing (onKeyDown, onKeyUp)
 import Bytes exposing (Bytes)
 import Bytes.Decode exposing (unsignedInt8)
+import Delay
 import Dict
-import Html exposing (Html, button, div, h2, span, text)
+import Html exposing (Attribute, Html, button, div, h2, span, text)
 import Html.Attributes exposing (disabled, id, style, tabindex)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, preventDefaultOn)
 import Http exposing (Metadata)
 import Http.Detailed
-import Json.Decode as Decode
+import Json.Decode as Decode exposing (Decoder)
 import Keyboard exposing (ctrlKeyDownEvent, ctrlKeyUpEvent, keyDownEvent, keyUpEvent)
 import Loader exposing (LoadAction(..), trimActionList)
 import MessageHandler exposing (array_decoder, bytesToTap)
@@ -38,7 +38,6 @@ import Z80Screen exposing (ScreenColourRun, screenLines)
 -- meant to be run every 20 msec(50Hz)
 -- arthur timings:
 --  6th Nov 2024 Chromium debug 59.9ms (16.76 Hz)  64 sec live 29.9ms (32.2 Hz)  60 sec
-
 --  4th Oct 2024 Chromium debug 61.9ms (16.1 Hz) 174 sec live 31.7ms (31.5 Hz)
 --  4th Oct 2024 Firefox  debug 81.0ms (12.3 Hz) 105 sec live 56.8ms (17.6 Hz)
 -- 20th Jul 2024 Chromium                                live 37.9ms (28.5 Hz)
@@ -86,6 +85,8 @@ type Message
     | ControlKeyDown String
     | ControlUnKey String
     | KeyRepeat
+    | CharacterKeyUp Char
+    | ControlKeyUp String
     | LoadTape
 
 
@@ -170,9 +171,17 @@ view model =
                 ]
             , button [ onClick LoadTape, disabled load_disabled ] [ text "Load Tape" ]
             ]
-        , div [ tabindex 0, id "spectrum" ]
+        , div
+            [ tabindex 0
+            , id "spectrum"
+            , preventDefaultOn "keydown" (Decode.map alwaysPreventDefault keyDownDecoder)
+            , preventDefaultOn "keyup" (Decode.map alwaysPreventDefault keyUpDecoder)
+            ]
             [ svg
-                [ height (272 * c_SCALEFACTOR |> String.fromInt), width (352 * c_SCALEFACTOR |> String.fromInt), viewBox "0 0 352 272" ]
+                [ height (272 * c_SCALEFACTOR |> String.fromInt)
+                , width (352 * c_SCALEFACTOR |> String.fromInt)
+                , viewBox "0 0 352 272"
+                ]
                 --<rect width="100%" height="100%" fill="green" />
                 screen_data_list
             ]
@@ -180,24 +189,38 @@ view model =
         --,svg [style "height" "192px", style "width" "256px"] (List.indexedMap lineListToSvg lines |> List.concat)
         ]
 
+
+alwaysPreventDefault : msg -> ( msg, Bool )
+alwaysPreventDefault msg =
+    ( msg, True )
+
+
 update : Message -> Model -> ( Model, Cmd Message )
 update message model =
     case message of
         LoadTape ->
             let
-                (first, rest) = case model.qaop.spectrum.tape of
-                                  Just a_tape -> (a_tape.tapfiles |> Dict.get 0, a_tape.tapfiles |> Dict.remove 0)
-                                  Nothing -> (Nothing, Dict.empty)
+                ( first, rest ) =
+                    case model.qaop.spectrum.tape of
+                        Just a_tape ->
+                            ( a_tape.tapfiles |> Dict.get 0, a_tape.tapfiles |> Dict.remove 0 )
+
+                        Nothing ->
+                            ( Nothing, Dict.empty )
+
                 -- here we push the tapfile into Qoap and execute appropriately
-                speccy = case first of
-                    Just tapfile -> model.qaop.spectrum |> loadTapfile tapfile
-                    Nothing -> model.qaop.spectrum
+                speccy =
+                    case first of
+                        Just tapfile ->
+                            model.qaop.spectrum |> loadTapfile tapfile
+
+                        Nothing ->
+                            model.qaop.spectrum
 
                 qaop =
                     debugLog "load_tape" "into model" model.qaop
-
             in
-            ( {model | qaop = { qaop | spectrum = speccy }}, Cmd.none )
+            ( { model | qaop = { qaop | spectrum = speccy } }, Cmd.none )
 
         GotRom result ->
             let
@@ -273,25 +296,20 @@ update message model =
             -- do nothing on repeating keys
             ( model, Cmd.none )
 
+        CharacterKeyUp char ->
+            ( model, Delay.after 50 (CharacterUnKey char) )
+
+        ControlKeyUp str ->
+            ( model, Delay.after 50 (ControlUnKey str) )
+
 
 subscriptions : Model -> Sub Message
 subscriptions model =
-    let
-        keysubs =
-            [ onKeyDown keyDownDecoder, onKeyUp keyUpDecoder ]
+    if model.qaop.spectrum.paused || not (List.isEmpty model.qaop.loader.actions) then
+        Sub.none
 
-        subs =
-            if model.qaop.spectrum.paused || not (List.isEmpty model.qaop.loader.actions) then
-                keysubs
-
-            else
-                let
-                    tick =
-                        Time.every (model.tickInterval |> toFloat) Tick
-                in
-                tick :: keysubs
-    in
-    Sub.batch subs
+    else
+        Time.every (model.tickInterval |> toFloat) Tick
 
 
 keyDownDecoder : Decode.Decoder Message
@@ -322,10 +340,10 @@ toUnKey : String -> Message
 toUnKey keyValue =
     case String.uncons keyValue of
         Just ( char, "" ) ->
-            CharacterUnKey char
+            CharacterKeyUp char
 
         _ ->
-            ControlUnKey keyValue
+            ControlKeyUp keyValue
 
 
 actionToCmd : LoadAction -> Cmd Message
@@ -435,12 +453,15 @@ run qaop =
 
     else
         ( { qaop | spectrum = qaop.spectrum |> frames qaop.keys }, Cmd.none )
-    --else
-    --    case qaop.spectrum.tape of
-    --        Just tape ->
-    --            let
-    --                newenv = qaop.spectrum.cpu.env
-    --        Nothing -> ( { qaop | spectrum = qaop.spectrum |> frames qaop.keys }, Cmd.none )
+
+
+
+--else
+--    case qaop.spectrum.tape of
+--        Just tape ->
+--            let
+--                newenv = qaop.spectrum.cpu.env
+--        Nothing -> ( { qaop | spectrum = qaop.spectrum |> frames qaop.keys }, Cmd.none )
 
 
 main : Program String Model Message
