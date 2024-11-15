@@ -8,14 +8,17 @@ require 'rspec/rails'
 # Add additional requires below this line. Rails is not loaded until this point!
 
 # need to try selenium driver again to see if send keys can not be so quick
+# Turned out to be twice as slow as cuprite
 # Capybara.register_driver :selenium_chrome do |app|
-#   Capybara::Selenium::Driver.new(app, browser: :chrome)
+#   options = Selenium::WebDriver::Chrome::Options.new(args: %w[no-sandbox disable-gpu window-size=1024,1280])
+#
+#   Capybara::Selenium::Driver.new(app, browser: :chrome, options:)
 # end
 # Capybara.javascript_driver = :selenium_chrome
 
 require "capybara/cuprite"
 Capybara.register_driver(:cuprite) do |app|
-  Capybara::Cuprite::Driver.new(app, headless: false, process_timeout: 15, window_size: [1024, 1280])
+  Capybara::Cuprite::Driver.new(app, headless: false, process_timeout: 20, window_size: [1024, 1280])
 end
 Capybara.javascript_driver = :cuprite
 
