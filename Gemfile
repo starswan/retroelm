@@ -1,3 +1,5 @@
+# yet again my gems are not a secret from anyone
+
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
@@ -46,13 +48,6 @@ group :development, :test do
   gem "faraday-follow_redirects"
   # gem "faraday_middleware"
 
-  # 4.11 insists that /usr/bin/firefox is a binary, when it isn't
-  # on Ubuntu 22.04 due to it being a snap which is very annoying
-  # gem "selenium-webdriver", "< 4.11"
-  # gem "selenium-webdriver"
-  # gem 'geckodriver'
-  gem "cuprite"
-
   gem "guard-bundler"
   gem "guard-rspec"
   # gem "guard-rubocop"
@@ -83,9 +78,13 @@ end
 group :test do
   # Adds support for Capybara system testing and selenium driver
   # gem 'capybara', '>= 2.15'
-  # gem 'selenium-webdriver'
-  # Easy installation and use of web drivers to run system tests with browsers
-  # gem 'webdrivers'
+  # 4.11 insists that /usr/bin/firefox is a binary, when it isn't
+  # on Ubuntu 22.04 due to it being a snap which is very annoying
+  # gem "selenium-webdriver", "< 4.11"
+  # gem 'geckodriver'
+  # cuprite driving chrom(ium) is much nicer
+  gem "cuprite"
+
   gem "factory_bot_rails"
 
   gem 'simplecov', require: false
