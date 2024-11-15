@@ -34,12 +34,12 @@ attr_indexes =
     bank0_attr_indexes ++ bank1_attr_indexes ++ bank2_attr_indexes
 
 
-dataOffsets =
-    range0_191 |> List.map calcDataOffset
+--dataOffsets =
+--    range0_191 |> List.map calcDataOffset
 
 
-range0_191 =
-    List.range 0 191
+--range0_191 =
+--    List.range 0 191
 
 
 type alias Z80Screen =
