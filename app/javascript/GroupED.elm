@@ -15,7 +15,7 @@ import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (addCpuTimeEnv, m1, mem, mem16, setMem, setMem16, z80_in)
 import Z80Flags exposing (FlagRegisters, c_F3, c_F5, c_F53, c_FC, z80_sub)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, dec_pc2, f_szh0n0p, get_bc, get_de, imm16, inc_pc, set408bit, set_bc, set_bc_main, set_de, set_de_main)
+import Z80Types exposing (IXIYHL(..), InterruptRegisters, Z80, add_cpu_time, f_szh0n0p, get_bc, get_de, imm16, inc_pc, set408bit, set_bc, set_bc_main, set_de, set_de_main)
 
 
 group_ed_dict : Dict Int (Z80ROM -> Z80 -> Z80Delta)
@@ -87,6 +87,10 @@ execute_ED43 rom48k z80 =
 
         env =
             z80_2.env |> setMem16 v.value (Bitwise.or (shiftLeftBy8 z80.main.b) z80.main.c)
+        --env = case (v.value |> fromInt) of
+        --  Z80Address.ROMAddress int -> z80_2.env
+        --  Z80Address.RAMAddress ramAddress ->
+        --    z80_2.env |> setMem16 ramAddress (Bitwise.or (shiftLeftBy8 z80.main.b) z80.main.c)
     in
     --{ z80_2 | env = env } |> add_cpu_time 6 |> Whole
     EnvWithPc env v.pc
@@ -177,6 +181,10 @@ execute_ED53 rom48k z80 =
 
         env =
             z80_1.env |> setMem16 v.value (Bitwise.or (shiftLeftBy8 z80.main.d) z80.main.e)
+        --env = case (v.value |> fromInt) of
+        --  Z80Address.ROMAddress int -> z80_1.env
+        --  Z80Address.RAMAddress ramAddress ->
+        --    z80_1.env |> setMem16 ramAddress (Bitwise.or (shiftLeftBy8 z80.main.d) z80.main.e)
     in
     --{ z80_1 | env = env } |> add_cpu_time 6 |> Whole
     EnvWithPc (env |> addCpuTimeEnv 6) v.pc
@@ -271,13 +279,13 @@ execute_EDB0 : Z80ROM -> Z80 -> Z80Delta
 execute_EDB0 rom48k z80 =
     --0xB0 -> debug_log "LDIR" ("HL " ++ (z80.main.hl |> toHexString) ++ " BC " ++ (z80 |> get_bc |> toHexString2)) (z80 |> ldir 1 True)
     -- case 0xB0: ldir(1,true); break;
-    z80 |> ldir 1 True rom48k
+    z80 |> ldir Forwards True rom48k
 
 
 execute_EDB8 : Z80ROM -> Z80 -> Z80Delta
 execute_EDB8 rom48k z80 =
     -- case 0xB8: ldir(-1,true); break;
-    z80 |> ldir -1 True rom48k
+    z80 |> ldir Backwards True rom48k
 
 
 
@@ -579,7 +587,16 @@ set_im_direct value z80 =
     { z80 | interrupts = { ints | iM = value } } |> Whole
 
 
-ldir : Int -> Bool -> Z80ROM -> Z80 -> Z80Delta
+
+--
+--
+--	private void ldir(int i, boolean r)
+--	{
+
+type DirectionForLDIR = Forwards | Backwards
+
+
+ldir : DirectionForLDIR -> Bool -> Z80ROM -> Z80 -> Z80Delta
 ldir i r rom48k z80 =
     --	private void ldir(int i, boolean r)
     let
@@ -597,17 +614,30 @@ ldir i r rom48k z80 =
         env_0 =
             z80.env
 
+        new_hl = case i of
+          Forwards -> a1  + 1 |> Bitwise.and 0xFFFF
+          Backwards -> a1 - 1 |> Bitwise.and 0xFFFF
+
         z80_1 =
-            { z80 | env = { env_0 | time = v1.time }, main = { main | hl = char (a1 + i) } } |> add_cpu_time 3
+            --{ z80 | env = { env_0 | time = v1.time }, main = { main | hl = char (a1 + i) } } |> add_cpu_time 3
+            { z80 | env = { env_0 | time = v1.time }, main = { main | hl = new_hl } } |> add_cpu_time 3
 
         a2 =
             z80_1.main |> get_de
 
+        --env_1 = case a2 |> fromInt of
+        --  ROMAddress int -> z80_1.env
+        --  RAMAddress ramAddress ->
+        --    z80_1.env |> setMem a2 v1.value
         env_1 =
             z80_1.env |> setMem a2 v1.value
 
+        new_de = case i of
+          Forwards -> a2 + 1 |> char
+          Backwards -> a2 - 1 |> char
+
         z80_2 =
-            { z80_1 | env = env_1 } |> set_de (char (a2 + i)) |> add_cpu_time 5
+            { z80_1 | env = env_1 } |> set_de new_de |> add_cpu_time 5
 
         --if(Fr!=0) Fr = 1; // keep Z
         --v += A;
@@ -638,24 +668,22 @@ ldir i r rom48k z80 =
         a =
             Bitwise.and ((z80_2.main |> get_bc) - 1) 0xFFFF
 
-        z80_3 =
-            z80_2 |> set_bc a
-
-        ( v, z80_4 ) =
+        ( v, pc, time ) =
             if a /= 0 then
                 if r then
-                    ( 0x80, z80_3 |> dec_pc2 |> add_cpu_time 5 )
+                    ( 0x80, Bitwise.and (z80_2.pc - 2) 0xFFFF, 5 )
 
                 else
-                    ( 0x80, z80_3 )
+                    ( 0x80, z80_2.pc, 0 )
 
             else
-                ( 0, z80_3 )
+                ( 0, z80_2.pc, 0 )
 
         flags =
-            z80_4.flags
+            z80_2.flags
+        env_2 = z80_2.env |> addCpuTimeEnv time
     in
-    { z80_4 | flags = { flags | fr = fr, ff = ff, fa = v, fb = v } } |> Whole
+    { z80_2 | pc = pc, env = env_2, flags = { flags | fr = fr, ff = ff, fa = v, fb = v } } |> set_bc a |> Whole
 
 
 
