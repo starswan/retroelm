@@ -668,9 +668,6 @@ ldir i r rom48k z80 =
         a =
             Bitwise.and ((z80_2.main |> get_bc) - 1) 0xFFFF
 
-        --z80_3 =
-        --    z80_2 |> set_bc a
-
         ( v, pc, time ) =
             if a /= 0 then
                 if r then
