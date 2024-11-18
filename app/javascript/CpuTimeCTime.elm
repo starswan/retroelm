@@ -125,46 +125,54 @@ cont1 tmp_t z80 =
 
 
 cont : Int -> CpuTimeCTime -> CpuTimeCTime
-cont tmp_n z80env =
+cont n z80env =
     let
-        tmp_t =
+        t =
             z80env.ctime
     in
-    if tmp_t + tmp_n <= 0 then
+    if t + n <= 0 then
         z80env
 
     else
         let
-            tmp_s =
-                c_SCRENDT - tmp_t
+            s =
+                c_SCRENDT - t
         in
-        if tmp_s < 0 then
+        if s < 0 then
             z80env
 
         else
             let
-                s =
-                    modBy 224 tmp_s
+                new_s =
+                    s |> modBy 224
 
                 ntk =
-                    if s > 126 then
-                        { n = s - 126, t = 6, k = 15, o = False }
+                    if new_s > 126 then
+                        let
+                            new_n =
+                                n - (new_s - 126)
+                        in
+                        if new_n <= 0 then
+                            { n = new_n, t = 6, k = 15, o = True }
+
+                        else
+                            { n = new_n, t = 6, k = 15, o = False }
 
                     else
                         let
                             k2 =
-                                shiftRightBy 3 s
+                                new_s |> shiftRightBy 3
 
                             s2 =
-                                Bitwise.and s 7
+                                Bitwise.and new_s 0x07
 
                             ( s3, n2, override ) =
                                 if s2 == 7 then
                                     -- in (only) this branch we need to bale if n == 1
-                                    ( s2 - 1, tmp_n - 1, tmp_n == 1 )
+                                    ( s2 - 1, n - 1, n == 1 )
 
                                 else
-                                    ( s2, tmp_n, False )
+                                    ( s2, n, False )
                         in
                         { n = n2, t = s3, k = k2, o = override }
 
