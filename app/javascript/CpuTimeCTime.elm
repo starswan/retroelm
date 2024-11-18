@@ -146,17 +146,17 @@ cont n z80env =
                 new_s =
                     s |> modBy 224
 
-                ntk =
+                maybe_ntk =
                     if new_s > 126 then
                         let
                             new_n =
                                 n - (new_s - 126)
                         in
                         if new_n <= 0 then
-                            { n = new_n, t = 6, k = 15, o = True }
+                            Nothing
 
                         else
-                            { n = new_n, t = 6, k = 15, o = False }
+                            Just { n = new_n, t = 6, k = 15 }
 
                     else
                         let
@@ -166,31 +166,41 @@ cont n z80env =
                             s2 =
                                 Bitwise.and new_s 0x07
 
-                            ( s3, n2, override ) =
+                            ( new_t, maybe_n2 ) =
                                 if s2 == 7 then
-                                    -- in (only) this branch we need to bale if n == 1
-                                    ( s2 - 1, n - 1, n == 1 )
+                                    if n - 1 == 0 then
+                                        ( s2 - 1, Nothing )
+
+                                    else
+                                        ( s2 - 1, Just (n - 1) )
 
                                 else
-                                    ( s2, n, False )
+                                    ( s2, Just n )
                         in
-                        { n = n2, t = s3, k = k2, o = override }
+                        case maybe_n2 of
+                            Just n2 ->
+                                Just { n = n2, t = new_t, k = k2 }
 
-                n3 =
-                    shiftRightBy 1 (ntk.n - 1)
-
-                n4 =
-                    if ntk.k < n3 then
-                        ntk.k
-
-                    else
-                        n3
+                            Nothing ->
+                                Nothing
             in
-            if ntk.o then
-                z80env
+            case maybe_ntk of
+                Just ntk ->
+                    let
+                        n3 =
+                            shiftRightBy 1 (ntk.n - 1)
 
-            else
-                { z80env | cpu_time = z80env.cpu_time + (ntk.t + 6 * n4) }
+                        n4 =
+                            if ntk.k < n3 then
+                                ntk.k
+
+                            else
+                                n3
+                    in
+                    { z80env | cpu_time = z80env.cpu_time + (ntk.t + 6 * n4) }
+
+                Nothing ->
+                    z80env
 
 
 
