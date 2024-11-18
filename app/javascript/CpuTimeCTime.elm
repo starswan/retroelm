@@ -62,6 +62,7 @@ cpuTimeIncrement4 =
 increment2 =
     CpuTimeIncrement 2
 
+
 increment0 =
     CpuTimeIncrement 0
 
@@ -121,52 +122,6 @@ cont1 tmp_t z80 =
 --		if(k<n) n = k;
 --		cpu.time += t + 6*n;
 --	}
--- Helper implementation function for cont
-
-
-contimpl : Int -> Int -> CpuTimeCTime -> CpuTimeCTime
-contimpl tmp_n tmp_s z80env =
-    let
-        s =
-            modBy 224 tmp_s
-
-        ntk =
-            if s > 126 then
-                { n = s - 126, t = 6, k = 15, o = False }
-
-            else
-                let
-                    k2 =
-                        shiftRightBy 3 s
-
-                    s2 =
-                        Bitwise.and s 7
-
-                    ( s3, n2, override ) =
-                        if s2 == 7 then
-                            -- in (only) this branch we need to bale if n == 1
-                            ( s2 - 1, tmp_n - 1, tmp_n == 1 )
-
-                        else
-                            ( s2, tmp_n, False )
-                in
-                { n = n2, t = s3, k = k2, o = override }
-
-        n3 =
-            shiftRightBy 1 (ntk.n - 1)
-
-        n4 =
-            if ntk.k < n3 then
-                ntk.k
-
-            else
-                n3
-    in
-    if ntk.o then
-        z80env
-
-    else
-        { z80env | cpu_time = z80env.cpu_time + (ntk.t + 6 * n4) }
 
 
 cont : Int -> CpuTimeCTime -> CpuTimeCTime
@@ -187,7 +142,47 @@ cont tmp_n z80env =
             z80env
 
         else
-            z80env |> contimpl tmp_n tmp_s
+            let
+                s =
+                    modBy 224 tmp_s
+
+                ntk =
+                    if s > 126 then
+                        { n = s - 126, t = 6, k = 15, o = False }
+
+                    else
+                        let
+                            k2 =
+                                shiftRightBy 3 s
+
+                            s2 =
+                                Bitwise.and s 7
+
+                            ( s3, n2, override ) =
+                                if s2 == 7 then
+                                    -- in (only) this branch we need to bale if n == 1
+                                    ( s2 - 1, tmp_n - 1, tmp_n == 1 )
+
+                                else
+                                    ( s2, tmp_n, False )
+                        in
+                        { n = n2, t = s3, k = k2, o = override }
+
+                n3 =
+                    shiftRightBy 1 (ntk.n - 1)
+
+                n4 =
+                    if ntk.k < n3 then
+                        ntk.k
+
+                    else
+                        n3
+            in
+            if ntk.o then
+                z80env
+
+            else
+                { z80env | cpu_time = z80env.cpu_time + (ntk.t + 6 * n4) }
 
 
 
