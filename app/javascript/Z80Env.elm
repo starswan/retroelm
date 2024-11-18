@@ -10,7 +10,7 @@ import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimeIncrement, C
 import Keyboard exposing (Keyboard, z80_keyboard_input)
 import Utils exposing (shiftLeftBy8, shiftRightBy8, toHexString2)
 import Z80Debug exposing (debugLog)
-import Z80Ram exposing (Z80Ram, getRamValue)
+import Z80Ram exposing (Z80Ram, getRamValue, setRamValue)
 import Z80Rom exposing (Z80ROM, getROMValue)
 
 
@@ -95,7 +95,7 @@ m1 addr ir rom48k z80env =
         n =
             z80env_time.cpu_time - z80env_time.ctime
 
-        maqybe_time_inc_0 =
+        maybe_time_inc_0 =
             if n > 0 then
                 z80env_time |> cont n
 
@@ -107,24 +107,37 @@ m1 addr ir rom48k z80env =
 
         maybe_time_inc_1 =
             if Bitwise.and ramAddr 0xC000 == 0 then
-                case maqybe_time_inc_0 of
+                case maybe_time_inc_0 of
                     Just z80env_time_time ->
-                        z80env_time |> addCpuTimeTimeInc z80env_time_time |> cont1 0
+                        let
+                            cont1_time =
+                                z80env_time |> addCpuTimeTimeInc z80env_time_time |> cont1 0
+                        in
+                        case cont1_time of
+                            Just cont1_inc ->
+                                Just (z80env_time_time |> addIncrement cont1_inc)
+
+                            Nothing ->
+                                Just z80env_time_time
 
                     Nothing ->
                         z80env_time |> cont1 0
 
             else
-                maqybe_time_inc_0
+                maybe_time_inc_0
 
         ctime =
             if Bitwise.and ir 0xC000 == 0x4000 then
-                case maybe_time_inc_1 of
-                    Just z80env_1_time_time ->
-                        z80env_1_time_time |> addIncrement cpuTimeIncrement4 |> incrementToInt
+                let
+                    ctime_inc =
+                        case maybe_time_inc_1 of
+                            Just time_inc_1 ->
+                                (time_inc_1 |> incrementToInt) + 4
 
-                    Nothing ->
-                        cpuTimeIncrement4 |> incrementToInt
+                            Nothing ->
+                                4
+                in
+                z80env_time.cpu_time + ctime_inc
 
             else
                 c_NOCONT
@@ -139,9 +152,10 @@ m1 addr ir rom48k z80env =
 
         cpu_time_ctime =
             case maybe_time_inc_1 of
-                Just z80env_1_time_time ->
+                Just time_inc_1 ->
                     let
-                        new_time = z80env_time |> addCpuTimeTimeInc z80env_1_time_time
+                        new_time =
+                            z80env_time |> addCpuTimeTimeInc time_inc_1
                     in
                     { new_time | ctime = ctime }
 
@@ -192,16 +206,25 @@ mem base_addr z80_time rom48k ram =
                         maybe_time_inc_2 =
                             case maybe_time_inc_1 of
                                 Just z80env_time_time ->
-                                    z80_time |> addCpuTimeTimeInc z80env_time_time |> cont1 0
+                                    case z80_time |> addCpuTimeTimeInc z80env_time_time |> cont1 0 of
+                                        Just cont1_inc ->
+                                            Just (z80env_time_time |> addIncrement cont1_inc)
+
+                                        Nothing ->
+                                            maybe_time_inc_1
 
                                 Nothing ->
                                     z80_time |> cont1 0
+
+                        ctime_inc =
+                            case maybe_time_inc_2 of
+                                Just time_inc_2 ->
+                                    time_inc_2 |> addIncrement increment3 |> incrementToInt
+
+                                Nothing ->
+                                    3
                     in
-                    case maybe_time_inc_2 of
-                        Just z80 ->
-                            ( maybe_time_inc_2, z80 |> addIncrement increment3 |> incrementToInt, ram |> getRamValue addr )
-                        Nothing ->
-                            ( maybe_time_inc_2, 3, ram |> getRamValue addr )
+                    ( maybe_time_inc_2, z80_time.cpu_time + ctime_inc, ram |> getRamValue addr )
 
                 else
                     ( maybe_time_inc_1, c_NOCONT, ram |> getRamValue addr )
@@ -212,7 +235,8 @@ mem base_addr z80_time rom48k ram =
     case maybe_time_inc of
         Just new_time_time ->
             let
-                t3 = z80_time |> addCpuTimeTimeInc new_time_time
+                t3 =
+                    z80_time |> addCpuTimeTimeInc new_time_time
             in
             CpuTimeAndValue { t3 | ctime = ctime } value
 
@@ -282,7 +306,8 @@ mem16 addr rom48k z80env =
             case maybe_time_inc_1 of
                 Just z80env_time_1_time ->
                     let
-                        t3 = z80env_time |> addCpuTimeTimeInc z80env_time_1_time
+                        t3 =
+                            z80env_time |> addCpuTimeTimeInc z80env_time_1_time
                     in
                     CpuTimeAndValue { t3 | ctime = c_NOCONT } (Bitwise.or low (shiftLeftBy8 high))
 
@@ -300,27 +325,35 @@ mem16 addr rom48k z80env =
                 z80env_1_time =
                     if addr1 < 0x4000 then
                         let
-                            maybe_time_inc_2 = case maybe_time_inc_1 of
-                                         Just z80env_time_1_time ->
-                                             z80env_time |> addCpuTimeTimeInc z80env_time_1_time |> cont1 0
+                            maybe_time_inc_2 =
+                                case maybe_time_inc_1 of
+                                    Just z80env_time_1_time ->
+                                        z80env_time |> addCpuTimeTimeInc z80env_time_1_time |> cont1 0
 
-                                         Nothing ->
-                                             z80env_time |> cont1 0
-                            maybe_time_inc_3 = case maybe_time_inc_2 of
-                                         Just z80env_time_1_time ->
-                                             z80env_time |> addCpuTimeTimeInc z80env_time_1_time |> cont1 3
+                                    Nothing ->
+                                        z80env_time |> cont1 0
 
-                                         Nothing ->
-                                             z80env_time |> cont1 3
+                            maybe_time_inc_3 =
+                                case maybe_time_inc_2 of
+                                    Just z80env_time_1_time ->
+                                        z80env_time |> addCpuTimeTimeInc z80env_time_1_time |> cont1 3
+
+                                    Nothing ->
+                                        z80env_time |> cont1 3
                         in
                         case maybe_time_inc_3 of
-                            Just cont13_1 -> z80env_time |> addCpuTimeTimeInc cont13_1 |> addCpuTimeTime 6
-                            Nothing ->   z80env_time |> addCpuTimeTime 6
+                            Just cont13_1 ->
+                                z80env_time |> addCpuTimeTimeInc cont13_1 |> addCpuTimeTime 6
+
+                            Nothing ->
+                                z80env_time |> addCpuTimeTime 6
+
                     else
                         case maybe_time_inc_1 of
                             Just z80env_time_1_time ->
                                 let
-                                    t3 = z80env_time |> addCpuTimeTimeInc z80env_time_1_time
+                                    t3 =
+                                        z80env_time |> addCpuTimeTimeInc z80env_time_1_time
                                 in
                                 { t3 | ctime = c_NOCONT }
 
@@ -353,9 +386,11 @@ mem16 addr rom48k z80env =
             case maybe_time_inc_5 of
                 Just new_z80 ->
                     let
-                        t3 = z80env_time |> addCpuTimeTimeInc new_z80
+                        t3 =
+                            z80env_time |> addCpuTimeTimeInc new_z80
                     in
                     CpuTimeAndValue t3 (or low (shiftLeftBy8 high))
+
                 Nothing ->
                     CpuTimeAndValue z80env_time (or low (shiftLeftBy8 high))
 
@@ -378,9 +413,11 @@ mem16 addr rom48k z80env =
             case maybe_time_inc_6 of
                 Just new_z80 ->
                     let
-                        t3 = z80env_time |> addCpuTimeTimeInc new_z80
+                        t3 =
+                            z80env_time |> addCpuTimeTimeInc new_z80
                     in
                     CpuTimeAndValue t3 (or low (shiftLeftBy8 high))
+
                 Nothing ->
                     CpuTimeAndValue z80env_time (or low (shiftLeftBy8 high))
 
@@ -395,7 +432,8 @@ mem16 addr rom48k z80env =
             case maybe_time_inc_1 of
                 Just z80env_time_1_time ->
                     let
-                        t3 = z80env_time |> addCpuTimeTimeInc z80env_time_1_time
+                        t3 =
+                            z80env_time |> addCpuTimeTimeInc z80env_time_1_time
                     in
                     CpuTimeAndValue { t3 | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
 
@@ -413,13 +451,13 @@ mem16 addr rom48k z80env =
             case maybe_time_inc_1 of
                 Just z80env_time_1_time ->
                     let
-                        t3 = z80env_time |> addCpuTimeTimeInc z80env_time_1_time
+                        t3 =
+                            z80env_time |> addCpuTimeTimeInc z80env_time_1_time
                     in
                     CpuTimeAndValue { t3 | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
 
                 Nothing ->
                     CpuTimeAndValue { z80env_time | ctime = c_NOCONT } (or low (shiftLeftBy8 high))
-
 
 
 setRam : Int -> Int -> Z80Env -> Z80Env
@@ -431,7 +469,8 @@ setRam addr value z80env =
     --    else
     --       Nothing
     --in
-    { z80env | ram = z80env.ram |> Z80Ram.setRamValue addr value }
+    { z80env | ram = z80env.ram |> setRamValue addr value }
+
 
 
 --
@@ -492,6 +531,7 @@ setMem z80_addr value z80env =
                             case maybe_time_1_inc of
                                 Just z80_time ->
                                     z80_time |> addIncrement increment3 |> incrementToInt
+
                                 Nothing ->
                                     3
 
@@ -511,7 +551,8 @@ setMem z80_addr value z80env =
             case maybe_time_inc_0 of
                 Just z80env_time_0_time ->
                     let
-                        t3 = z80env_time |> addCpuTimeTimeInc z80env_time_0_time
+                        t3 =
+                            z80env_time |> addCpuTimeTimeInc z80env_time_0_time
                     in
                     { t3 | ctime = ctime }
 
@@ -569,7 +610,8 @@ setMem16 addr value z80env =
                 case z80env_time_1 of
                     Just z80env_time_1_time ->
                         let
-                            t3 = z80env_time |> addCpuTimeTimeInc z80env_time_1_time
+                            t3 =
+                                z80env_time |> addCpuTimeTimeInc z80env_time_1_time
                         in
                         { t3 | ctime = c_NOCONT }
 

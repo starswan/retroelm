@@ -239,7 +239,12 @@ cont_port portn z80_time =
                 if Bitwise.and portn 0x01 == 0 then
                     case maybe_time_inc_1 of
                         Just env2_time ->
-                            z80_time |> addCpuTimeTimeInc env2_time |> cont1 1
+                            let
+                                cont1_time = z80_time |> addCpuTimeTimeInc env2_time |> cont1 1
+                            in
+                            case cont1_time of
+                                Just time_inc -> Just (env2_time |> addIncrement time_inc)
+                                Nothing -> maybe_time_inc_1
 
                         Nothing ->
                             Nothing
@@ -256,16 +261,7 @@ cont_port portn z80_time =
                 { t3 | ctime = c_NOCONT }
 
             Nothing ->
-                case maybe_time_inc_1 of
-                    Just env1_time_time ->
-                        let
-                            t3 =
-                                z80_time |> addCpuTimeTimeInc env1_time_time
-                        in
-                        { t3 | ctime = c_NOCONT }
-
-                    Nothing ->
-                        { z80_time | ctime = c_NOCONT }
+                { z80_time | ctime = c_NOCONT }
 
     else
         let
