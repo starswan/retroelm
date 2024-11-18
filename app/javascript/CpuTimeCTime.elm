@@ -124,14 +124,14 @@ cont1 tmp_t z80 =
 --	}
 
 
-cont : Int -> CpuTimeCTime -> CpuTimeCTime
+cont : Int -> CpuTimeCTime -> Maybe CpuTimeCTime
 cont n z80env =
     let
         t =
             z80env.ctime
     in
     if t + n <= 0 then
-        z80env
+        Nothing
 
     else
         let
@@ -139,7 +139,7 @@ cont n z80env =
                 c_SCRENDT - t
         in
         if s < 0 then
-            z80env
+            Nothing
 
         else
             let
@@ -200,7 +200,10 @@ cont n z80env =
                     { z80env | cpu_time = z80env.cpu_time + (ntk.t + 6 * n4) }
 
                 Nothing ->
-                    z80env
+                    Nothing
+
+            else
+                Just { z80env | cpu_time = z80env.cpu_time + (ntk.t + 6 * n4) }
 
 
 
@@ -232,34 +235,57 @@ cont_port portn z80env =
                 z80env |> cont n
 
             else
-                z80env
-
-        env2 =
-            if Bitwise.and portn 0xC000 /= 0x4000 then
-                let
-                    env3 =
-                        if Bitwise.and portn 0x01 == 0 then
-                            env1_time |> cont1 1
-
-                        else
-                            env1_time
-                in
-                { env3 | ctime = c_NOCONT }
-
-            else
-                let
-                    env3 =
-                        CpuTimeCTime env1_time.cpu_time env1_time.cpu_time
-
-                    contval =
-                        Bitwise.and portn 1 |> shiftLeftBy 1
-
-                    env4 =
-                        env3 |> cont (2 + contval)
-                in
-                env4 |> addCpuTimeTime 4
+                Nothing
     in
-    env2
+    if Bitwise.and portn 0xC000 /= 0x4000 then
+        let
+            env3 =
+                if Bitwise.and portn 0x01 == 0 then
+                    case env1_time of
+                        Just env2_time ->
+                            Just (env2_time |> cont1 1)
+
+                        Nothing ->
+                            Nothing
+                    --env1_time |> cont1 1
+
+                else
+                    env1_time
+        in
+        case env3 of
+            Just env3_time ->
+                { env3_time | ctime = c_NOCONT }
+
+            Nothing ->
+                case env1_time of
+                    Just env1_time_time ->
+                        { env1_time_time | ctime = c_NOCONT }
+
+                    Nothing ->
+                        { z80env | ctime = c_NOCONT }
+
+    else
+        let
+            env3 =
+                case env1_time of
+                    Just env1_time_time ->
+                        { env1_time_time | ctime = env1_time_time.cpu_time }
+
+                    Nothing ->
+                        { z80env | ctime = z80env.cpu_time }
+
+            contval =
+                Bitwise.and portn 1 |> shiftLeftBy 1
+
+            env4 =
+                env3 |> cont (2 + contval)
+        in
+        case env4 of
+            Just env4_time ->
+                env4_time |> addCpuTimeTime 4
+
+            Nothing ->
+                env3 |> addCpuTimeTime 4
 
 
 addCpuTimeTime : Int -> CpuTimeCTime -> CpuTimeCTime
