@@ -343,8 +343,8 @@ execute_ED40485058606870 value z80 =
         inval =
             z80.env |> z80_in bc
 
-        z80_1 =
-            z80 |> set408bit (shiftRightBy 3 (value - 0x40)) inval.value HL
+        --z80_1 =
+        --    z80 |> set408bit (shiftRightBy 3 (value - 0x40)) inval.value HL
     in
     --{ z80_1 | flags = z80_1.flags |> f_szh0n0p inval.value } |> add_cpu_time 4 |> Whole
     Fszh0n0pTimeDeltaSet408Bit 4 (shiftRightBy 3 (value - 0x40)) inval.value
