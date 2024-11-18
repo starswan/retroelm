@@ -77,7 +77,7 @@ increment0 =
 --	}
 
 
-cont1 : Int -> CpuTimeCTime -> Maybe CpuTimeCTime
+cont1 : Int -> CpuTimeCTime -> Maybe CpuTimeIncrement
 cont1 tmp_t z80 =
     let
         t =
@@ -90,7 +90,7 @@ cont1 tmp_t z80 =
         Nothing
 
     else if modBy 224 t < 126 then
-        Just (z80 |> addCpuTimeTime (6 - Bitwise.and t 7))
+        Just (CpuTimeIncrement (6 - Bitwise.and t 7))
 
     else
         Nothing
@@ -124,7 +124,7 @@ cont1 tmp_t z80 =
 --	}
 
 
-cont : Int -> CpuTimeCTime -> Maybe CpuTimeCTime
+cont : Int -> CpuTimeCTime -> Maybe CpuTimeIncrement
 cont n z80env =
     let
         t =
@@ -199,7 +199,7 @@ cont n z80env =
                     Nothing
 
             else
-                Just { z80env | cpu_time = z80env.cpu_time + (ntk.t + 6 * n4) }
+                Just (CpuTimeIncrement (ntk.t + 6 * n4))
 
 
 
@@ -221,64 +221,75 @@ cont n z80env =
 
 
 cont_port : Int -> CpuTimeCTime -> CpuTimeCTime
-cont_port portn z80env =
+cont_port portn z80_time =
     let
         n =
-            z80env.cpu_time - z80env.ctime
+            z80_time.cpu_time - z80_time.ctime
 
-        env1_time =
+        maybe_time_inc_1 =
             if n > 0 then
-                z80env |> cont n
+                z80_time |> cont n
 
             else
                 Nothing
     in
     if Bitwise.and portn 0xC000 /= 0x4000 then
         let
-            env3 =
+            maybe_time_inc_2 =
                 if Bitwise.and portn 0x01 == 0 then
-                    case env1_time of
+                    case maybe_time_inc_1 of
                         Just env2_time ->
-                            env2_time |> cont1 1
+                            z80_time |> addCpuTimeTimeInc env2_time |> cont1 1
 
                         Nothing ->
                             Nothing
-                    --env1_time |> cont1 1
 
                 else
-                    env1_time
+                    maybe_time_inc_1
         in
-        case env3 of
+        case maybe_time_inc_2 of
             Just env3_time ->
-                { env3_time | ctime = c_NOCONT }
+                let
+                    t3 =
+                        z80_time |> addCpuTimeTimeInc env3_time
+                in
+                { t3 | ctime = c_NOCONT }
 
             Nothing ->
-                case env1_time of
+                case maybe_time_inc_1 of
                     Just env1_time_time ->
-                        { env1_time_time | ctime = c_NOCONT }
+                        let
+                            t3 =
+                                z80_time |> addCpuTimeTimeInc env1_time_time
+                        in
+                        { t3 | ctime = c_NOCONT }
 
                     Nothing ->
-                        { z80env | ctime = c_NOCONT }
+                        { z80_time | ctime = c_NOCONT }
 
     else
         let
             env3 =
-                case env1_time of
+                case maybe_time_inc_1 of
                     Just env1_time_time ->
-                        { env1_time_time | ctime = env1_time_time.cpu_time }
+                        let
+                            t3 =
+                                z80_time |> addCpuTimeTimeInc env1_time_time
+                        in
+                        { t3 | ctime = t3.cpu_time }
 
                     Nothing ->
-                        { z80env | ctime = z80env.cpu_time }
+                        { z80_time | ctime = z80_time.cpu_time }
 
             contval =
                 Bitwise.and portn 1 |> shiftLeftBy 1
 
-            env4 =
+            maybe_time4_inc =
                 env3 |> cont (2 + contval)
         in
-        case env4 of
+        case maybe_time4_inc of
             Just env4_time ->
-                env4_time |> addCpuTimeTime 4
+                z80_time |> addCpuTimeTimeInc env4_time |> addCpuTimeTime 4
 
             Nothing ->
                 env3 |> addCpuTimeTime 4
@@ -294,3 +305,19 @@ addCpuTimeTimeInc value z80env =
     case value of
         CpuTimeIncrement int ->
             { z80env | cpu_time = z80env.cpu_time + int }
+
+
+addIncrement : CpuTimeIncrement -> CpuTimeIncrement -> CpuTimeIncrement
+addIncrement value value2 =
+    case value of
+        CpuTimeIncrement v1 ->
+            case value2 of
+                CpuTimeIncrement v2 ->
+                    CpuTimeIncrement (v1 + v2)
+
+
+incrementToInt : CpuTimeIncrement -> Int
+incrementToInt value =
+    case value of
+        CpuTimeIncrement v1 ->
+            v1
