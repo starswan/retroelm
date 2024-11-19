@@ -289,8 +289,8 @@ frames keys speccy =
 
         cpu1 =
             { sz80
-              -- time_limit is a constant
-              --| time_limit = c_FRSTART + c_FRTIME
+                -- time_limit is a constant
+                --| time_limit = c_FRSTART + c_FRTIME
                 | env = { env | keyboard = keys |> update_keyboard }
             }
 
@@ -1007,7 +1007,7 @@ checkLoad spectrum =
             spectrum.cpu
 
         pc1 =
-            cpu.pc |> toInt
+            cpu.pc
     in
     if (cpu |> get_ei) || pc1 < 0x056B || pc1 > 0x0604 then
         Nothing
@@ -1021,12 +1021,10 @@ checkLoad spectrum =
                 if pc1 >= 0x05E3 then
                     let
                         ( pc2, sp2 ) =
-                            --( cpu.env |> mem16 sp1 spectrum.rom48k |> .value, char sp1 + 2 )
-                            ( cpu.env |> mem16 (sp1 |> toInt) spectrum.rom48k |> .value, sp1 |> incrementBy2 )
+                            ( cpu.env |> mem16 sp1 spectrum.rom48k |> .value, char sp1 + 2 )
                     in
                     if pc2 == 0x05E6 then
-                        --( cpu.env |> mem16 sp2 spectrum.rom48k |> .value, char sp2 + 2 )
-                        ( cpu.env |> mem16 (sp2 |> toInt) spectrum.rom48k |> .value, sp2 |> incrementBy2 )
+                        ( cpu.env |> mem16 sp2 spectrum.rom48k |> .value, char sp2 + 2 )
 
                     else
                         ( pc2, sp2 )
@@ -1152,17 +1150,7 @@ doLoad cpu z80rom tape =
                                 aTapfile.block.dataLength
 
                             startState =
-                                { p = tape.tapePos.position
-                                , ix = cpu.main.ix |> toInt
-                                , de = cpu.main |> get_de
-                                , h = h1
-                                , l = cpu.main |> get_l HL
-                                , a = cpu.flags.a
-                                , f = cpu.flags |> get_flags
-                                , rf = -1
-                                , data = Dict.empty
-                                , break = False
-                                }
+                                { p = tape.tapePos.position, ix = cpu.main.ix, de = cpu.main |> get_de, h = h1, l = cpu.main |> get_l HL, a = cpu.flags.a, f = cpu.flags |> get_flags, rf = -1, data = Dict.empty, break = False }
 
                             new_data =
                                 --		for(;;) {
