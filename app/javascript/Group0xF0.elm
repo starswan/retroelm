@@ -1,7 +1,6 @@
 module Group0xF0 exposing (..)
 
 import Array exposing (Array)
-import Bitwise
 import Dict exposing (Dict)
 import Group0x00 exposing (miniDict00)
 import Group0x10 exposing (miniDict10)
@@ -18,9 +17,8 @@ import Group0xB0 exposing (delta_dict_B0, miniDictB0)
 import Group0xC0 exposing (delta_dict_C0)
 import Group0xE0 exposing (delta_dict_E0, miniDictE0)
 import Z80Delta exposing (Z80Delta(..))
-import Z80Flags exposing (c_FS)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY(..), IXIYHL, Z80, jp_z80)
+import Z80Types exposing (IXIY(..), IXIYHL, Z80)
 
 
 miniDictF0 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)

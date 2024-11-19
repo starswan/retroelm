@@ -4,7 +4,7 @@ import Dict exposing (Dict)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Flags exposing (z80_and, z80_xor)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY, IXIYHL, Z80, get_h, get_h_ixiy, get_l, get_l_ixiy, hl_deref_with_z80)
+import Z80Types exposing (IXIY, IXIYHL, Z80, get_h_ixiy, get_l_ixiy, hl_deref_with_z80)
 
 
 delta_dict_A0 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)

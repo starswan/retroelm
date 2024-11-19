@@ -3,7 +3,7 @@ module SingleNoParams exposing (..)
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeCTime, addCpuTimeTime)
 import Dict exposing (Dict)
-import Z80Env exposing (addCpuTimeEnv, z80_pop, z80_push)
+import Z80Env exposing (z80_pop, z80_push)
 import Z80Flags exposing (set_af)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (Z80, set_bc_main, set_de_main, set_iff)
