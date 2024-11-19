@@ -193,13 +193,10 @@ cont n z80env =
                             else
                                 n3
                     in
-                    { z80env | cpu_time = z80env.cpu_time + (ntk.t + 6 * n4) }
+                    Just (CpuTimeIncrement (ntk.t + 6 * n4))
 
                 Nothing ->
                     Nothing
-
-            else
-                Just (CpuTimeIncrement (ntk.t + 6 * n4))
 
 
 
