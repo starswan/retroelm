@@ -1,8 +1,3 @@
---
--- $Id$
---
-
-
 module Spectrum exposing (..)
 
 import Array exposing (Array)
@@ -289,8 +284,8 @@ frames keys speccy =
 
         cpu1 =
             { sz80
-                -- time_limit is a constant
-                --| time_limit = c_FRSTART + c_FRTIME
+              -- time_limit is a constant
+              --| time_limit = c_FRSTART + c_FRTIME
                 | env = { env | keyboard = keys |> update_keyboard }
             }
 
@@ -1160,7 +1155,7 @@ doLoad cpu z80rom tape =
                                             let
                                                 --	if(p == tape_blk) {
                                                 --	   rf = cpu.FZ;
-                                                --		break;
+                                                --	   break;
                                                 --	}
                                                 --	if(p == tape.length) {
                                                 --		if(ready)
