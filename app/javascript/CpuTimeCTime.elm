@@ -160,35 +160,28 @@ cont n z80env =
 
                     else
                         let
-                            k2 =
+                            k =
                                 new_s |> shiftRightBy 3
 
                             s2 =
                                 Bitwise.and new_s 0x07
-
-                            ( new_t, maybe_n2 ) =
-                                if s2 == 7 then
-                                    if n - 1 == 0 then
-                                        ( s2 - 1, Nothing )
-
-                                    else
-                                        ( s2 - 1, Just (n - 1) )
-
-                                else
-                                    ( s2, Just n )
                         in
-                        case maybe_n2 of
-                            Just n2 ->
-                                Just { n = n2, t = new_t, k = k2 }
-
-                            Nothing ->
-                                Nothing
+                        if s2 == 7 then
+                            let
+                                n1 = n - 1
+                            in
+                                if n1 == 0 then
+                                    Nothing
+                                else
+                                    Just { n = n1, t = s2 - 1, k = k }
+                        else
+                            Just { n = n, t = s2, k = k }
             in
             case maybe_ntk of
                 Just ntk ->
                     let
                         n3 =
-                            shiftRightBy 1 (ntk.n - 1)
+                            (ntk.n - 1) |> shiftRightBy 1
 
                         n4 =
                             if ntk.k < n3 then
@@ -197,13 +190,10 @@ cont n z80env =
                             else
                                 n3
                     in
-                    { z80env | cpu_time = z80env.cpu_time + (ntk.t + 6 * n4) }
+                    Just { z80env | cpu_time = z80env.cpu_time + (ntk.t + 6 * n4) }
 
                 Nothing ->
                     Nothing
-
-            else
-                Just { z80env | cpu_time = z80env.cpu_time + (ntk.t + 6 * n4) }
 
 
 
