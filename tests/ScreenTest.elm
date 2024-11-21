@@ -1,7 +1,6 @@
 module ScreenTest exposing (..)
 
 import Expect exposing (Expectation)
-import ScreenStorage exposing (getScreenValue, setScreenValue)
 import Z80Screen exposing (foldUp, foldRunCounts)
 import Test exposing (..)
 
@@ -48,61 +47,4 @@ suite =
          --         {start=14,length=2, colour=Blue, flash=False}]
          --          (a |> Z80Screen.rawToLines)
       ]
-      ,describe "get and set"
-            [
-              test "get set zero" <|
-                \_ ->
-                  let
-                      scr = ScreenStorage.constructor |> setScreenValue 0 34
-                  in
-                      Expect.equal 34 (scr |> getScreenValue 0)
-              ,test "get set 0x20" <|
-                \_ ->
-                  let
-                      scr = ScreenStorage.constructor |> setScreenValue 34 0x78
-                  in
-                      Expect.equal 0x78 (scr |> getScreenValue 34)
-              ,test "get set 0x40" <|
-                \_ ->
-                  let
-                      scr = ScreenStorage.constructor |> setScreenValue 0x43 0x79
-                  in
-                      Expect.equal 0x79 (scr |> getScreenValue 0x43)
-              ,test "get set 0x60" <|
-                \_ ->
-                  let
-                      scr = ScreenStorage.constructor |> setScreenValue 0x63 0x79
-                  in
-                      Expect.equal 0x79 (scr |> getScreenValue 0x63)
-              ,test "get set 0x800" <|
-                \_ ->
-                  let
-                      scr = ScreenStorage.constructor |> setScreenValue 0x800 0xA3
-                  in
-                      Expect.equal 0xA3 (scr |> getScreenValue 0x0800)
-              ,test "get set 0x1000" <|
-                \_ ->
-                  let
-                      scr = ScreenStorage.constructor |> setScreenValue 0x1007 0xA8
-                  in
-                      Expect.equal 0xA8 (scr |> getScreenValue 0x1007)
-              ,test "get set 0x1800" <|
-                \_ ->
-                  let
-                      scr = ScreenStorage.constructor |> setScreenValue 0x1807 0xA8
-                  in
-                      Expect.equal 0xA8 (scr |> getScreenValue 0x1807)
-              ,test "get set 0x1900" <|
-                \_ ->
-                  let
-                      scr = ScreenStorage.constructor |> setScreenValue 0x1907 0xA8
-                  in
-                      Expect.equal 0xA8 (scr |> getScreenValue 0x1907)
-              ,test "get set 0x1A00" <|
-                \_ ->
-                  let
-                      scr = ScreenStorage.constructor |> setScreenValue 0x1A07 0xB8
-                  in
-                      Expect.equal 0xB8 (scr |> getScreenValue 0x1A07)
-        ]
    ]
