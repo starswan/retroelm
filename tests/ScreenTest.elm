@@ -1,7 +1,6 @@
 module ScreenTest exposing (..)
 
 import Expect exposing (Expectation)
-import ScreenStorage
 import Z80Screen exposing (foldUp, foldRunCounts)
 import Test exposing (..)
 
