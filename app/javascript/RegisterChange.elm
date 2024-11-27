@@ -33,6 +33,8 @@ type RegisterChange
     | Shifter3 Int CpuTimeIncrement
     | Shifter4 Int CpuTimeIncrement
     | Shifter5 Int CpuTimeIncrement
+    | Shifter6 Int CpuTimeIncrement
+    | Shifter7 Int CpuTimeIncrement
 
 
 type RegisterChangeApplied
@@ -51,6 +53,8 @@ type RegisterChangeApplied
     | Shifter3Applied Int CpuTimeIncrement
     | Shifter4Applied Int CpuTimeIncrement
     | Shifter5Applied Int CpuTimeIncrement
+    | Shifter6Applied Int CpuTimeIncrement
+    | Shifter7Applied Int CpuTimeIncrement
 
 
 applyRegisterChange : RegisterChange -> FlagRegisters -> MainWithIndexRegisters -> RegisterChangeApplied
@@ -130,3 +134,7 @@ applyRegisterChange change z80_flags main =
 
         Shifter5 int cpuTimeIncrement ->
             Shifter5Applied int cpuTimeIncrement
+        Shifter6 int cpuTimeIncrement ->
+            Shifter6Applied int cpuTimeIncrement
+        Shifter7 int cpuTimeIncrement ->
+            Shifter7Applied int cpuTimeIncrement

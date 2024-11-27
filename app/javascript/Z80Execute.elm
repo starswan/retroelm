@@ -14,7 +14,7 @@ import Utils exposing (shiftLeftBy8)
 import Z80Change exposing (FlagChange(..), Z80Change, applyZ80Change)
 import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..), applyDeltaWithChanges)
 import Z80Env exposing (addCpuTimeEnvInc, mem, setMem, z80_pop, z80_push)
-import Z80Flags exposing (FlagRegisters, IntWithFlags, dec, inc, shifter0, shifter1, shifter2, shifter3, shifter4, shifter5)
+import Z80Flags exposing (FlagRegisters, IntWithFlags, dec, inc, shifter0, shifter1, shifter2, shifter3, shifter4, shifter5, shifter6, shifter7)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL(..), Z80, set_bc_main, set_de_main)
 
@@ -402,6 +402,12 @@ applyRegisterDelta pc_inc cpu_time z80changeData rom48k z80 =
 
         Shifter5Applied addr cpuTimeIncrement ->
             z80 |> applyShifter new_pc shifter5 addr cpuTimeIncrement cpu_time rom48k
+
+        Shifter6Applied addr cpuTimeIncrement ->
+            z80 |> applyShifter new_pc shifter6 addr cpuTimeIncrement cpu_time rom48k
+
+        Shifter7Applied addr cpuTimeIncrement ->
+            z80 |> applyShifter new_pc shifter7 addr cpuTimeIncrement cpu_time rom48k
 
 
 applyShifter : Int -> (Int -> FlagRegisters -> IntWithFlags) -> Int -> CpuTimeIncrement -> CpuTimeCTime -> Z80ROM -> Z80 -> Z80

@@ -74,6 +74,8 @@ singleByteMainRegs =
         , ( 0xCB1E, ( rr_indirect_hl, IncrementByTwo ) )
         , ( 0xCB26, ( sla_indirect_hl, IncrementByTwo ) )
         , ( 0xCB2E, ( sra_indirect_hl, IncrementByTwo ) )
+        , ( 0xCB36, ( sll_indirect_hl, IncrementByTwo ) )
+        , ( 0xCB3E, ( srl_indirect_hl, IncrementByTwo ) )
         ]
 
 
@@ -560,3 +562,15 @@ sra_indirect_hl : MainWithIndexRegisters -> RegisterChange
 sra_indirect_hl z80_main =
     -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
     Shifter5 z80_main.hl increment7
+
+
+sll_indirect_hl : MainWithIndexRegisters -> RegisterChange
+sll_indirect_hl z80_main =
+    -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
+    Shifter6 z80_main.hl increment7
+
+
+srl_indirect_hl : MainWithIndexRegisters -> RegisterChange
+srl_indirect_hl z80_main =
+    -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
+    Shifter7 z80_main.hl increment7
