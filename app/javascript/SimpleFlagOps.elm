@@ -6,7 +6,7 @@ import Dict exposing (Dict)
 import PCIncrement exposing (PCIncrement(..))
 import Utils exposing (shiftRightBy8)
 import Z80Change exposing (FlagChange(..))
-import Z80Flags exposing (FlagRegisters, adc, c_FP, c_FS, cpl, daa, dec, get_af, get_flags, inc, rot, sbc, scf_ccf, shifter0, shifter1, shifter2, shifter3, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
+import Z80Flags exposing (FlagRegisters, adc, c_FP, c_FS, cpl, daa, dec, get_af, get_flags, inc, rot, sbc, scf_ccf, shifter0, shifter1, shifter2, shifter3, shifter4, shifter5, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
 
 
 singleByteFlags : Dict Int ( FlagRegisters -> FlagChange, PCIncrement )
@@ -49,6 +49,8 @@ singleByteFlags =
         , ( 0xCB0F, ( rrc_a, IncrementByTwo ) )
         , ( 0xCB17, ( rl_a, IncrementByTwo ) )
         , ( 0xCB1F, ( rr_a, IncrementByTwo ) )
+        , ( 0xCB27, ( sla_a, IncrementByTwo ) )
+        , ( 0xCB2F, ( sra_a, IncrementByTwo ) )
         ]
 
 
@@ -364,6 +366,32 @@ rr_a z80_flags =
     let
         value =
             shifter3 z80_flags.a z80_flags
+
+        new_flags =
+            value.flags
+    in
+    OnlyFlags { new_flags | a = value.value }
+
+
+sla_a : FlagRegisters -> FlagChange
+sla_a z80_flags =
+    --case 0x07: A=shifter(o,A); break;
+    let
+        value =
+            shifter4 z80_flags.a z80_flags
+
+        new_flags =
+            value.flags
+    in
+    OnlyFlags { new_flags | a = value.value }
+
+
+sra_a : FlagRegisters -> FlagChange
+sra_a z80_flags =
+    --case 0x07: A=shifter(o,A); break;
+    let
+        value =
+            shifter5 z80_flags.a z80_flags
 
         new_flags =
             value.flags

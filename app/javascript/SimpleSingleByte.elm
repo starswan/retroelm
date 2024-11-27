@@ -72,6 +72,8 @@ singleByteMainRegs =
         , ( 0xCB0E, ( rrc_indirect_hl, IncrementByTwo ) )
         , ( 0xCB16, ( rl_indirect_hl, IncrementByTwo ) )
         , ( 0xCB1E, ( rr_indirect_hl, IncrementByTwo ) )
+        , ( 0xCB26, ( sla_indirect_hl, IncrementByTwo ) )
+        , ( 0xCB2E, ( sra_indirect_hl, IncrementByTwo ) )
         ]
 
 
@@ -529,17 +531,32 @@ rlc_indirect_hl z80_main =
     -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
     Shifter0 z80_main.hl increment7
 
+
 rrc_indirect_hl : MainWithIndexRegisters -> RegisterChange
 rrc_indirect_hl z80_main =
     -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
     Shifter1 z80_main.hl increment7
+
 
 rl_indirect_hl : MainWithIndexRegisters -> RegisterChange
 rl_indirect_hl z80_main =
     -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
     Shifter2 z80_main.hl increment7
 
+
 rr_indirect_hl : MainWithIndexRegisters -> RegisterChange
 rr_indirect_hl z80_main =
     -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
     Shifter3 z80_main.hl increment7
+
+
+sla_indirect_hl : MainWithIndexRegisters -> RegisterChange
+sla_indirect_hl z80_main =
+    -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
+    Shifter4 z80_main.hl increment7
+
+
+sra_indirect_hl : MainWithIndexRegisters -> RegisterChange
+sra_indirect_hl z80_main =
+    -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
+    Shifter5 z80_main.hl increment7

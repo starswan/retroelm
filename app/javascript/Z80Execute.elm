@@ -14,7 +14,7 @@ import Utils exposing (shiftLeftBy8)
 import Z80Change exposing (FlagChange(..), Z80Change, applyZ80Change)
 import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..), applyDeltaWithChanges)
 import Z80Env exposing (addCpuTimeEnvInc, mem, setMem, z80_pop, z80_push)
-import Z80Flags exposing (dec, inc, shifter0, shifter1, shifter2, shifter3)
+import Z80Flags exposing (FlagRegisters, IntWithFlags, dec, inc, shifter0, shifter1, shifter2, shifter3, shifter4, shifter5)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIYHL(..), Z80, set_bc_main, set_de_main)
 
@@ -386,68 +386,46 @@ applyRegisterDelta pc_inc cpu_time z80changeData rom48k z80 =
             { z80 | pc = new_pc, env = env_1, interrupts = { interrupts | r = interrupts.r + 1 } }
 
         Shifter0Applied addr cpuTimeIncrement ->
-            let
-                value =
-                    mem addr cpu_time rom48k z80.env.ram
-
-                result =
-                    z80.flags |> shifter0 value.value
-
-                env_1 =
-                    { env | time = value.time }
-
-                env_2 =
-                    env_1 |> setMem addr result.value |> addCpuTimeEnvInc cpuTimeIncrement
-            in
-            { z80 | pc = new_pc, env = env_2, interrupts = { interrupts | r = interrupts.r + 1 } }
+            z80 |> applyShifter new_pc shifter0 addr cpuTimeIncrement cpu_time rom48k
 
         Shifter1Applied addr cpuTimeIncrement ->
-            let
-                value =
-                    mem addr cpu_time rom48k z80.env.ram
-
-                result =
-                    z80.flags |> shifter1 value.value
-
-                env_1 =
-                    { env | time = value.time }
-
-                env_2 =
-                    env_1 |> setMem addr result.value |> addCpuTimeEnvInc cpuTimeIncrement
-            in
-            { z80 | pc = new_pc, env = env_2, interrupts = { interrupts | r = interrupts.r + 1 } }
+            z80 |> applyShifter new_pc shifter1 addr cpuTimeIncrement cpu_time rom48k
 
         Shifter2Applied addr cpuTimeIncrement ->
-            let
-                value =
-                    mem addr cpu_time rom48k z80.env.ram
-
-                result =
-                    z80.flags |> shifter2 value.value
-
-                env_1 =
-                    { env | time = value.time }
-
-                env_2 =
-                    env_1 |> setMem addr result.value |> addCpuTimeEnvInc cpuTimeIncrement
-            in
-            { z80 | pc = new_pc, env = env_2, interrupts = { interrupts | r = interrupts.r + 1 } }
+            z80 |> applyShifter new_pc shifter2 addr cpuTimeIncrement cpu_time rom48k
 
         Shifter3Applied addr cpuTimeIncrement ->
-            let
-                value =
-                    mem addr cpu_time rom48k z80.env.ram
+            z80 |> applyShifter new_pc shifter3 addr cpuTimeIncrement cpu_time rom48k
 
-                result =
-                    z80.flags |> shifter3 value.value
+        Shifter4Applied addr cpuTimeIncrement ->
+            z80 |> applyShifter new_pc shifter4 addr cpuTimeIncrement cpu_time rom48k
 
-                env_1 =
-                    { env | time = value.time }
+        Shifter5Applied addr cpuTimeIncrement ->
+            z80 |> applyShifter new_pc shifter5 addr cpuTimeIncrement cpu_time rom48k
 
-                env_2 =
-                    env_1 |> setMem addr result.value |> addCpuTimeEnvInc cpuTimeIncrement
-            in
-            { z80 | pc = new_pc, env = env_2, interrupts = { interrupts | r = interrupts.r + 1 } }
+
+applyShifter : Int -> (Int -> FlagRegisters -> IntWithFlags) -> Int -> CpuTimeIncrement -> CpuTimeCTime -> Z80ROM -> Z80 -> Z80
+applyShifter new_pc shifterFunc addr cpuTimeIncrement cpu_time rom48k z80 =
+    let
+        value =
+            mem addr cpu_time rom48k z80.env.ram
+
+        result =
+            z80.flags |> shifterFunc value.value
+
+        env =
+            z80.env
+
+        interrupts =
+            z80.interrupts
+
+        env_1 =
+            { env | time = value.time }
+
+        env_2 =
+            env_1 |> setMem addr result.value |> addCpuTimeEnvInc cpuTimeIncrement
+    in
+    { z80 | pc = new_pc, env = env_2, interrupts = { interrupts | r = interrupts.r + 1 } }
 
 
 applyTripleChangeDelta : CpuTimeCTime -> TripleByteChange -> Z80 -> Z80
