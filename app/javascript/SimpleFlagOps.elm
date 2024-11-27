@@ -53,8 +53,11 @@ singleByteFlags =
         , ( 0xCB2F, ( sra_a, IncrementByTwo ) )
         , ( 0xCB37, ( sll_a, IncrementByTwo ) )
         , ( 0xCB3F, ( srl_a, IncrementByTwo ) )
-        , ( 0xCB47, ( bit_0_a, IncrementByTwo ) )
-        , ( 0xCB4F, ( bit_1_a, IncrementByTwo ) )
+        , ( 0xCB47, ( \z80_flags -> z80_flags |> testBit Bit_0 z80_flags.a |> OnlyFlags, IncrementByTwo ) )
+        , ( 0xCB4F, ( \z80_flags -> z80_flags |> testBit Bit_1 z80_flags.a |> OnlyFlags, IncrementByTwo ) )
+        , ( 0xCB57, ( \z80_flags -> z80_flags |> testBit Bit_2 z80_flags.a |> OnlyFlags, IncrementByTwo ) )
+        , ( 0xCB5F, ( \z80_flags -> z80_flags |> testBit Bit_3 z80_flags.a |> OnlyFlags, IncrementByTwo ) )
+        , ( 0xCB67, ( \z80_flags -> z80_flags |> testBit Bit_4 z80_flags.a |> OnlyFlags, IncrementByTwo ) )
         ]
 
 
@@ -376,13 +379,3 @@ sll_a z80_flags =
 srl_a : FlagRegisters -> FlagChange
 srl_a z80_flags =
     applyShifter shifter7 z80_flags
-
-
-bit_0_a : FlagRegisters -> FlagChange
-bit_0_a z80_flags =
-    z80_flags |> testBit Bit_0 z80_flags.a |> OnlyFlags
-
-
-bit_1_a : FlagRegisters -> FlagChange
-bit_1_a z80_flags =
-    z80_flags |> testBit Bit_1 z80_flags.a |> OnlyFlags

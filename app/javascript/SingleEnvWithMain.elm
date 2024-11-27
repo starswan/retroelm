@@ -35,6 +35,9 @@ singleEnvMainRegs =
         , ( 0x7E, ( ld_a_indirect_hl, IncrementByOne ) )
         , ( 0xCB46, ( bit_0_indirect_hl, IncrementByTwo ) )
         , ( 0xCB4E, ( bit_1_indirect_hl, IncrementByTwo ) )
+        , ( 0xCB56, ( bit_2_indirect_hl, IncrementByTwo ) )
+        , ( 0xCB5E, ( bit_3_indirect_hl, IncrementByTwo ) )
+        , ( 0xCB66, ( bit_4_indirect_hl, IncrementByTwo ) )
         ]
 
 
@@ -294,3 +297,30 @@ bit_1_indirect_hl z80_main rom48k z80_env =
             mem z80_main.hl z80_env.time rom48k z80_env.ram
     in
     SingleBitTest Bit_1 value.value value.time
+
+bit_2_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
+bit_2_indirect_hl z80_main rom48k z80_env =
+    -- case 0x46: bit(o,env.mem(HL)); Ff=Ff&~F53|MP>>>8&F53; time+=4; break;
+    let
+        value =
+            mem z80_main.hl z80_env.time rom48k z80_env.ram
+    in
+    SingleBitTest Bit_2 value.value value.time
+
+bit_3_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
+bit_3_indirect_hl z80_main rom48k z80_env =
+    -- case 0x46: bit(o,env.mem(HL)); Ff=Ff&~F53|MP>>>8&F53; time+=4; break;
+    let
+        value =
+            mem z80_main.hl z80_env.time rom48k z80_env.ram
+    in
+    SingleBitTest Bit_3 value.value value.time
+
+bit_4_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
+bit_4_indirect_hl z80_main rom48k z80_env =
+    -- case 0x46: bit(o,env.mem(HL)); Ff=Ff&~F53|MP>>>8&F53; time+=4; break;
+    let
+        value =
+            mem z80_main.hl z80_env.time rom48k z80_env.ram
+    in
+    SingleBitTest Bit_4 value.value value.time
