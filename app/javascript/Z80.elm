@@ -423,8 +423,8 @@ execute_delta rom48k tmp_z80 =
 singleByte: CpuTimeCTime -> Int -> Z80 -> Z80ROM -> Maybe DeltaWithChanges
 singleByte ctime instr_code tmp_z80 rom48k =
     case singleEnvMainRegs |> Dict.get instr_code of
-        Just f ->
-            Just (MainWithEnvDelta (f tmp_z80.main rom48k tmp_z80.env))
+        Just (f, pcInc) ->
+            Just (MainWithEnvDelta  pcInc (f tmp_z80.main rom48k tmp_z80.env))
         Nothing ->
             case singleByteZ80Env |> Dict.get instr_code of
                 Just f ->

@@ -27,6 +27,17 @@ type alias IntWithFlagsAndTime =
     }
 
 
+type BitTest
+    = Bit_0
+    | Bit_1
+    | Bit_2
+    | Bit_3
+    | Bit_4
+    | Bit_5
+    | Bit_6
+    | Bit_7
+
+
 
 --/*
 -- lazy flag evaluation:
@@ -427,17 +438,57 @@ dec v flagRegs =
     IntWithFlags vv { flagRegs | ff = Bitwise.or ff vv, fb = -1, fa = v, fr = vv }
 
 
+--private void bit(int n, int v)
+--{
+--    int m = v & 1<<n;
+--    Ff = Ff&~0xFF | v&F53 | m;
+--    Fa = ~(Fr = m);
+--    Fb = 0;
+--}
+
 bit : Int -> Int -> FlagRegisters -> FlagRegisters
 bit n v flagRegs =
     let
-        m =
+        fr =
             Bitwise.and v (shiftLeftBy n 1)
 
         ff =
-            Bitwise.or (Bitwise.and flagRegs.ff (complement 0xFF)) (Bitwise.or (Bitwise.and v c_F53) m)
+            Bitwise.or (Bitwise.and flagRegs.ff (complement 0xFF)) (Bitwise.or (Bitwise.and v c_F53) fr)
+    in
+    { flagRegs | ff = ff, fr = fr, fa = complement fr, fb = 0 }
 
+
+testBit : BitTest -> Int -> FlagRegisters -> FlagRegisters
+testBit testType v flagRegs =
+    let
         fr =
-            m
+            case testType of
+                Bit_0 ->
+                    Bitwise.and 0x01 v
+
+                Bit_1 ->
+                    Bitwise.and 0x02 v
+
+                Bit_2 ->
+                    Bitwise.and 0x04 v
+
+                Bit_3 ->
+                    Bitwise.and 0x08 v
+
+                Bit_4 ->
+                    Bitwise.and 0x10 v
+
+                Bit_5 ->
+                    Bitwise.and 0x20 v
+
+                Bit_6 ->
+                    Bitwise.and 0x40 v
+
+                Bit_7 ->
+                    Bitwise.and 0x80 v
+
+        ff =
+            Bitwise.or (Bitwise.and flagRegs.ff (complement 0xFF)) (Bitwise.or (Bitwise.and v c_F53) fr)
     in
     { flagRegs | ff = ff, fr = fr, fa = complement fr, fb = 0 }
 
@@ -540,6 +591,7 @@ shifter7 v_in flagRegs =
     flagRegs |> shifter_v (shiftRightBy1 (v_in * 0x0201))
 
 
+
 --private int add16(int a, int b)
 --{
 --	int r = a + b;
@@ -550,6 +602,8 @@ shifter7 v_in flagRegs =
 --	time += 7;
 --	return (char)r;
 --}
+
+
 add16 : Int -> Int -> FlagRegisters -> IntWithFlagsAndTime
 add16 a b main_flags =
     let
@@ -683,6 +737,7 @@ set_af v =
             Bitwise.and v 0xFF
     in
     set_flags flagRegs a
+
 
 get_af : FlagRegisters -> Int
 get_af z80_flags =

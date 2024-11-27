@@ -6,7 +6,7 @@ import Dict exposing (Dict)
 import PCIncrement exposing (PCIncrement(..))
 import Utils exposing (shiftRightBy8)
 import Z80Change exposing (FlagChange(..))
-import Z80Flags exposing (FlagRegisters, IntWithFlags, adc, c_FP, c_FS, cpl, daa, dec, get_af, get_flags, inc, rot, sbc, scf_ccf, shifter0, shifter1, shifter2, shifter3, shifter4, shifter5, shifter6, shifter7, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
+import Z80Flags exposing (BitTest(..), FlagRegisters, IntWithFlags, adc, c_FP, c_FS, cpl, daa, dec, get_af, get_flags, inc, rot, sbc, scf_ccf, shifter0, shifter1, shifter2, shifter3, shifter4, shifter5, shifter6, shifter7, testBit, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
 
 
 singleByteFlags : Dict Int ( FlagRegisters -> FlagChange, PCIncrement )
@@ -53,6 +53,8 @@ singleByteFlags =
         , ( 0xCB2F, ( sra_a, IncrementByTwo ) )
         , ( 0xCB37, ( sll_a, IncrementByTwo ) )
         , ( 0xCB3F, ( srl_a, IncrementByTwo ) )
+        , ( 0xCB47, ( bit_0_a, IncrementByTwo ) )
+        , ( 0xCB4F, ( bit_1_a, IncrementByTwo ) )
         ]
 
 
@@ -370,7 +372,17 @@ sll_a : FlagRegisters -> FlagChange
 sll_a z80_flags =
     applyShifter shifter6 z80_flags
 
+
 srl_a : FlagRegisters -> FlagChange
 srl_a z80_flags =
     applyShifter shifter7 z80_flags
 
+
+bit_0_a : FlagRegisters -> FlagChange
+bit_0_a z80_flags =
+    z80_flags |> testBit Bit_0 z80_flags.a |> OnlyFlags
+
+
+bit_1_a : FlagRegisters -> FlagChange
+bit_1_a z80_flags =
+    z80_flags |> testBit Bit_1 z80_flags.a |> OnlyFlags

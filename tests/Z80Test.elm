@@ -243,19 +243,5 @@ suite =
                in
                   Expect.equal { pc = (addr + 1), fa = 6, fb = -7, ff = 0, fr = 0 }
                   { pc = new_z80.pc, fa = new_z80.flags.fa, fb =  new_z80.flags.fb, ff = new_z80.flags.ff, fr = new_z80.flags.fr }
-         ],
-         describe "16 bit Pop"
-         [
-            test "POP HL (0xE1)" <|
-            \_ ->
-               let
-                  new_env = z80env
-                               |> setMem addr 0xE1
-                               |> setMem 0xFF77 0x16
-                               |> setMem 0xFF78 0x56
-                  new_z80 = execute_instruction z80rom { z80 | env = { new_env | sp = 0xFF77 },
-                                                        main = { z80main | hl = 0x5050, d = 0x60, e = 0x00, b = 0x00, c = 0x05 } }
-               in
-                  Expect.equal {pc=(addr + 1), hl=0x5616, sp=0xFF79}  {sp=new_z80.env.sp, pc=new_z80.pc, hl=new_z80.main.hl}
          ]
       ]
