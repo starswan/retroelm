@@ -144,23 +144,23 @@ imm16 rom48k z80 =
 --	}
 
 
-jp_z80 : Bool -> Z80ROM -> Z80 -> Z80
-jp_z80 y rom48k z80 =
-    let
-        a =
-            z80 |> imm16 rom48k
-
-        env =
-            z80.env
-
-        z80_1 =
-            { z80 | pc = a.pc, env = { env | time = a.time } }
-    in
-    if y then
-        { z80_1 | pc = a.value }
-
-    else
-        z80_1
+--jp_z80 : Bool -> Z80ROM -> Z80 -> Z80
+--jp_z80 y rom48k z80 =
+--    let
+--        a =
+--            z80 |> imm16 rom48k
+--
+--        env =
+--            z80.env
+--
+--        z80_1 =
+--            { z80 | pc = a.pc, env = { env | time = a.time } }
+--    in
+--    if y then
+--        { z80_1 | pc = a.value }
+--
+--    else
+--        z80_1
 
 
 
@@ -458,9 +458,9 @@ get_de z80 =
     z80.d |> shiftLeftBy8 |> Bitwise.or z80.e
 
 
-dec_pc2 : Z80 -> Z80
-dec_pc2 z80 =
-    { z80 | pc = Bitwise.and (z80.pc - 2) 0xFFFF }
+--dec_pc2 : Z80 -> Z80
+--dec_pc2 z80 =
+--    { z80 | pc = Bitwise.and (z80.pc - 2) 0xFFFF }
 
 
 
@@ -622,16 +622,3 @@ set408bit c value ixiyhl z80 =
             { z80 | flags = { z80_flags | a = value } }
 
 
-f_szh0n0p : Int -> FlagRegisters -> FlagRegisters
-f_szh0n0p r flags =
-    let
-        fr =
-            r
-
-        ff =
-            Bitwise.or (Bitwise.and flags.ff (complement 0xFF)) fr
-
-        fa =
-            Bitwise.or r 0x0100
-    in
-    { flags | fr = fr, ff = ff, fa = fa, fb = 0 }

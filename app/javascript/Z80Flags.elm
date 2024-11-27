@@ -184,6 +184,13 @@ set_flags tmp_f a =
     { a = a, ff = ff, fr = fr, fa = fa, fb = fb }
 
 
+
+--private void add(int b)
+--{
+--	A = Fr = (Ff = (Fa = A) + (Fb = b)) & 0xFF;
+--}
+
+
 z80_add : Int -> FlagRegisters -> FlagRegisters
 z80_add b the_flags =
     let
@@ -201,6 +208,10 @@ z80_add b the_flags =
     in
     { the_flags | fa = fa, fb = fb, ff = ff, fr = fr, a = fr }
 
+--private void adc(int b)
+--{
+--	A = Fr = (Ff = (Fa = A) + (Fb = b) + (Ff>>>8 & FC)) & 0xFF;
+--}
 
 adc : Int -> FlagRegisters -> FlagRegisters
 adc b the_flags =
@@ -220,6 +231,12 @@ adc b the_flags =
     { the_flags | fa = fa, fb = fb, ff = ff, fr = fr, a = fr }
 
 
+--private void sub(int b)
+--{
+--    Fb = ~b;
+--    A = Fr = (Ff = (Fa = A) - b) & 0xFF;
+--}
+
 z80_sub : Int -> FlagRegisters -> FlagRegisters
 z80_sub b flagRegs =
     let
@@ -238,6 +255,12 @@ z80_sub b flagRegs =
     { flagRegs | fa = fa, fb = fb, ff = ff, fr = fr, a = fr }
 
 
+--private void sbc(int b)
+--{
+--    Fb = ~b;
+--    A = Fr = (Ff = (Fa = A) - b - (Ff>>>8 & FC)) & 0xFF;
+--}
+
 sbc : Int -> FlagRegisters -> FlagRegisters
 sbc b flagRegs =
     let
@@ -255,6 +278,14 @@ sbc b flagRegs =
     in
     { flagRegs | fa = fa, fb = fb, ff = ff, fr = fr, a = fr }
 
+
+--private void cp(int b)
+--{
+--    int r = (Fa = A) - b;
+--    Fb = ~b;
+--    Ff = r&~F53 | b&F53;
+--    Fr = r&0xFF;
+--}
 
 z80_cp : Int -> FlagRegisters -> FlagRegisters
 z80_cp b flagRegs =
@@ -277,6 +308,11 @@ z80_cp b flagRegs =
     { flagRegs | fr = fr, ff = ff, fb = fb, fa = fa }
 
 
+--private void and(int b)
+--{
+--    Fa = ~(A = Ff = Fr = A & b); Fb = 0;
+--}
+
 z80_and : Int -> FlagRegisters -> FlagRegisters
 z80_and b flagRegs =
     let
@@ -294,6 +330,12 @@ z80_and b flagRegs =
     in
     { flagRegs | fa = fa, fb = 0, ff = ff, fr = fr, a = a }
 
+
+--private void or(int b)
+--{
+--    Fa = (A = Ff = Fr = A | b) | 0x100;
+--    Fb = 0;
+--}
 
 z80_or : Int -> FlagRegisters -> FlagRegisters
 z80_or b flagRegs =
@@ -313,6 +355,12 @@ z80_or b flagRegs =
     { flagRegs | fa = fa, fb = 0, ff = ff, fr = fr, a = a }
 
 
+--private void xor(int b)
+--{
+--    Fa = (A = Ff = Fr = A ^ b) | 0x100;
+--    Fb = 0
+--}
+
 z80_xor : Int -> FlagRegisters -> FlagRegisters
 z80_xor b flagRegs =
     let
@@ -330,6 +378,12 @@ z80_xor b flagRegs =
     in
     { flagRegs | fa = fa, fb = 0, ff = ff, fr = fr, a = a }
 
+
+--private void cpl()
+--{
+--    Ff = Ff&~F53 | (A ^= 0xFF)&F53;
+--    Fb |= ~0x80; Fa = Fa&~FH | ~Fr&FH; // set H, N
+--}
 
 cpl : FlagRegisters -> FlagRegisters
 cpl flagRegs =
@@ -387,6 +441,12 @@ bit n v flagRegs =
     in
     { flagRegs | ff = ff, fr = fr, fa = complement fr, fb = 0 }
 
+--private void rot(int a)
+--{
+--    Ff = Ff&0xD7 | a&0x128;
+--    Fb &= 0x80; Fa = Fa&~FH | Fr&FH; // reset H, N
+--    A = a&0xFF;
+--}
 
 rot : Int -> FlagRegisters -> FlagRegisters
 rot a flagRegs =
@@ -627,3 +687,17 @@ set_af v =
 get_af : FlagRegisters -> Int
 get_af z80_flags =
     Bitwise.or (shiftLeftBy8 z80_flags.a) (get_flags z80_flags)
+
+f_szh0n0p : Int -> FlagRegisters -> FlagRegisters
+f_szh0n0p r flags =
+    let
+        fr =
+            r
+
+        ff =
+            Bitwise.or (Bitwise.and flags.ff (complement 0xFF)) fr
+
+        fa =
+            Bitwise.or r 0x0100
+    in
+    { flags | fr = fr, ff = ff, fa = fa, fb = 0 }
