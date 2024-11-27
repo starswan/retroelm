@@ -1,11 +1,9 @@
 module EDTest exposing (..)
 
-import Bitwise exposing (shiftRightBy)
 import Expect exposing (Expectation)
-import Fuzz exposing (Fuzzer, int, list, string)
 import Test exposing (..)
 import Z80 exposing (execute_instruction)
-import Z80Env exposing (mem, mem16, setMem, setMem16)
+import Z80Env exposing (mem, mem16, setMem)
 import Z80Rom
 
 suite : Test
