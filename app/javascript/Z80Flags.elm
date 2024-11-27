@@ -438,6 +438,14 @@ dec v flagRegs =
     IntWithFlags vv { flagRegs | ff = Bitwise.or ff vv, fb = -1, fa = v, fr = vv }
 
 
+--private void bit(int n, int v)
+--{
+--    int m = v & 1<<n;
+--    Ff = Ff&~0xFF | v&F53 | m;
+--    Fa = ~(Fr = m);
+--    Fb = 0;
+--}
+
 bit : Int -> Int -> FlagRegisters -> FlagRegisters
 bit n v flagRegs =
     let

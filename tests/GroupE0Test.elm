@@ -19,9 +19,6 @@ suite =
         z80 =
             { old_z80 | pc = addr }
 
-        flags =
-            z80.flags
-
         z80env =
             z80.env
 
@@ -51,7 +48,7 @@ suite =
                                 }
                     in
                     Expect.equal { pc = 0x10, sp = 0xFF75 } { sp = new_z80.env.sp, pc = new_z80.pc }
-                ,test "0xDF RST 18" <|
+            , test "0xDF RST 18" <|
                 \_ ->
                     let
                         new_env =
@@ -67,6 +64,25 @@ suite =
                                     , main = { z80main | hl = 0x5050, d = 0x60, e = 0x00, b = 0x00, c = 0x05 }
                                 }
                     in
-                    Expect.equal { pc = 0x18, sp = 0xFF75, mem=addr+1 } { sp = new_z80.env.sp, pc = new_z80.pc, mem=(mem16 0xFF75 z80rom new_z80.env) |> .value }
+                    Expect.equal { pc = 0x18, sp = 0xFF75, mem = addr + 1 } { sp = new_z80.env.sp, pc = new_z80.pc, mem = mem16 0xFF75 z80rom new_z80.env |> .value }
+            ]
+        , describe "16 bit Pop"
+            [ test "POP HL (0xE1)" <|
+                \_ ->
+                    let
+                        new_env =
+                            z80env
+                                |> setMem addr 0xE1
+                                |> setMem 0xFF77 0x16
+                                |> setMem 0xFF78 0x56
+
+                        new_z80 =
+                            execute_instruction z80rom
+                                { z80
+                                    | env = { new_env | sp = 0xFF77 }
+                                    , main = { z80main | hl = 0x5050, d = 0x60, e = 0x00, b = 0x00, c = 0x05 }
+                                }
+                    in
+                    Expect.equal { pc = addr + 1, hl = 0x5616, sp = 0xFF79 } { sp = new_z80.env.sp, pc = new_z80.pc, hl = new_z80.main.hl }
             ]
         ]

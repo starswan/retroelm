@@ -54,6 +54,7 @@ singleByteFlags =
         , ( 0xCB37, ( sll_a, IncrementByTwo ) )
         , ( 0xCB3F, ( srl_a, IncrementByTwo ) )
         , ( 0xCB47, ( bit_0_a, IncrementByTwo ) )
+        , ( 0xCB4F, ( bit_1_a, IncrementByTwo ) )
         ]
 
 
@@ -380,3 +381,8 @@ srl_a z80_flags =
 bit_0_a : FlagRegisters -> FlagChange
 bit_0_a z80_flags =
     z80_flags |> testBit Bit_0 z80_flags.a |> OnlyFlags
+
+
+bit_1_a : FlagRegisters -> FlagChange
+bit_1_a z80_flags =
+    z80_flags |> testBit Bit_1 z80_flags.a |> OnlyFlags
