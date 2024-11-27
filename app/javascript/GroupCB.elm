@@ -7,7 +7,7 @@ import Utils exposing (byte, char, toHexString)
 import Z80Debug exposing (debugTodo)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (addCpuTimeEnv, m1, mem, setMem)
-import Z80Flags exposing (IntWithFlags, bit, c_F53, shifter, shifter0)
+import Z80Flags exposing (IntWithFlags, bit, c_F53, shifter)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIY, IXIYHL(..), IntWithFlagsTimeAndPC, Z80, a_with_z80, add_cpu_time, b_with_z80, c_with_z80, d_with_z80, e_with_z80, get_ixiy_xy, h_with_z80, hl_deref_with_z80, inc_pc, inc_pc2, l_with_z80, set408bit)
 
@@ -46,36 +46,36 @@ group_cb_dict =
 --         Whole x
 
 
-execute_CB0007 : CpuTimePcAndValue -> Z80 -> IntWithFlagsTimeAndPC
-execute_CB0007 raw z80 =
-    let
-        --o = Bitwise.and (c_value |> shiftRightBy 3) 7
-        --caseval = Bitwise.and c_value 0xC7
-        --z = debug_log "group_cb raw" (raw.value |> toHexString2) Nothing
-        value =
-            shifter0 raw.value z80.flags
+--execute_CB0007 : CpuTimePcAndValue -> Z80 -> IntWithFlagsTimeAndPC
+--execute_CB0007 raw z80 =
+--    let
+--        --o = Bitwise.and (c_value |> shiftRightBy 3) 7
+--        --caseval = Bitwise.and c_value 0xC7
+--        --z = debug_log "group_cb raw" (raw.value |> toHexString2) Nothing
+--        value =
+--            shifter0 raw.value z80.flags
+--
+--        --w = debug_log "group_cb value" (value.value |> toHexString2) Nothing
+--        --env_1 = z80.env
+--        --x = { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set_flag_regs value.flags |> set408bit caseval value.value HL
+--    in
+--    --Whole x
+--    IntWithFlagsTimeAndPC value.value value.flags raw.time raw.pc
 
-        --w = debug_log "group_cb value" (value.value |> toHexString2) Nothing
-        --env_1 = z80.env
-        --x = { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set_flag_regs value.flags |> set408bit caseval value.value HL
-    in
-    --Whole x
-    IntWithFlagsTimeAndPC value.value value.flags raw.time raw.pc
 
-
-execute_CB06 : Z80ROM -> Z80 -> Z80Delta
-execute_CB06 rom48k z80 =
-    let
-        x =
-            z80 |> execute_CB0007 (z80 |> hl_deref_with_z80 HL rom48k)
-
-        env =
-            z80.env
-
-        env_1 =
-            { env | time = x.time } |> setMem z80.main.hl x.value
-    in
-    EnvWithFlagsAndPc env_1 x.flags x.pc
+--execute_CB06 : Z80ROM -> Z80 -> Z80Delta
+--execute_CB06 rom48k z80 =
+--    let
+--        x =
+--            z80 |> execute_CB0007 (z80 |> hl_deref_with_z80 HL rom48k)
+--
+--        env =
+--            z80.env
+--
+--        env_1 =
+--            { env | time = x.time } |> setMem z80.main.hl x.value
+--    in
+--    EnvWithFlagsAndPc env_1 x.flags x.pc
 
 
 group_cb : Z80ROM -> Z80 -> Z80Delta
@@ -134,17 +134,18 @@ group_cb rom48k tmp_z80 =
             -- case 0x05: HL=HL&0xFF00|shifter(o,HL&0xFF); break;
             -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
             -- case 0x07: A=shifter(o,A); break;
-            if caseval < 0x08 then
-                let
-                    raw =
-                        z80 |> load408bit caseval HL rom48k
-
-                    value =
-                        shifter o raw.value z80.flags
-                in
-                PcTimeFlagsSet408Bit raw.pc raw.time value.flags caseval value.value
-
-            else if caseval >= 0x40 && caseval <= 0x47 then
+-- we can't actually remove this until we have implemented (and tested) all of CB00 - CB3F
+            --if caseval < 0x08 then
+            --    let
+            --        raw =
+            --            z80 |> load408bit caseval HL rom48k
+            --
+            --        value =
+            --            shifter o raw.value z80.flags
+            --    in
+            --    PcTimeFlagsSet408Bit raw.pc raw.time value.flags caseval value.value
+            --else if caseval >= 0x40 && caseval <= 0x47 then
+            if caseval >= 0x40 && caseval <= 0x47 then
                 -- case 0x40: bit(o,B); break;
                 -- case 0x41: bit(o,C); break;
                 -- case 0x42: bit(o,D); break;
@@ -244,7 +245,7 @@ group_xy_cb ixiyhl rom48k z80 =
         offset =
             mem z80.pc z80.env.time rom48k z80.env.ram
 
-        a =
+        addr =
             char (xy + byte offset.value)
 
         env_1 =
@@ -257,7 +258,7 @@ group_xy_cb ixiyhl rom48k z80 =
             z80 |> inc_pc2
 
         v1 =
-            mem a (c.time |> addCpuTimeTime 5) rom48k z80.env.ram
+            mem addr (c.time |> addCpuTimeTime 5) rom48k z80.env.ram
 
         z80_3 =
             { z80 | pc = new_pc, env = { env_1 | time = v1.time |> addCpuTimeTime 4 } }
@@ -284,7 +285,7 @@ group_xy_cb ixiyhl rom48k z80 =
                         flags =
                             bit o v1.value z80_3.flags
                     in
-                    IntWithFlags v1.value { flags | ff = Bitwise.or (Bitwise.and flags.ff (complement c_F53)) (shiftRightBy (Bitwise.and 8 c_F53) a) }
+                    IntWithFlags v1.value { flags | ff = Bitwise.or (Bitwise.and flags.ff (complement c_F53)) (shiftRightBy (Bitwise.and 8 c_F53) addr) }
 
                 0x80 ->
                     IntWithFlags (Bitwise.and v1.value (complement (shiftLeftBy o 1))) z80_3.flags
@@ -297,7 +298,7 @@ group_xy_cb ixiyhl rom48k z80 =
                 z80_3.env
 
             else
-                z80_3.env |> setMem a v2.value |> addCpuTimeEnv 3
+                z80_3.env |> setMem addr v2.value |> addCpuTimeEnv 3
 
         --y = debug_log "xy_cb2" ((z80.pc |> toHexString) ++ " c " ++ (c.value |> toHexString2) ++
         --                                                   " set " ++ (a |> toHexString) ++

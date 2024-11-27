@@ -6,7 +6,7 @@ import Dict exposing (Dict)
 import PCIncrement exposing (PCIncrement(..))
 import Utils exposing (shiftRightBy8)
 import Z80Change exposing (FlagChange(..))
-import Z80Flags exposing (FlagRegisters, adc, c_FP, c_FS, cpl, daa, dec, get_af, get_flags, inc, rot, sbc, scf_ccf, shifter0, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
+import Z80Flags exposing (FlagRegisters, adc, c_FP, c_FS, cpl, daa, dec, get_af, get_flags, inc, rot, sbc, scf_ccf, shifter0, shifter1, shifter2, shifter3, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
 
 
 singleByteFlags : Dict Int ( FlagRegisters -> FlagChange, PCIncrement )
@@ -46,6 +46,9 @@ singleByteFlags =
         , ( 0xF5, ( push_af, IncrementByOne ) )
         , ( 0xF8, ( ret_m, IncrementByOne ) )
         , ( 0xCB07, ( rlc_a, IncrementByTwo ) )
+        , ( 0xCB0F, ( rrc_a, IncrementByTwo ) )
+        , ( 0xCB17, ( rl_a, IncrementByTwo ) )
+        , ( 0xCB1F, ( rr_a, IncrementByTwo ) )
         ]
 
 
@@ -313,13 +316,6 @@ ret_m z80_flags =
 push_af : FlagRegisters -> FlagChange
 push_af z80_flags =
     -- case 0xF5: push(A<<8|flags()); break;
-    --let
-    --    a =
-    --        z80 |> get_af
-    --
-    --    --pushed = z80.env |> z80_push a
-    --in
-    ----{ z80 | env = pushed }
     FlagChangePush (z80_flags |> get_af)
 
 
@@ -329,6 +325,45 @@ rlc_a z80_flags =
     let
         value =
             shifter0 z80_flags.a z80_flags
+
+        new_flags =
+            value.flags
+    in
+    OnlyFlags { new_flags | a = value.value }
+
+
+rrc_a : FlagRegisters -> FlagChange
+rrc_a z80_flags =
+    --case 0x07: A=shifter(o,A); break;
+    let
+        value =
+            shifter1 z80_flags.a z80_flags
+
+        new_flags =
+            value.flags
+    in
+    OnlyFlags { new_flags | a = value.value }
+
+
+rl_a : FlagRegisters -> FlagChange
+rl_a z80_flags =
+    --case 0x07: A=shifter(o,A); break;
+    let
+        value =
+            shifter2 z80_flags.a z80_flags
+
+        new_flags =
+            value.flags
+    in
+    OnlyFlags { new_flags | a = value.value }
+
+
+rr_a : FlagRegisters -> FlagChange
+rr_a z80_flags =
+    --case 0x07: A=shifter(o,A); break;
+    let
+        value =
+            shifter3 z80_flags.a z80_flags
 
         new_flags =
             value.flags

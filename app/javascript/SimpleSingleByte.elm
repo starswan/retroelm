@@ -3,70 +3,75 @@ module SimpleSingleByte exposing (..)
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeIncrement(..), increment3, increment7)
 import Dict exposing (Dict)
+import PCIncrement exposing (PCIncrement(..))
 import RegisterChange exposing (RegisterChange(..))
 import Utils exposing (shiftRightBy8)
 import Z80Types exposing (IXIYHL(..), MainRegisters, MainWithIndexRegisters, Z80, get_bc, get_de)
 
 
-singleByteMainRegs : Dict Int (MainWithIndexRegisters -> RegisterChange)
+singleByteMainRegs : Dict Int ( MainWithIndexRegisters -> RegisterChange, PCIncrement )
 singleByteMainRegs =
     Dict.fromList
-        [ ( 0x03, inc_bc )
-        , ( 0x0B, dec_bc )
-        , ( 0x13, inc_de )
-        , ( 0x1B, dec_de )
-        , ( 0x23, inc_hl )
-        , ( 0x2B, dec_hl )
-        , ( 0x34, inc_indirect_hl )
-        , ( 0x35, dec_indirect_hl )
-        , ( 0x41, ld_b_c )
-        , ( 0x42, ld_b_d )
-        , ( 0x43, ld_b_e )
-        , ( 0x44, ld_b_h )
-        , ( 0x45, ld_b_l )
-        , ( 0x48, ld_c_b )
-        , ( 0x4A, ld_c_d )
-        , ( 0x4B, ld_c_e )
-        , ( 0x4C, ld_c_h )
-        , ( 0x4D, ld_c_l )
-        , ( 0x50, ld_d_b )
-        , ( 0x51, ld_d_c )
-        , ( 0x53, ld_d_e )
-        , ( 0x54, ld_d_h )
-        , ( 0x55, ld_d_l )
-        , ( 0x58, ld_e_b )
-        , ( 0x59, ld_e_c )
-        , ( 0x5A, ld_e_d )
-        , ( 0x5C, ld_e_h )
-        , ( 0x5D, ld_e_l )
-        , ( 0x60, ld_h_b )
-        , ( 0x61, ld_h_c )
-        , ( 0x62, ld_h_d )
-        , ( 0x63, ld_h_e )
-        , ( 0x65, ld_h_l )
-        , ( 0x68, ld_l_b )
-        , ( 0x69, ld_l_c )
-        , ( 0x6A, ld_l_d )
-        , ( 0x6B, ld_l_e )
-        , ( 0x6C, ld_l_h )
-        , ( 0x70, ld_indirect_hl_b )
-        , ( 0x71, ld_indirect_hl_c )
-        , ( 0x72, ld_indirect_hl_d )
-        , ( 0x73, ld_indirect_hl_e )
-        , ( 0x74, ld_indirect_hl_h )
-        , ( 0x75, ld_indirect_hl_l )
-        , ( 0x78, ld_a_b )
-        , ( 0x79, ld_a_c )
-        , ( 0x7A, ld_a_d )
-        , ( 0x7B, ld_a_e )
-        , ( 0x7C, ld_a_h )
-        , ( 0x7D, ld_a_l )
-        , ( 0xC5, push_bc )
-        , ( 0xD5, push_de )
-        , ( 0xE5, push_hl )
-        , ( 0xEB, ex_de_hl )
-        , ( 0xE9, jp_hl )
-        , ( 0xF9, ld_sp_hl )
+        [ ( 0x03, ( inc_bc, IncrementByOne ) )
+        , ( 0x0B, ( dec_bc, IncrementByOne ) )
+        , ( 0x13, ( inc_de, IncrementByOne ) )
+        , ( 0x1B, ( dec_de, IncrementByOne ) )
+        , ( 0x23, ( inc_hl, IncrementByOne ) )
+        , ( 0x2B, ( dec_hl, IncrementByOne ) )
+        , ( 0x34, ( inc_indirect_hl, IncrementByOne ) )
+        , ( 0x35, ( dec_indirect_hl, IncrementByOne ) )
+        , ( 0x41, ( ld_b_c, IncrementByOne ) )
+        , ( 0x42, ( ld_b_d, IncrementByOne ) )
+        , ( 0x43, ( ld_b_e, IncrementByOne ) )
+        , ( 0x44, ( ld_b_h, IncrementByOne ) )
+        , ( 0x45, ( ld_b_l, IncrementByOne ) )
+        , ( 0x48, ( ld_c_b, IncrementByOne ) )
+        , ( 0x4A, ( ld_c_d, IncrementByOne ) )
+        , ( 0x4B, ( ld_c_e, IncrementByOne ) )
+        , ( 0x4C, ( ld_c_h, IncrementByOne ) )
+        , ( 0x4D, ( ld_c_l, IncrementByOne ) )
+        , ( 0x50, ( ld_d_b, IncrementByOne ) )
+        , ( 0x51, ( ld_d_c, IncrementByOne ) )
+        , ( 0x53, ( ld_d_e, IncrementByOne ) )
+        , ( 0x54, ( ld_d_h, IncrementByOne ) )
+        , ( 0x55, ( ld_d_l, IncrementByOne ) )
+        , ( 0x58, ( ld_e_b, IncrementByOne ) )
+        , ( 0x59, ( ld_e_c, IncrementByOne ) )
+        , ( 0x5A, ( ld_e_d, IncrementByOne ) )
+        , ( 0x5C, ( ld_e_h, IncrementByOne ) )
+        , ( 0x5D, ( ld_e_l, IncrementByOne ) )
+        , ( 0x60, ( ld_h_b, IncrementByOne ) )
+        , ( 0x61, ( ld_h_c, IncrementByOne ) )
+        , ( 0x62, ( ld_h_d, IncrementByOne ) )
+        , ( 0x63, ( ld_h_e, IncrementByOne ) )
+        , ( 0x65, ( ld_h_l, IncrementByOne ) )
+        , ( 0x68, ( ld_l_b, IncrementByOne ) )
+        , ( 0x69, ( ld_l_c, IncrementByOne ) )
+        , ( 0x6A, ( ld_l_d, IncrementByOne ) )
+        , ( 0x6B, ( ld_l_e, IncrementByOne ) )
+        , ( 0x6C, ( ld_l_h, IncrementByOne ) )
+        , ( 0x70, ( ld_indirect_hl_b, IncrementByOne ) )
+        , ( 0x71, ( ld_indirect_hl_c, IncrementByOne ) )
+        , ( 0x72, ( ld_indirect_hl_d, IncrementByOne ) )
+        , ( 0x73, ( ld_indirect_hl_e, IncrementByOne ) )
+        , ( 0x74, ( ld_indirect_hl_h, IncrementByOne ) )
+        , ( 0x75, ( ld_indirect_hl_l, IncrementByOne ) )
+        , ( 0x78, ( ld_a_b, IncrementByOne ) )
+        , ( 0x79, ( ld_a_c, IncrementByOne ) )
+        , ( 0x7A, ( ld_a_d, IncrementByOne ) )
+        , ( 0x7B, ( ld_a_e, IncrementByOne ) )
+        , ( 0x7C, ( ld_a_h, IncrementByOne ) )
+        , ( 0x7D, ( ld_a_l, IncrementByOne ) )
+        , ( 0xC5, ( push_bc, IncrementByOne ) )
+        , ( 0xD5, ( push_de, IncrementByOne ) )
+        , ( 0xE5, ( push_hl, IncrementByOne ) )
+        , ( 0xEB, ( ex_de_hl, IncrementByOne ) )
+        , ( 0xE9, ( jp_hl, IncrementByOne ) )
+        , ( 0xF9, ( ld_sp_hl, IncrementByOne ) )
+        , ( 0xCB06, ( rlc_indirect_hl, IncrementByTwo ) )
+        , ( 0xCB0E, ( rrc_indirect_hl, IncrementByTwo ) )
+        , ( 0xCB16, ( rl_indirect_hl, IncrementByTwo ) )
+        , ( 0xCB1E, ( rr_indirect_hl, IncrementByTwo ) )
         ]
 
 
@@ -516,17 +521,25 @@ ld_indirect_hl_l z80_main =
 ex_de_hl : MainWithIndexRegisters -> RegisterChange
 ex_de_hl z80_main =
     -- case 0xEB: v=HL; HL=D<<8|E; D=v>>>8; E=v&0xFF; break;
-    --let
-        --hl =
-        --    z80_main.hl
-
-        --de =
-        --    z80_main |> get_de
-
-        --x = debug_log "EX DE,HL" ("DE " ++ (v |> toHexString) ++ " HL " ++ (de |> toHexString)) Nothing
-        --main =
-        --    z80.main |> set_de_main v
-    --in
-    --z80 |> set_de v |> set_hl de
-    --MainRegs { main | hl = de }
     ChangeRegisterDEAndHL z80_main.hl (z80_main |> get_de)
+
+
+rlc_indirect_hl : MainWithIndexRegisters -> RegisterChange
+rlc_indirect_hl z80_main =
+    -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
+    Shifter0 z80_main.hl increment7
+
+rrc_indirect_hl : MainWithIndexRegisters -> RegisterChange
+rrc_indirect_hl z80_main =
+    -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
+    Shifter1 z80_main.hl increment7
+
+rl_indirect_hl : MainWithIndexRegisters -> RegisterChange
+rl_indirect_hl z80_main =
+    -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
+    Shifter2 z80_main.hl increment7
+
+rr_indirect_hl : MainWithIndexRegisters -> RegisterChange
+rr_indirect_hl z80_main =
+    -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
+    Shifter3 z80_main.hl increment7

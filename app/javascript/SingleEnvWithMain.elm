@@ -1,10 +1,11 @@
 module SingleEnvWithMain exposing (..)
 
 import Bitwise
-import CpuTimeCTime exposing (CpuTimeCTime, addCpuTimeTime, addCpuTimeTimeInc, cpuTimeIncrement4, increment3)
+import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeIncrement, addCpuTimeTime, addCpuTimeTimeInc, cpuTimeIncrement4, increment3, increment7)
 import Dict exposing (Dict)
 import Utils exposing (shiftLeftBy8)
 import Z80Env exposing (Z80Env, addCpuTimeEnvInc, mem)
+import Z80Flags exposing (shifter0)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (MainWithIndexRegisters, Z80)
 
@@ -231,6 +232,7 @@ ld_h_indirect_hl z80_main rom48k z80_env =
     --MainRegsWithPcAndCpuTime (main |> set_h value.value HL) value.pc (value.time |> addCpuTimeTime 3)
     SingleEnvNewHLRegister new_hl (value.time |> addCpuTimeTime 3)
 
+
 ld_l_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
 ld_l_indirect_hl z80_main rom48k z80_env =
     -- case 0x6E: HL=HL&0xFF00|env.mem(HL); time+=3; break;
@@ -238,10 +240,13 @@ ld_l_indirect_hl z80_main rom48k z80_env =
     let
         value =
             mem z80_main.hl z80_env.time rom48k z80_env.ram
-        new_hl = z80_main.hl |> Bitwise.and 0xFF00 |> Bitwise.or value.value
+
+        new_hl =
+            z80_main.hl |> Bitwise.and 0xFF00 |> Bitwise.or value.value
     in
     --MainRegsWithPcAndCpuTime (main |> set_h value.value HL) value.pc (value.time |> addCpuTimeTime 3)
     SingleEnvNewHLRegister new_hl (value.time |> addCpuTimeTime 3)
+
 
 ld_a_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
 ld_a_indirect_hl z80_main rom48k z80_env =
@@ -253,4 +258,3 @@ ld_a_indirect_hl z80_main rom48k z80_env =
     in
     --{ z80 | pc = value.pc, env = { env_1 | time = value.time } } |> set_a value.value
     SingleEnvNewARegister value.value (value.time |> addCpuTimeTimeInc increment3)
-
