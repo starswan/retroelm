@@ -1,15 +1,15 @@
 module Z80Change exposing (..)
 
 import CpuTimeCTime exposing (CpuTimeIncrement)
-import Z80Env exposing (addCpuTimeEnv, addCpuTimeEnvInc, setMem)
-import Z80Flags exposing (FlagRegisters)
+import Z80Env exposing (addCpuTimeEnvInc, setMem)
+import Z80Flags exposing (FlagRegisters, IntWithFlags)
 import Z80Types exposing (Z80)
 
 
 type Z80Change
-    = FlagsWithBRegister FlagRegisters Int
-    | FlagsWithCRegister FlagRegisters Int
-    | FlagsWithDRegister FlagRegisters Int
+    = FlagsWithBRegister IntWithFlags
+    | FlagsWithCRegister IntWithFlags
+    | FlagsWithDRegister IntWithFlags
     | FlagsWithERegister FlagRegisters Int
     | HLRegister Int
     | FlagsWithHLRegister FlagRegisters Int CpuTimeIncrement
@@ -35,26 +35,26 @@ type FlagChange
 applyZ80Change : Z80Change -> Z80 -> Z80
 applyZ80Change change z80 =
     case change of
-        FlagsWithBRegister flagRegisters int ->
+        FlagsWithBRegister intWithFlags ->
             let
                 main =
                     z80.main
             in
-            { z80 | flags = flagRegisters, main = { main | b = int } }
+            { z80 | flags = intWithFlags.flags, main = { main | b = intWithFlags.value } }
 
-        FlagsWithCRegister flagRegisters int ->
+        FlagsWithCRegister intWithFlags ->
             let
                 main =
                     z80.main
             in
-            { z80 | flags = flagRegisters, main = { main | c = int } }
+            { z80 | flags = intWithFlags.flags, main = { main | c = intWithFlags.value } }
 
-        FlagsWithDRegister flagRegisters int ->
+        FlagsWithDRegister intWithFlags ->
             let
                 main =
                     z80.main
             in
-            { z80 | flags = flagRegisters, main = { main | d = int } }
+            { z80 | flags = intWithFlags.flags, main = { main | d = intWithFlags.value } }
 
         FlagsWithERegister flagRegisters int ->
             let

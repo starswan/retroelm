@@ -4,7 +4,7 @@ import Bitwise
 import CpuTimeCTime exposing (CpuTimeIncrement)
 import Utils exposing (shiftLeftBy8)
 import Z80Flags exposing (FlagRegisters)
-import Z80Types exposing (MainWithIndexRegisters, Z80, set_de, set_de_main)
+import Z80Types exposing (MainWithIndexRegisters, Z80, set_de_main)
 
 
 type RegisterChange
@@ -27,6 +27,14 @@ type RegisterChange
     | RegisterChangeJump Int
     | SetIndirect Int Int CpuTimeIncrement
     | ChangeRegisterDEAndHL Int Int
+    | Shifter0 Int CpuTimeIncrement
+    | Shifter1 Int CpuTimeIncrement
+    | Shifter2 Int CpuTimeIncrement
+    | Shifter3 Int CpuTimeIncrement
+    | Shifter4 Int CpuTimeIncrement
+    | Shifter5 Int CpuTimeIncrement
+    | Shifter6 Int CpuTimeIncrement
+    | Shifter7 Int CpuTimeIncrement
 
 
 type RegisterChangeApplied
@@ -39,6 +47,14 @@ type RegisterChangeApplied
     | DecrementIndirectApplied Int CpuTimeIncrement
     | JumpApplied Int
     | SetIndirectApplied Int Int CpuTimeIncrement
+    | Shifter0Applied Int CpuTimeIncrement
+    | Shifter1Applied Int CpuTimeIncrement
+    | Shifter2Applied Int CpuTimeIncrement
+    | Shifter3Applied Int CpuTimeIncrement
+    | Shifter4Applied Int CpuTimeIncrement
+    | Shifter5Applied Int CpuTimeIncrement
+    | Shifter6Applied Int CpuTimeIncrement
+    | Shifter7Applied Int CpuTimeIncrement
 
 
 applyRegisterChange : RegisterChange -> FlagRegisters -> MainWithIndexRegisters -> RegisterChangeApplied
@@ -101,4 +117,24 @@ applyRegisterChange change z80_flags main =
         ChangeRegisterDEAndHL de hl ->
             MainRegsApplied ({ main | hl = hl } |> set_de_main de)
 
+        Shifter0 int cpuTimeIncrement ->
+            Shifter0Applied int cpuTimeIncrement
 
+        Shifter1 int cpuTimeIncrement ->
+            Shifter1Applied int cpuTimeIncrement
+
+        Shifter2 int cpuTimeIncrement ->
+            Shifter2Applied int cpuTimeIncrement
+
+        Shifter3 int cpuTimeIncrement ->
+            Shifter3Applied int cpuTimeIncrement
+
+        Shifter4 int cpuTimeIncrement ->
+            Shifter4Applied int cpuTimeIncrement
+
+        Shifter5 int cpuTimeIncrement ->
+            Shifter5Applied int cpuTimeIncrement
+        Shifter6 int cpuTimeIncrement ->
+            Shifter6Applied int cpuTimeIncrement
+        Shifter7 int cpuTimeIncrement ->
+            Shifter7Applied int cpuTimeIncrement

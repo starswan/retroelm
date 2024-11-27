@@ -31,7 +31,7 @@ type Z80Delta
     | SetMem8WithTime Int Int Int
     | SetMem16WithTimeAndPc Int Int Int Int
     | SetMem8WithCpuTimeIncrementAndPc Int Int CpuTimeCTime Int Int
-    | PcTimeFlagsSet408Bit Int CpuTimeCTime FlagRegisters Int Int
+    --| PcTimeFlagsSet408Bit Int CpuTimeCTime FlagRegisters Int Int
     | PcTimeSet408Bit Int CpuTimeCTime Int Int
     | Fszh0n0pTimeDeltaSet408Bit Int Int Int
 
@@ -123,8 +123,8 @@ applyDeltaWithChanges z80delta z80 =
         SetMem8WithCpuTimeIncrementAndPc addr value cpuTimeCTime time pc ->
             { z80 | pc = pc, env = { z80_env | time = cpuTimeCTime } |> setMem addr value |> addCpuTimeEnv time, interrupts = z80delta.interrupts }
 
-        PcTimeFlagsSet408Bit pc cpuTimeCTime flagRegisters caseval value ->
-            { z80 | pc = pc, env = { z80_env | time = cpuTimeCTime } } |> set_flag_regs flagRegisters |> set408bit caseval value HL
+        --PcTimeFlagsSet408Bit pc cpuTimeCTime flagRegisters caseval value ->
+        --    { z80 | pc = pc, env = { z80_env | time = cpuTimeCTime } } |> set_flag_regs flagRegisters |> set408bit caseval value HL
 
         PcTimeSet408Bit pc cpuTimeCTime caseval result ->
             { z80 | pc = pc, env = { z80_env | time = cpuTimeCTime } } |> set408bit caseval result HL

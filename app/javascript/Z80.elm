@@ -443,7 +443,7 @@ singleByte ctime instr_code tmp_z80 rom48k =
                                    Just (Simple8BitDelta (param.time |> addCpuTimeTime 3) (f param.value))
                                Nothing ->
                                    case singleByteMainRegs  |> Dict.get instr_code of
-                                        Just mainRegFunc ->  Just (RegisterChangeDelta ctime (mainRegFunc tmp_z80.main))
+                                        Just (mainRegFunc, t) ->  Just (RegisterChangeDelta t ctime (mainRegFunc tmp_z80.main))
                                         Nothing ->
                                             case singleByteFlags |> Dict.get instr_code of
                                                 Just (flagFunc, t) -> Just (FlagDelta t ctime (flagFunc tmp_z80.flags))

@@ -24,8 +24,7 @@ doubleWithRegisters : Dict Int (MainWithIndexRegisters -> Int -> DoubleWithRegis
 doubleWithRegisters =
     Dict.fromList
         [ ( 0x10, djnz )
-        ,( 0x36, ld_indirect_hl_n )
-
+        , ( 0x36, ld_indirect_hl_n )
         ]
 
 
@@ -150,6 +149,7 @@ djnz z80_main param =
                 ( 4, Nothing )
     in
     RelativeJumpWithTimeOffset (NewBRegister b) jump time
+
 
 ld_indirect_hl_n : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
 ld_indirect_hl_n z80_main param =
@@ -324,14 +324,14 @@ cp_n param z80_flags =
     --{ z80 | flags = flags, env = { env_1 | time = v.time }, pc = v.pc }
     FlagJump flags
 
+
 ld_a_n : Int -> FlagRegisters -> JumpChange
 ld_a_n param z80_flags =
     -- case 0x3E: A=imm8(); break;
     --let
-        --v =
-        --    imm8 z80.pc z80.env.time rom48k z80.env.ram
-
-        --new_z80 = { z80 | env = v.env, pc = v.pc }
+    --v =
+    --    imm8 z80.pc z80.env.time rom48k z80.env.ram
+    --new_z80 = { z80 | env = v.env, pc = v.pc }
     --in
     --{ new_z80 | flags = { z80_flags | a = v.value } }
     --CpuTimeWithFlagsAndPc v.time { z80_flags | a = v.value } v.pc
