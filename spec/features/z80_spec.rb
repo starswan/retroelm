@@ -51,7 +51,7 @@ RSpec.describe "Spectrum Emulator" do
       # check that Elm is running
       expect(page).to have_content 'Refresh Interval'
 
-      sleep 10
+      sleep 15
       x = find("#spectrum")
       # This is very slow, but calling send_keys
       # with a string on an array
