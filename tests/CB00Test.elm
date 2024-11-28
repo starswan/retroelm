@@ -13,6 +13,9 @@ suite =
         addr =
             0x5800
 
+        addr_plus_1 =
+            addr + 1
+
         sp =
             0xF765
 
@@ -35,7 +38,7 @@ suite =
             z80.flags
 
         z80env =
-            z80.env
+            z80.env |> setMem addr 0xCB
 
         z80rom =
             Z80Rom.constructor
@@ -46,8 +49,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x00
+                            |> setMem addr_plus_1 0x00
 
                     new_z80 =
                         execute_instruction z80rom
@@ -63,8 +65,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x00
+                            |> setMem addr_plus_1 0x00
 
                     new_z80 =
                         execute_instruction z80rom
@@ -80,8 +81,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x01
+                            |> setMem addr_plus_1 0x01
 
                     new_z80 =
                         execute_instruction z80rom
@@ -97,8 +97,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x02
+                            |> setMem addr_plus_1 0x02
 
                     new_z80 =
                         execute_instruction z80rom
@@ -114,8 +113,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x03
+                            |> setMem addr_plus_1 0x03
 
                     new_z80 =
                         execute_instruction z80rom
@@ -131,8 +129,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x04
+                            |> setMem addr_plus_1 0x04
 
                     new_z80 =
                         execute_instruction z80rom
@@ -148,8 +145,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x05
+                            |> setMem addr_plus_1 0x05
 
                     new_z80 =
                         execute_instruction z80rom
@@ -165,8 +161,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x06
+                            |> setMem addr_plus_1 0x06
                             |> setMem 0x6545 0x31
 
                     new_z80 =
@@ -187,7 +182,7 @@ suite =
                     new_env =
                         z80env
                             |> setMem addr 0xDD
-                            |> setMem (addr + 1) 0xCB
+                            |> setMem addr_plus_1 0xCB
                             |> setMem (addr + 2) 0x45
                             |> setMem (addr + 3) 0x06
                             |> setMem 0x6545 0x31
@@ -210,7 +205,7 @@ suite =
                     new_env =
                         z80env
                             |> setMem addr 0xFD
-                            |> setMem (addr + 1) 0xCB
+                            |> setMem addr_plus_1 0xCB
                             |> setMem (addr + 2) 0x45
                             |> setMem (addr + 3) 0x06
                             |> setMem 0x6545 0x31
@@ -232,8 +227,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x07
+                            |> setMem addr_plus_1 0x07
 
                     new_z80 =
                         execute_instruction z80rom
@@ -249,8 +243,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x08
+                            |> setMem addr_plus_1 0x08
 
                     new_z80 =
                         execute_instruction z80rom
@@ -266,8 +259,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x09
+                            |> setMem addr_plus_1 0x09
 
                     new_z80 =
                         execute_instruction z80rom
@@ -283,8 +275,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x0A
+                            |> setMem addr_plus_1 0x0A
 
                     new_z80 =
                         execute_instruction z80rom
@@ -300,8 +291,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x0B
+                            |> setMem addr_plus_1 0x0B
 
                     new_z80 =
                         execute_instruction z80rom
@@ -317,8 +307,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x0C
+                            |> setMem addr_plus_1 0x0C
 
                     new_z80 =
                         execute_instruction z80rom
@@ -334,8 +323,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x0D
+                            |> setMem addr_plus_1 0x0D
 
                     new_z80 =
                         execute_instruction z80rom
@@ -351,8 +339,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x0E
+                            |> setMem addr_plus_1 0x0E
                             |> setMem 0x6545 0x31
 
                     new_z80 =
@@ -372,8 +359,7 @@ suite =
                 let
                     new_env =
                         z80env
-                            |> setMem addr 0xCB
-                            |> setMem (addr + 1) 0x0F
+                            |> setMem addr_plus_1 0x0F
 
                     new_z80 =
                         execute_instruction z80rom
