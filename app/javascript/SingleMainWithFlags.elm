@@ -127,18 +127,36 @@ singleByteMainAndFlagRegisters =
         , ( 0xCB3B, ( srl_e, IncrementByTwo ) )
         , ( 0xCB3C, ( srl_h, IncrementByTwo ) )
         , ( 0xCB3D, ( srl_l, IncrementByTwo ) )
-        , ( 0xCB40, ( bit_0_b, IncrementByTwo ) )
-        , ( 0xCB41, ( bit_0_c, IncrementByTwo ) )
-        , ( 0xCB42, ( bit_0_d, IncrementByTwo ) )
-        , ( 0xCB43, ( bit_0_e, IncrementByTwo ) )
-        , ( 0xCB44, ( bit_0_h, IncrementByTwo ) )
-        , ( 0xCB45, ( bit_0_l, IncrementByTwo ) )
+        , ( 0xCB40, ( \z80_main z80_flags -> z80_flags |> testBit Bit_0 z80_main.b |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB41, ( \z80_main z80_flags -> z80_flags |> testBit Bit_0 z80_main.c |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB42, ( \z80_main z80_flags -> z80_flags |> testBit Bit_0 z80_main.d |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB43, ( \z80_main z80_flags -> z80_flags |> testBit Bit_0 z80_main.e |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB44, ( \z80_main z80_flags -> z80_flags |> testBit Bit_0 (z80_main.hl |> shiftRightBy8) |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB45, ( \z80_main z80_flags -> z80_flags |> testBit Bit_0 (z80_main.hl |> Bitwise.and 0xFF) |> Z80ChangeFlags, IncrementByTwo ) )
         , ( 0xCB48, ( bit_1_b, IncrementByTwo ) )
         , ( 0xCB49, ( bit_1_c, IncrementByTwo ) )
         , ( 0xCB4A, ( bit_1_d, IncrementByTwo ) )
         , ( 0xCB4B, ( bit_1_e, IncrementByTwo ) )
         , ( 0xCB4C, ( bit_1_h, IncrementByTwo ) )
         , ( 0xCB4D, ( bit_1_l, IncrementByTwo ) )
+        , ( 0xCB50, ( bit_2_b, IncrementByTwo ) )
+        , ( 0xCB51, ( bit_2_c, IncrementByTwo ) )
+        , ( 0xCB52, ( bit_2_d, IncrementByTwo ) )
+        , ( 0xCB53, ( bit_2_e, IncrementByTwo ) )
+        , ( 0xCB54, ( bit_2_h, IncrementByTwo ) )
+        , ( 0xCB55, ( bit_2_l, IncrementByTwo ) )
+        , ( 0xCB58, ( \z80_main z80_flags -> z80_flags |> testBit Bit_3 z80_main.b |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB59, ( \z80_main z80_flags -> z80_flags |> testBit Bit_3 z80_main.c |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB5A, ( \z80_main z80_flags -> z80_flags |> testBit Bit_3 z80_main.d |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB5B, ( \z80_main z80_flags -> z80_flags |> testBit Bit_3 z80_main.e |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB5C, ( \z80_main z80_flags -> z80_flags |> testBit Bit_3 (z80_main.hl |> shiftRightBy8) |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB5D, ( \z80_main z80_flags -> z80_flags |> testBit Bit_3 (z80_main.hl |> Bitwise.and 0xFF) |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB60, ( \z80_main z80_flags -> z80_flags |> testBit Bit_4 z80_main.b |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB61, ( \z80_main z80_flags -> z80_flags |> testBit Bit_4 z80_main.c |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB62, ( \z80_main z80_flags -> z80_flags |> testBit Bit_4 z80_main.d |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB63, ( \z80_main z80_flags -> z80_flags |> testBit Bit_4 z80_main.e |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB64, ( \z80_main z80_flags -> z80_flags |> testBit Bit_4 (z80_main.hl |> shiftRightBy8) |> Z80ChangeFlags, IncrementByTwo ) )
+        , ( 0xCB65, ( \z80_main z80_flags -> z80_flags |> testBit Bit_4 (z80_main.hl |> Bitwise.and 0xFF) |> Z80ChangeFlags, IncrementByTwo ) )
         ]
 
 
@@ -1104,35 +1122,36 @@ srl_l z80_main z80_flags =
     FlagsWithHLRegister value.flags new_hl increment0
 
 
-bit_0_b : MainWithIndexRegisters -> FlagRegisters -> Z80Change
-bit_0_b z80_main z80_flags =
-    -- case 0x40: bit(o,B); break;
-    z80_flags |> testBit Bit_0 z80_main.b |> Z80ChangeFlags
+--bit_0_b : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+--bit_0_b z80_main z80_flags =
+--    -- case 0x40: bit(o,B); break;
+--    z80_flags |> testBit Bit_0 z80_main.b |> Z80ChangeFlags
+--
+--
+--bit_0_c : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+--bit_0_c z80_main z80_flags =
+--    z80_flags |> testBit Bit_0 z80_main.c |> Z80ChangeFlags
+--
+--
+--bit_0_d : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+--bit_0_d z80_main z80_flags =
+--    z80_flags |> testBit Bit_0 z80_main.d |> Z80ChangeFlags
+--
+--
+--bit_0_e : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+--bit_0_e z80_main z80_flags =
+--    z80_flags |> testBit Bit_0 z80_main.e |> Z80ChangeFlags
+--
+--
+--bit_0_h : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+--bit_0_h z80_main z80_flags =
+--    z80_flags |> testBit Bit_0 (z80_main.hl |> shiftRightBy8) |> Z80ChangeFlags
+--
+--
+--bit_0_l : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+--bit_0_l z80_main z80_flags =
+--    z80_flags |> testBit Bit_0 (Bitwise.and z80_main.hl 0xFF) |> Z80ChangeFlags
 
-
-bit_0_c : MainWithIndexRegisters -> FlagRegisters -> Z80Change
-bit_0_c z80_main z80_flags =
-    z80_flags |> testBit Bit_0 z80_main.c |> Z80ChangeFlags
-
-
-bit_0_d : MainWithIndexRegisters -> FlagRegisters -> Z80Change
-bit_0_d z80_main z80_flags =
-    z80_flags |> testBit Bit_0 z80_main.d |> Z80ChangeFlags
-
-
-bit_0_e : MainWithIndexRegisters -> FlagRegisters -> Z80Change
-bit_0_e z80_main z80_flags =
-    z80_flags |> testBit Bit_0 z80_main.e |> Z80ChangeFlags
-
-
-bit_0_h : MainWithIndexRegisters -> FlagRegisters -> Z80Change
-bit_0_h z80_main z80_flags =
-    z80_flags |> testBit Bit_0 (z80_main.hl |> shiftRightBy8) |> Z80ChangeFlags
-
-
-bit_0_l : MainWithIndexRegisters -> FlagRegisters -> Z80Change
-bit_0_l z80_main z80_flags =
-    z80_flags |> testBit Bit_0 (Bitwise.and z80_main.hl 0xFF) |> Z80ChangeFlags
 
 bit_1_b : MainWithIndexRegisters -> FlagRegisters -> Z80Change
 bit_1_b z80_main z80_flags =
@@ -1163,3 +1182,36 @@ bit_1_h z80_main z80_flags =
 bit_1_l : MainWithIndexRegisters -> FlagRegisters -> Z80Change
 bit_1_l z80_main z80_flags =
     z80_flags |> testBit Bit_1 (Bitwise.and z80_main.hl 0xFF) |> Z80ChangeFlags
+
+
+bit_2_b : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+bit_2_b z80_main z80_flags =
+    -- case 0x40: bit(o,B); break;
+    z80_flags |> testBit Bit_2 z80_main.b |> Z80ChangeFlags
+
+
+bit_2_c : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+bit_2_c z80_main z80_flags =
+    -- case 0x41: bit(o,C); break;
+    z80_flags |> testBit Bit_2 z80_main.c |> Z80ChangeFlags
+
+
+bit_2_d : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+bit_2_d z80_main z80_flags =
+    -- case 0x42: bit(o,D); break;
+    z80_flags |> testBit Bit_2 z80_main.d |> Z80ChangeFlags
+
+
+bit_2_e : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+bit_2_e z80_main z80_flags =
+    z80_flags |> testBit Bit_2 z80_main.e |> Z80ChangeFlags
+
+
+bit_2_h : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+bit_2_h z80_main z80_flags =
+    z80_flags |> testBit Bit_2 (z80_main.hl |> shiftRightBy8) |> Z80ChangeFlags
+
+
+bit_2_l : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+bit_2_l z80_main z80_flags =
+    z80_flags |> testBit Bit_2 (Bitwise.and z80_main.hl 0xFF) |> Z80ChangeFlags
