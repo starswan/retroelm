@@ -135,32 +135,32 @@ group_cb rom48k tmp_z80 =
             -- case 0x06: v=shifter(o,env.mem(HL)); time+=4; env.mem(HL,v); time+=3; break;
             -- case 0x07: A=shifter(o,A); break;
 -- we can't actually remove this until we have implemented (and tested) all of CB40 - CB7F
-            if caseval >= 0x40 && caseval <= 0x47 then
-                -- case 0x40: bit(o,B); break;
-                -- case 0x41: bit(o,C); break;
-                -- case 0x42: bit(o,D); break;
-                -- case 0x43: bit(o,E); break;
-                -- case 0x44: bit(o,HL>>>8); break;
-                -- case 0x45: bit(o,HL&0xFF); break;
-                -- case 0x46: bit(o,env.mem(HL)); Ff=Ff&~F53|MP>>>8&F53; time+=4; break;
-                -- case 0x47: bit(o,A); break;
-                let
-                    raw =
-                        z80 |> load408bit caseval HL rom48k
-
-                    flags =
-                        bit o raw.value z80.flags
-
-                    --env_1 =
-                    --    z80.env
-                    --x =
-                    --    { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set_flag_regs flags
-                in
-                --Whole x
-                CpuTimeWithFlagsAndPc raw.time flags raw.pc
-
-            else if caseval >= 0x80 && caseval <= 0x87 then
-            --if caseval >= 0x80 && caseval <= 0x87 then
+--            if caseval >= 0x40 && caseval <= 0x47 then
+--                -- case 0x40: bit(o,B); break;
+--                -- case 0x41: bit(o,C); break;
+--                -- case 0x42: bit(o,D); break;
+--                -- case 0x43: bit(o,E); break;
+--                -- case 0x44: bit(o,HL>>>8); break;
+--                -- case 0x45: bit(o,HL&0xFF); break;
+--                -- case 0x46: bit(o,env.mem(HL)); Ff=Ff&~F53|MP>>>8&F53; time+=4; break;
+--                -- case 0x47: bit(o,A); break;
+--                let
+--                    raw =
+--                        z80 |> load408bit caseval HL rom48k
+--
+--                    flags =
+--                        bit o raw.value z80.flags
+--
+--                    --env_1 =
+--                    --    z80.env
+--                    --x =
+--                    --    { z80 | pc = raw.pc, env = { env_1 | time = raw.time } } |> set_flag_regs flags
+--                in
+--                --Whole x
+--                CpuTimeWithFlagsAndPc raw.time flags raw.pc
+--
+--            else if caseval >= 0x80 && caseval <= 0x87 then
+            if caseval >= 0x80 && caseval <= 0x87 then
                 -- case 0x80: B=B&~(1<<o); break;
                 -- case 0x81: C=C&~(1<<o); break;
                 -- case 0x82: D=D&~(1<<o); break;
