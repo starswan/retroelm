@@ -58,6 +58,9 @@ singleByteFlags =
         , ( 0xCB57, ( \z80_flags -> z80_flags |> testBit Bit_2 z80_flags.a |> OnlyFlags, IncrementByTwo ) )
         , ( 0xCB5F, ( \z80_flags -> z80_flags |> testBit Bit_3 z80_flags.a |> OnlyFlags, IncrementByTwo ) )
         , ( 0xCB67, ( \z80_flags -> z80_flags |> testBit Bit_4 z80_flags.a |> OnlyFlags, IncrementByTwo ) )
+        , ( 0xCB6F, ( \z80_flags -> z80_flags |> testBit Bit_5 z80_flags.a |> OnlyFlags, IncrementByTwo ) )
+        , ( 0xCB77, ( \z80_flags -> z80_flags |> testBit Bit_6 z80_flags.a |> OnlyFlags, IncrementByTwo ) )
+        , ( 0xCB7F, ( \z80_flags -> z80_flags |> testBit Bit_7 z80_flags.a |> OnlyFlags, IncrementByTwo ) )
         ]
 
 
