@@ -55,7 +55,8 @@ pairToColour raw_colour runcount =
         bright =
             colour_byte |> getBit 6
 
-        flash = (colour_byte |> getBit 7)
+        flash =
+            colour_byte |> getBit 7
 
         colour =
             if runcount.value then

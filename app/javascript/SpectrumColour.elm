@@ -2,6 +2,8 @@ module SpectrumColour exposing (..)
 
 import Dict
 import Maybe exposing (withDefault)
+
+
 type SpectrumColour
     = Black
     | Blue
@@ -18,6 +20,7 @@ type SpectrumColour
     | BrightCyan
     | BrightYellow
     | BrightWhite
+
 
 c_BLACK =
     "#000000"
@@ -137,4 +140,3 @@ colourToString colour =
 
         BrightWhite ->
             c_WHITE
-

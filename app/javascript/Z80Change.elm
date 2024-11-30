@@ -99,7 +99,7 @@ applyZ80Change change z80 =
 
         Z80ChangeSetIndirect addr int time ->
             let
-                env = z80.env |> setMem addr int |> addCpuTimeEnvInc time
+                env =
+                    z80.env |> setMem addr int |> addCpuTimeEnvInc time
             in
             { z80 | env = env }
-

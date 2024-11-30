@@ -292,6 +292,7 @@ bit_0_indirect_hl z80_main rom48k z80_env =
     in
     SingleBitTest Bit_0 value
 
+
 bit_1_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
 bit_1_indirect_hl z80_main rom48k z80_env =
     -- case 0x46: bit(o,env.mem(HL)); Ff=Ff&~F53|MP>>>8&F53; time+=4; break;
@@ -300,6 +301,7 @@ bit_1_indirect_hl z80_main rom48k z80_env =
             mem z80_main.hl z80_env.time rom48k z80_env.ram
     in
     SingleBitTest Bit_1 value
+
 
 bit_2_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
 bit_2_indirect_hl z80_main rom48k z80_env =
@@ -310,6 +312,7 @@ bit_2_indirect_hl z80_main rom48k z80_env =
     in
     SingleBitTest Bit_2 value
 
+
 bit_3_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
 bit_3_indirect_hl z80_main rom48k z80_env =
     -- case 0x46: bit(o,env.mem(HL)); Ff=Ff&~F53|MP>>>8&F53; time+=4; break;
@@ -318,6 +321,7 @@ bit_3_indirect_hl z80_main rom48k z80_env =
             mem z80_main.hl z80_env.time rom48k z80_env.ram
     in
     SingleBitTest Bit_3 value
+
 
 bit_4_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
 bit_4_indirect_hl z80_main rom48k z80_env =
@@ -328,6 +332,7 @@ bit_4_indirect_hl z80_main rom48k z80_env =
     in
     SingleBitTest Bit_4 value
 
+
 bit_5_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
 bit_5_indirect_hl z80_main rom48k z80_env =
     -- case 0x46: bit(o,env.mem(HL)); Ff=Ff&~F53|MP>>>8&F53; time+=4; break;
@@ -337,6 +342,7 @@ bit_5_indirect_hl z80_main rom48k z80_env =
     in
     SingleBitTest Bit_5 value
 
+
 bit_6_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
 bit_6_indirect_hl z80_main rom48k z80_env =
     -- case 0x46: bit(o,env.mem(HL)); Ff=Ff&~F53|MP>>>8&F53; time+=4; break;
@@ -345,6 +351,7 @@ bit_6_indirect_hl z80_main rom48k z80_env =
             mem z80_main.hl z80_env.time rom48k z80_env.ram
     in
     SingleBitTest Bit_6 value
+
 
 bit_7_indirect_hl : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
 bit_7_indirect_hl z80_main rom48k z80_env =

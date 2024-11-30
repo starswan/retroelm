@@ -77,9 +77,10 @@ toHexString2 : Int -> String
 toHexString2 value =
     "0x" ++ (Hex.toString value |> String.toUpper |> String.padLeft 2 '0')
 
+
 toPlainHexString2 : Int -> String
 toPlainHexString2 value =
-    (Hex.toString value |> String.toUpper |> String.padLeft 2 '0')
+    Hex.toString value |> String.toUpper |> String.padLeft 2 '0'
 
 
 
