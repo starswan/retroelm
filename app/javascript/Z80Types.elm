@@ -8,6 +8,7 @@ import Z80Flags exposing (FlagRegisters)
 import Z80Ram exposing (Z80Ram)
 import Z80Rom exposing (Z80ROM)
 
+
 type alias MainRegisters =
     { b : Int
     , c : Int
@@ -46,6 +47,7 @@ type alias Z80 =
     , alt_main : MainRegisters
     , alt_flags : FlagRegisters
     , interrupts : InterruptRegisters
+
     --, time_limit : Int
     }
 
@@ -142,8 +144,6 @@ imm16 rom48k z80 =
 --		int a = MP = imm16();
 --		if(y) PC = a;
 --	}
-
-
 --jp_z80 : Bool -> Z80ROM -> Z80 -> Z80
 --jp_z80 y rom48k z80 =
 --    let
@@ -161,16 +161,11 @@ imm16 rom48k z80 =
 --
 --    else
 --        z80_1
-
-
-
 --	private void call(boolean y)
 --	{
 --		int a = MP = imm16();
 --		if(y) {push(PC); PC = a;}
 --	}
-
-
 --call_if : Bool -> Z80ROM -> Z80 -> Z80EnvWithPC
 --call_if y rom48k z80 =
 --    let
@@ -198,8 +193,6 @@ imm16 rom48k z80 =
 --
 --    else
 --        Z80EnvWithPC new_env a.pc
-
-
 --rst_z80 : Int -> Z80 -> Z80
 --rst_z80 c z80 =
 --    --z80 |> push z80.pc |> set_pc (c - 199)
@@ -208,8 +201,6 @@ imm16 rom48k z80 =
 --            z80.env |> z80_push z80.pc
 --    in
 --    { z80 | env = pushed, pc = c - 199 }
-
-
 --rst : Int -> Z80 -> Z80EnvWithPC
 --rst c z80 =
 --    --z80 |> push z80.pc |> set_pc (c - 199)
@@ -280,6 +271,7 @@ hl_deref_with_z80 ixiyhl rom48k z80 =
     in
     CpuTimePcAndValue new_b.time a.pc new_b.value
 
+
 hl_deref_with_z80_ixiy : IXIY -> Z80ROM -> Z80 -> CpuTimePcAndValue
 hl_deref_with_z80_ixiy ixiyhl rom48k z80 =
     let
@@ -337,6 +329,7 @@ set_l value ixiyhl z80 =
             get_xy ixiyhl z80
     in
     set_xy (Bitwise.or (Bitwise.and xy 0xFF00) value) ixiyhl z80
+
 
 set_l_ixiy : Int -> IXIY -> MainWithIndexRegisters -> MainWithIndexRegisters
 set_l_ixiy value ixiyhl z80 =
@@ -430,6 +423,7 @@ env_mem_hl ixiyhl rom48k z80 =
             in
             CpuTimePcAndValue (dval.time |> addCpuTimeTime 8) (char (z80.pc + 1)) (char (z80.main.iy + byte dval.value))
 
+
 env_mem_hl_ixiy : IXIY -> Z80ROM -> Z80 -> CpuTimePcAndValue
 env_mem_hl_ixiy ixiyhl rom48k z80 =
     case ixiyhl of
@@ -458,12 +452,10 @@ get_de z80 =
     z80.d |> shiftLeftBy8 |> Bitwise.or z80.e
 
 
+
 --dec_pc2 : Z80 -> Z80
 --dec_pc2 z80 =
 --    { z80 | pc = Bitwise.and (z80.pc - 2) 0xFFFF }
-
-
-
 --	void bc(int v) {C=v&0xFF; B=v>>>8;}
 
 
@@ -506,8 +498,6 @@ set_de_main v z80_main =
 --		byte d = (byte)env.mem(pc); time += 8;
 --		MP = PC = (char)(pc+d+1);
 --	}
-
-
 --jr : Z80ROM -> Z80 -> CpuTimeAndPc
 --jr rom48k z80 =
 --    let
@@ -559,8 +549,6 @@ set_iff value z80 =
 
 
 --	int af() {return A<<8 | flags();}
-
-
 --get_af_z80 : Z80 -> Int
 --get_af_z80 z80 =
 --    z80.flags |> get_af
@@ -620,5 +608,3 @@ set408bit c value ixiyhl z80 =
                     z80.flags
             in
             { z80 | flags = { z80_flags | a = value } }
-
-
