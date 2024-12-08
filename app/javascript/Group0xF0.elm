@@ -2,7 +2,6 @@ module Group0xF0 exposing (..)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
-import Group0x10 exposing (miniDict10)
 import Group0x20 exposing (delta_dict_20, miniDict20)
 import Group0x30 exposing (delta_dict_30, miniDict30)
 import Group0x40 exposing (miniDict40)
@@ -72,7 +71,6 @@ xYDict : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
 xYDict =
     miniDict40
         |> Dict.union miniDict20
-        |> Dict.union miniDict10
         |> Dict.union miniDict50
         |> Dict.union miniDict60
         |> Dict.union miniDict70
