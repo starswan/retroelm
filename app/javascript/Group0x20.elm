@@ -33,30 +33,6 @@ delta_dict_20 =
         ]
 
 
-delta_dict_lite_20 : Dict Int (Z80ROM -> Z80 -> Z80Delta)
-delta_dict_lite_20 =
-    Dict.fromList
-        [ ( 0x22, ld_nn_indirect_hl ) -- needs triple with env and main
-        ]
-
-
-ld_nn_indirect_hl : Z80ROM -> Z80 -> Z80Delta
-ld_nn_indirect_hl rom48k z80 =
-    -- oops we seem to have forgotten the IX IY version of this
-    -- case 0x22: MP=(v=imm16())+1; env.mem16(v,HL); time+=6; break;
-    -- case 0x22: MP=(v=imm16())+1; env.mem16(v,xy); time+=6; break;
-    let
-        v =
-            z80 |> imm16 rom48k
-
-        --new_z80 = { z80 | pc = v.pc }
-        --env =
-        --    z80.env |> set_mem16 v.value z80.main.hl |> add_cpu_time_env 6
-        --x = debug_log "LD nn, HL" ((z80.pc |> toHexString) ++ " addr " ++ (v.value |> toHexString) ++ " " ++ (new_z80.main.hl |> toHexString)) env
-    in
-    SetMem16WithTimeAndPc v.value z80.main.hl 6 v.pc
-
-
 inc_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
 inc_hl ixiyhl rom48k z80 =
     -- case 0x23: HL=(char)(HL+1); time+=2; break;
