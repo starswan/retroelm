@@ -14,8 +14,7 @@ import Z80Types exposing (IXIY, IXIYHL, Z80, get_xy_ixiy, imm16, imm8, set_xy, s
 miniDict20 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
 miniDict20 =
     Dict.fromList
-        [ ( 0x23, inc_hl )
-        , ( 0x24, inc_h )
+        [ ( 0x24, inc_h )
         , ( 0x25, dec_h )
         , ( 0x26, ld_h_n )
         , ( 0x29, add_hl_hl )
@@ -31,25 +30,6 @@ delta_dict_20 =
     Dict.fromList
         [ ( 0x2A, ld_hl_indirect_nn ) -- needs triple with env
         ]
-
-
-inc_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
-inc_hl ixiyhl rom48k z80 =
-    -- case 0x23: HL=(char)(HL+1); time+=2; break;
-    -- case 0x23: xy=(char)(xy+1); time+=2; break;
-    let
-        xy =
-            z80.main |> get_xy_ixiy ixiyhl
-
-        --x = if z80.pc /= 0x11E7 then
-        --        debug_log "INC HL" (z80.pc |> toHexString) Nothing
-        --    else
-        --        Nothing
-        main =
-            z80.main |> set_xy_ixiy (char (xy + 1)) ixiyhl
-    in
-    --{ z80 | main = main } |> add_cpu_time 2
-    MainRegsWithPcAndCpuTime main z80.pc (z80.env.time |> addCpuTimeTime 2)
 
 
 inc_h : IXIY -> Z80ROM -> Z80 -> Z80Delta
@@ -136,7 +116,6 @@ add_hl_hl ixiyhl rom48k z80 =
     in
     --{ z80 | main = new_z80, flags = new_xy.flags } |> add_cpu_time new_xy.time
     FlagsWithPCMainAndTime new_xy.flags z80.pc new_z80 new_xy.time
-
 
 
 ld_hl_indirect_nn : IXIYHL -> Z80ROM -> Z80 -> Z80Delta

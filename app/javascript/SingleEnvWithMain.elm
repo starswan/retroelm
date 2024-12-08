@@ -200,7 +200,6 @@ ld_b_indirect_hl z80_main rom48k z80_env =
             mem z80_main.hl z80_env.time rom48k z80_env.ram
     in
     --{ z80 | pc = value.pc, env = value.env } |> set_b value.value
-    --MainRegsWithPcAndCpuTime { main | b = value.value } value.pc value.time
     SingleEnvNewBRegister value.value (value.time |> addCpuTimeTime 3)
 
 

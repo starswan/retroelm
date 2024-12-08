@@ -15,6 +15,8 @@ type RegisterChange
     | ChangeRegisterEWithTime Int CpuTimeIncrement
     | ChangeRegisterE Int
     | ChangeRegisterHL Int CpuTimeIncrement
+    | ChangeRegisterIX Int CpuTimeIncrement
+    | ChangeRegisterIY Int CpuTimeIncrement
     | ChangeRegisterD Int
     | ChangeRegisterA Int
     | ChangeRegisterC Int
@@ -75,6 +77,12 @@ applyRegisterChange change z80_flags main =
         ChangeRegisterHL int time ->
             MainRegsWithTimeApplied { main | hl = int } time
 
+        ChangeRegisterIX int cpuTimeIncrement ->
+            MainRegsWithTimeApplied { main | ix = int } cpuTimeIncrement
+
+        ChangeRegisterIY int cpuTimeIncrement ->
+            MainRegsWithTimeApplied { main | iy = int } cpuTimeIncrement
+
         ChangeRegisterB int ->
             MainRegsApplied { main | b = int }
 
@@ -134,7 +142,9 @@ applyRegisterChange change z80_flags main =
 
         Shifter5 int cpuTimeIncrement ->
             Shifter5Applied int cpuTimeIncrement
+
         Shifter6 int cpuTimeIncrement ->
             Shifter6Applied int cpuTimeIncrement
+
         Shifter7 int cpuTimeIncrement ->
             Shifter7Applied int cpuTimeIncrement
