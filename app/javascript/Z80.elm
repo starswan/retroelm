@@ -370,40 +370,40 @@ execute_delta rom48k tmp_z80 =
       ct = tmp_z80.env |> m1 tmp_z80.pc (Bitwise.or interrupts.ir (Bitwise.and interrupts.r 0x7F)) rom48k
 
       -- CB is just another lookup (hopefully) as they are all quite different
-      (instrCode, instrTime) = case ct.value of
+      (instrCode, instrTime, paramOffset) = case ct.value of
                                     0xCB ->
                                         let
                                             param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ct.time rom48k tmp_z80.env.ram
                                         in
-                                            (Bitwise.or 0xCB00 param.value, param.time)
+                                            (Bitwise.or 0xCB00 param.value, param.time, 1)
                                     0xDD ->
                                         let
                                             param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ct.time rom48k tmp_z80.env.ram
                                         in
-                                            (Bitwise.or 0xDD00 param.value, param.time)
+                                            (Bitwise.or 0xDD00 param.value, param.time, 2)
                                     0xFD ->
                                         let
                                             param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ct.time rom48k tmp_z80.env.ram
                                         in
-                                            (Bitwise.or 0xFD00 param.value, param.time)
+                                            (Bitwise.or 0xFD00 param.value, param.time, 2)
                                     _ ->
-                                        (ct.value,ct.time)
+                                        (ct.value,ct.time, 1)
    in
    case triple16WithFlags |> Dict.get instrCode of
        Just f ->
          let
-            doubleParam = tmp_z80.env |> mem16 (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) rom48k
+            doubleParam = tmp_z80.env |> mem16 (Bitwise.and (tmp_z80.pc + paramOffset) 0xFFFF) rom48k
          in
            -- duplicate of code in imm16 - add 6 to the cpu_time
            TripleFlagDelta (doubleParam.time |> addCpuTimeTime 6) (f doubleParam.value tmp_z80.flags)
        Nothing ->
            case tripleByteWith16BitParam |> Dict.get instrCode of
-              Just f ->
+              Just (f, pcInc) ->
                  let
-                    doubleParam = tmp_z80.env |> mem16 (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) rom48k
+                    doubleParam = tmp_z80.env |> mem16 (Bitwise.and (tmp_z80.pc + paramOffset) 0xFFFF) rom48k
                  in
                    -- duplicate of code in imm16 - add 6 to the cpu_time
-                   TripleChangeDelta (doubleParam.time |> addCpuTimeTime 6) (f doubleParam.value)
+                   TripleChangeDelta pcInc (doubleParam.time |> addCpuTimeTime 6) (f doubleParam.value)
               Nothing ->
                 case maybeRelativeJump |> Dict.get instrCode of
                    Just f ->

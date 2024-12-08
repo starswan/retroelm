@@ -2,7 +2,7 @@ module Z80Execute exposing (..)
 
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeIncrement(..), addCpuTimeTime, addCpuTimeTimeInc, cpuTimeIncrement4)
-import PCIncrement exposing (PCIncrement(..))
+import PCIncrement exposing (PCIncrement(..), TriplePCIncrement(..))
 import RegisterChange exposing (RegisterChange, RegisterChangeApplied(..), applyRegisterChange)
 import SingleByteWithEnv exposing (SingleByteEnvChange(..), applyEnvChangeDelta)
 import SingleEnvWithMain exposing (SingleEnvMainChange, applySingleEnvMainChange)
@@ -28,7 +28,7 @@ type DeltaWithChanges
     | DoubleWithRegistersDelta CpuTimeCTime DoubleWithRegisterChange
     | JumpChangeDelta CpuTimeCTime JumpChange
     | NoParamsDelta CpuTimeCTime NoParamChange
-    | TripleChangeDelta CpuTimeCTime TripleByteChange
+    | TripleChangeDelta TriplePCIncrement CpuTimeCTime TripleByteChange
     | SingleEnvDelta CpuTimeCTime SingleByteEnvChange
     | TripleFlagDelta CpuTimeCTime TripleWithFlagsChange
     | MainWithEnvDelta PCIncrement SingleEnvMainChange
@@ -61,8 +61,8 @@ apply_delta z80 rom48k z80delta =
         NoParamsDelta cpuTimeCTime noParamChange ->
             z80 |> applyNoParamsDelta cpuTimeCTime noParamChange rom48k
 
-        TripleChangeDelta cpuTimeCTime tripleByteChange ->
-            z80 |> applyTripleChangeDelta cpuTimeCTime tripleByteChange
+        TripleChangeDelta pcIncrement cpuTimeCTime tripleByteChange ->
+            z80 |> applyTripleChangeDelta pcIncrement cpuTimeCTime tripleByteChange
 
         SingleEnvDelta cpuTimeCTime singleByteEnvChange ->
             z80 |> applyEnvChangeDelta cpuTimeCTime singleByteEnvChange
@@ -434,14 +434,21 @@ applyShifter new_pc shifterFunc addr cpuTimeIncrement cpu_time rom48k z80 =
     { z80 | pc = new_pc, env = env_2, interrupts = { interrupts | r = interrupts.r + 1 } }
 
 
-applyTripleChangeDelta : CpuTimeCTime -> TripleByteChange -> Z80 -> Z80
-applyTripleChangeDelta cpu_time z80changeData z80 =
+applyTripleChangeDelta : TriplePCIncrement -> CpuTimeCTime -> TripleByteChange -> Z80 -> Z80
+applyTripleChangeDelta pc_increment cpu_time z80changeData z80 =
     let
         interrupts =
             z80.interrupts
 
-        new_pc =
-            Bitwise.and (z80.pc + 3) 0xFFFF
+        new_pc = case pc_increment of
+
+            IncrementByThree ->
+                Bitwise.and (z80.pc + 3) 0xFFFF
+
+
+            IncrementByFour ->
+                Bitwise.and (z80.pc + 4) 0xFFFF
+
 
         env =
             z80.env
@@ -491,6 +498,31 @@ applyTripleChangeDelta cpu_time z80changeData z80 =
 
         CallImmediate int ->
             z80 |> z80_call int cpu_time
+
+        NewIXRegister int ->
+            let
+                main =
+                    z80.main
+            in
+            { z80
+                | main = { main | ix = int }
+                , pc = new_pc
+                , env = { env | time = cpu_time |> addCpuTimeTimeInc cpuTimeIncrement4 }
+                , interrupts = { interrupts | r = interrupts.r + 1 }
+            }
+
+        NewIYRegister int ->
+            let
+                main =
+                    z80.main
+            in
+            { z80
+                | main = { main | iy = int }
+                , pc = new_pc
+                , env = { env | time = cpu_time |> addCpuTimeTimeInc cpuTimeIncrement4 }
+                , interrupts = { interrupts | r = interrupts.r + 1 }
+            }
+
 
 
 z80_call : Int -> CpuTimeCTime -> Z80 -> Z80

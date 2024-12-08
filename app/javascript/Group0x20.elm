@@ -14,15 +14,14 @@ import Z80Types exposing (IXIY, IXIYHL, Z80, get_xy_ixiy, imm16, imm8, set_xy, s
 miniDict20 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
 miniDict20 =
     Dict.fromList
-        [ ( 0x21, ld_hl_nn )
-        , ( 0x23, execute_0x23 )
-        , ( 0x24, execute_0x24 )
-        , ( 0x25, execute_0x25 )
+        [ ( 0x23, inc_hl )
+        , ( 0x24, inc_h )
+        , ( 0x25, dec_h )
         , ( 0x26, ld_h_n )
         , ( 0x29, add_hl_hl )
-        , ( 0x2B, execute_0x2B )
-        , ( 0x2C, execute_0x2C )
-        , ( 0x2D, execute_0x2D )
+        , ( 0x2B, dec_hl )
+        , ( 0x2C, inc_l )
+        , ( 0x2D, dec_l )
         , ( 0x2E, ld_l_n )
         ]
 
@@ -39,23 +38,6 @@ delta_dict_lite_20 =
     Dict.fromList
         [ ( 0x22, ld_nn_indirect_hl ) -- needs triple with env and main
         ]
-
-
-ld_hl_nn : IXIY -> Z80ROM -> Z80 -> Z80Delta
-ld_hl_nn ixiyhl rom48k z80 =
-    -- case 0x21: HL=imm16(); break;
-    -- case 0x21: xy=imm16(); break;
-    let
-        new_xy =
-            z80 |> imm16 rom48k
-
-        --z80_1 = { z80 | env = new_xy.env, pc = new_xy.pc }
-        --x = debug_log ("LD " ++ (ixiyhl |> toString) ++ "," ++ (new_xy.value |> toHexString)) ("pc = " ++ (z80.pc |> toHexString)) Nothing
-        main =
-            z80.main |> set_xy_ixiy new_xy.value ixiyhl
-    in
-    --{ z80_1 | main = main }
-    MainRegsWithPcAndCpuTime main new_xy.pc new_xy.time
 
 
 ld_nn_indirect_hl : Z80ROM -> Z80 -> Z80Delta
@@ -75,8 +57,8 @@ ld_nn_indirect_hl rom48k z80 =
     SetMem16WithTimeAndPc v.value z80.main.hl 6 v.pc
 
 
-execute_0x23 : IXIY -> Z80ROM -> Z80 -> Z80Delta
-execute_0x23 ixiyhl rom48k z80 =
+inc_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
+inc_hl ixiyhl rom48k z80 =
     -- case 0x23: HL=(char)(HL+1); time+=2; break;
     -- case 0x23: xy=(char)(xy+1); time+=2; break;
     let
@@ -94,8 +76,8 @@ execute_0x23 ixiyhl rom48k z80 =
     MainRegsWithPcAndCpuTime main z80.pc (z80.env.time |> addCpuTimeTime 2)
 
 
-execute_0x24 : IXIY -> Z80ROM -> Z80 -> Z80Delta
-execute_0x24 ixiyhl rom48k z80 =
+inc_h : IXIY -> Z80ROM -> Z80 -> Z80Delta
+inc_h ixiyhl rom48k z80 =
     -- case 0x24: HL=HL&0xFF|inc(HL>>>8)<<8; break;
     -- case 0x24: xy=xy&0xFF|inc(xy>>>8)<<8; break;
     let
@@ -116,8 +98,8 @@ execute_0x24 ixiyhl rom48k z80 =
     FlagsWithPCMainAndTime value.flags z80.pc main increment0
 
 
-execute_0x25 : IXIY -> Z80ROM -> Z80 -> Z80Delta
-execute_0x25 ixiyhl rom48k z80 =
+dec_h : IXIY -> Z80ROM -> Z80 -> Z80Delta
+dec_h ixiyhl rom48k z80 =
     -- case 0x25: HL=HL&0xFF|dec(HL>>>8)<<8; break;
     -- case 0x25: xy=xy&0xFF|dec(xy>>>8)<<8; break;
     let
@@ -201,8 +183,8 @@ ld_hl_indirect_nn ixiyhl rom48k z80 =
     MainRegsWithPcAndCpuTime main v.pc (new_xy.time |> addCpuTimeTime 6)
 
 
-execute_0x2B : IXIY -> Z80ROM -> Z80 -> Z80Delta
-execute_0x2B ixiyhl rom48k z80 =
+dec_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
+dec_hl ixiyhl rom48k z80 =
     -- case 0x2B: HL=(char)(HL-1); time+=2; break;
     -- case 0x2B: xy=(char)(xy-1); time+=2; break;
     -- The HL version of this is now in SimpleSingleByte
@@ -220,8 +202,8 @@ execute_0x2B ixiyhl rom48k z80 =
     MainRegsWithPcAndCpuTime new_z80 z80.pc (z80.env.time |> addCpuTimeTime 2)
 
 
-execute_0x2C : IXIY -> Z80ROM -> Z80 -> Z80Delta
-execute_0x2C ixiyhl rom48k z80 =
+inc_l : IXIY -> Z80ROM -> Z80 -> Z80Delta
+inc_l ixiyhl rom48k z80 =
     -- case 0x2C: HL=HL&0xFF00|inc(HL&0xFF); break;
     -- case 0x2C: xy=xy&0xFF00|inc(xy&0xFF); break;
     -- The HL version of this is now in SimpleSingleByte
@@ -249,8 +231,8 @@ execute_0x2C ixiyhl rom48k z80 =
     FlagsWithPCMainAndTime l.flags z80.pc main increment0
 
 
-execute_0x2D : IXIY -> Z80ROM -> Z80 -> Z80Delta
-execute_0x2D ixiyhl rom48k z80 =
+dec_l : IXIY -> Z80ROM -> Z80 -> Z80Delta
+dec_l ixiyhl rom48k z80 =
     -- case 0x2D: HL=HL&0xFF00|dec(HL&0xFF); break;
     -- case 0x2D: xy=xy&0xFF00|dec(xy&0xFF); break;
     -- The HL version of this is now in SimpleSingleByte
