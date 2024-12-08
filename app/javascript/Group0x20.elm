@@ -14,8 +14,7 @@ import Z80Types exposing (IXIY, IXIYHL, Z80, get_xy_ixiy, imm16, imm8, set_xy, s
 miniDict20 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
 miniDict20 =
     Dict.fromList
-        [ ( 0x24, inc_h )
-        , ( 0x25, dec_h )
+        [  ( 0x25, dec_h )
         , ( 0x26, ld_h_n )
         , ( 0x29, add_hl_hl )
         , ( 0x2B, dec_hl )
@@ -30,28 +29,6 @@ delta_dict_20 =
     Dict.fromList
         [ ( 0x2A, ld_hl_indirect_nn ) -- needs triple with env
         ]
-
-
-inc_h : IXIY -> Z80ROM -> Z80 -> Z80Delta
-inc_h ixiyhl rom48k z80 =
-    -- case 0x24: HL=HL&0xFF|inc(HL>>>8)<<8; break;
-    -- case 0x24: xy=xy&0xFF|inc(xy>>>8)<<8; break;
-    let
-        xy =
-            get_xy_ixiy ixiyhl z80.main
-
-        value =
-            inc (shiftRightBy8 xy) z80.flags
-
-        --z80_1 = { z80 | flags = value.flags }
-        new_xy =
-            Bitwise.or (Bitwise.and xy 0xFF) (shiftLeftBy8 value.value)
-
-        main =
-            set_xy_ixiy new_xy ixiyhl z80.main
-    in
-    --{ z80_1 | main = main }
-    FlagsWithPCMainAndTime value.flags z80.pc main increment0
 
 
 dec_h : IXIY -> Z80ROM -> Z80 -> Z80Delta

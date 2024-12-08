@@ -138,20 +138,17 @@ dec_de z80_main =
 inc_hl : MainWithIndexRegisters -> RegisterChange
 inc_hl z80_main =
     -- case 0x23: HL=(char)(HL+1); time+=2; break;
-    -- case 0x23: xy=(char)(xy+1); time+=2; break;
     ChangeRegisterHL (Bitwise.and (z80_main.hl + 1) 0xFFFF) (CpuTimeIncrement 2)
 
 
 inc_ix : MainWithIndexRegisters -> RegisterChange
 inc_ix z80_main =
-    -- case 0x23: HL=(char)(HL+1); time+=2; break;
     -- case 0x23: xy=(char)(xy+1); time+=2; break;
     ChangeRegisterIX (Bitwise.and (z80_main.ix + 1) 0xFFFF) (CpuTimeIncrement 2)
 
 
 inc_iy : MainWithIndexRegisters -> RegisterChange
 inc_iy z80_main =
-    -- case 0x23: HL=(char)(HL+1); time+=2; break;
     -- case 0x23: xy=(char)(xy+1); time+=2; break;
     ChangeRegisterIY (Bitwise.and (z80_main.iy + 1) 0xFFFF) (CpuTimeIncrement 2)
 
