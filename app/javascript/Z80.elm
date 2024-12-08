@@ -370,13 +370,24 @@ execute_delta rom48k tmp_z80 =
       ct = tmp_z80.env |> m1 tmp_z80.pc (Bitwise.or interrupts.ir (Bitwise.and interrupts.r 0x7F)) rom48k
 
       -- CB is just another lookup (hopefully) as they are all quite different
-      (instrCode, instrTime) = if ct.value == 0xCB then
-                                   let
-                                      param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ct.time rom48k tmp_z80.env.ram
-                                   in
-                                      (Bitwise.or 0xCB00 param.value, param.time)
-                                 else
-                                    (ct.value,ct.time)
+      (instrCode, instrTime) = case ct.value of
+                                    0xCB ->
+                                        let
+                                            param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ct.time rom48k tmp_z80.env.ram
+                                        in
+                                            (Bitwise.or 0xCB00 param.value, param.time)
+                                    0xDD ->
+                                        let
+                                            param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ct.time rom48k tmp_z80.env.ram
+                                        in
+                                            (Bitwise.or 0xDD00 param.value, param.time)
+                                    0xFD ->
+                                        let
+                                            param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ct.time rom48k tmp_z80.env.ram
+                                        in
+                                            (Bitwise.or 0xFD00 param.value, param.time)
+                                    _ ->
+                                        (ct.value,ct.time)
    in
    case triple16WithFlags |> Dict.get instrCode of
        Just f ->

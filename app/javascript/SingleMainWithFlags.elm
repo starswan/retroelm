@@ -17,6 +17,8 @@ singleByteMainAndFlagRegisters =
         , ( 0x04, ( inc_b, IncrementByOne ) )
         , ( 0x05, ( dec_b, IncrementByOne ) )
         , ( 0x09, ( add_hl_bc, IncrementByOne ) )
+        , ( 0xDD09, ( add_ix_bc, IncrementByTwo ) )
+        , ( 0xFD09, ( add_iy_bc, IncrementByTwo ) )
         , ( 0x0C, ( inc_c, IncrementByOne ) )
         , ( 0x0D, ( dec_c, IncrementByOne ) )
         , ( 0x12, ( ld_indirect_de_a, IncrementByOne ) )
@@ -322,6 +324,33 @@ add_hl_bc z80_main z80_flags =
             add16 xy (get_bc z80_main) z80_flags
     in
     FlagsWithHLRegister new_xy.flags new_xy.value new_xy.time
+
+
+add_ix_bc : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+add_ix_bc z80_main z80_flags =
+    --case 0x09: HL=add16(HL,B<<8|C); break;
+    --case 0x09: xy=add16(xy,B<<8|C); break;
+    let
+        xy =
+            z80_main.ix
+
+        new_xy =
+            add16 xy (get_bc z80_main) z80_flags
+    in
+    FlagsWithIXRegister new_xy.flags new_xy.value new_xy.time
+
+add_iy_bc : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+add_iy_bc z80_main z80_flags =
+    --case 0x09: HL=add16(HL,B<<8|C); break;
+    --case 0x09: xy=add16(xy,B<<8|C); break;
+    let
+        xy =
+            z80_main.iy
+
+        new_xy =
+            add16 xy (get_bc z80_main) z80_flags
+    in
+    FlagsWithIYRegister new_xy.flags new_xy.value new_xy.time
 
 
 add_a_b : MainWithIndexRegisters -> FlagRegisters -> Z80Change
