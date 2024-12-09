@@ -170,6 +170,17 @@ suite =
                                 }
                     in
                     Expect.equal ( addr + 2, 0x3445, 0x0107 ) ( z80_after_01.pc, z80_after_01.main.hl, z80_after_01.main.ix )
+            , test "0xFD 0x09 ADD IY, BC" <|
+                \_ ->
+                    let
+                        z80_after_01 =
+                            execute_instruction z80rom
+                                { z80
+                                    | env = z80env |> setMem addr 0xFD |> setMem (addr + 1) 0x09
+                                    , main = { z80main | iy = 0x05, b = 0x01, c = 0x02, hl = 0x3445 }
+                                }
+                    in
+                    Expect.equal ( addr + 2, 0x3445, 0x0107 ) ( z80_after_01.pc, z80_after_01.main.hl, z80_after_01.main.iy )
             ]
         , describe "LD A, (16 bit)"
             [ test "0x0A - LD A,(BC)" <|

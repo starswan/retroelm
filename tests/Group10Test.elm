@@ -60,6 +60,17 @@ suite =
                                 }
                     in
                     Expect.equal ( addr + 1, 0x4668 ) ( z80_after_01.pc, z80_after_01.main.hl )
+            , test "0xDD 0x19 ADD IX, DE" <|
+                \_ ->
+                    let
+                        z80_after_01 =
+                            execute_instruction z80rom
+                                { z80
+                                    | env = z80env |> setMem addr 0xDD |> setMem (addr + 1) 0x19
+                                    , main = { z80main | ix = 0x05, d = 0x01, e = 0x02, hl = 0x3445 }
+                                }
+                    in
+                    Expect.equal ( addr + 2, 0x3445, 0x0107 ) ( z80_after_01.pc, z80_after_01.main.hl, z80_after_01.main.ix )
             , test "0xFD 0x19 ADD IY, DE" <|
                 \_ ->
                     let
