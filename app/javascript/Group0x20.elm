@@ -3,12 +3,11 @@ module Group0x20 exposing (..)
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeAndPc, addCpuTimeTime, increment0)
 import Dict exposing (Dict)
-import Utils exposing (shiftLeftBy8)
 import Z80Delta exposing (Z80Delta(..))
-import Z80Env exposing (mem16)
-import Z80Flags exposing (add16, dec, inc)
+import Z80Env
+import Z80Flags exposing (dec, inc)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIY, IXIYHL, Z80, get_xy_ixiy, imm16, imm8, set_xy, set_xy_ixiy)
+import Z80Types exposing (IXIY, IXIYHL, Z80, get_xy_ixiy, imm8, set_xy_ixiy)
 
 
 miniDict20 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
@@ -19,33 +18,6 @@ miniDict20 =
         , ( 0x2D, dec_l )
         , ( 0x2E, ld_l_n )
         ]
-
-
-delta_dict_20 : Dict Int (IXIYHL -> Z80ROM -> Z80 -> Z80Delta)
-delta_dict_20 =
-    Dict.fromList
-        [ ( 0x2A, ld_hl_indirect_nn ) -- needs triple with env
-        ]
-
-
-ld_hl_indirect_nn : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
-ld_hl_indirect_nn ixiyhl rom48k z80 =
-    -- case 0x2A: MP=(v=imm16())+1; HL=env.mem16(v); time+=6; break;
-    -- case 0x2A: MP=(v=imm16())+1; xy=env.mem16(v); time+=6; break;
-    let
-        v =
-            z80 |> imm16 rom48k
-
-        --z80_1 = { z80 | pc = v.pc }
-        new_xy =
-            z80.env |> mem16 v.value rom48k
-
-        --z80_2 = { z80_1 | env = new_xy.env }
-        main =
-            z80.main |> set_xy new_xy.value ixiyhl
-    in
-    --{ z80_2 | main = main } |> add_cpu_time 6
-    MainRegsWithPcAndCpuTime main v.pc (new_xy.time |> addCpuTimeTime 6)
 
 
 dec_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta

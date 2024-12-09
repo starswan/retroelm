@@ -2,7 +2,7 @@ module Group0xF0 exposing (..)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
-import Group0x20 exposing (delta_dict_20, miniDict20)
+import Group0x20 exposing (miniDict20)
 import Group0x30 exposing (delta_dict_30, miniDict30)
 import Group0x40 exposing (miniDict40)
 import Group0x50 exposing (miniDict50)
@@ -47,7 +47,6 @@ lt40_delta_dict =
     delta_dict_80
         |> Dict.union delta_dict_90
         |> Dict.union delta_dict_A0
-        |> Dict.union delta_dict_20
         |> Dict.union delta_dict_30
         |> Dict.union delta_dict_B0
         |> Dict.union delta_dict_C0
