@@ -20,6 +20,8 @@ singleByteMainRegs =
         , ( 0xDD23, ( inc_ix, IncrementByTwo ) )
         , ( 0xFD23, ( inc_iy, IncrementByTwo ) )
         , ( 0x2B, ( dec_hl, IncrementByOne ) )
+        , ( 0xDD2B, ( dec_ix, IncrementByTwo ) )
+        , ( 0xFD2B, ( dec_iy, IncrementByTwo ) )
         , ( 0x34, ( inc_indirect_hl, IncrementByOne ) )
         , ( 0x35, ( dec_indirect_hl, IncrementByOne ) )
         , ( 0x41, ( ld_b_c, IncrementByOne ) )
@@ -156,12 +158,31 @@ inc_iy z80_main =
 dec_hl : MainWithIndexRegisters -> RegisterChange
 dec_hl z80_main =
     -- case 0x2B: HL=(char)(HL-1); time+=2; break;
-    -- case 0x2B: xy=(char)(xy-1); time+=2; break;
     let
         new_xy =
             Bitwise.and (z80_main.hl - 1) 0xFFFF
     in
     ChangeRegisterHL new_xy (CpuTimeIncrement 2)
+
+
+dec_ix : MainWithIndexRegisters -> RegisterChange
+dec_ix z80_main =
+    -- case 0x2B: xy=(char)(xy-1); time+=2; break;
+    let
+        new_xy =
+            Bitwise.and (z80_main.ix - 1) 0xFFFF
+    in
+    ChangeRegisterIX new_xy (CpuTimeIncrement 2)
+
+
+dec_iy : MainWithIndexRegisters -> RegisterChange
+dec_iy z80_main =
+    -- case 0x2B: xy=(char)(xy-1); time+=2; break;
+    let
+        new_xy =
+            Bitwise.and (z80_main.iy - 1) 0xFFFF
+    in
+    ChangeRegisterIY new_xy (CpuTimeIncrement 2)
 
 
 ld_b_c : MainWithIndexRegisters -> RegisterChange

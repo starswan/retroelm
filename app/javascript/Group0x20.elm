@@ -4,7 +4,6 @@ import Bitwise
 import CpuTimeCTime exposing (CpuTimeAndPc, addCpuTimeTime, increment0)
 import Dict exposing (Dict)
 import Z80Delta exposing (Z80Delta(..))
-import Z80Env
 import Z80Flags exposing (dec, inc)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIY, IXIYHL, Z80, get_xy_ixiy, imm8, set_xy_ixiy)
@@ -13,30 +12,10 @@ import Z80Types exposing (IXIY, IXIYHL, Z80, get_xy_ixiy, imm8, set_xy_ixiy)
 miniDict20 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
 miniDict20 =
     Dict.fromList
-        [ ( 0x2B, dec_hl )
-        , ( 0x2C, inc_l )
+        [ ( 0x2C, inc_l )
         , ( 0x2D, dec_l )
         , ( 0x2E, ld_l_n )
         ]
-
-
-dec_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
-dec_hl ixiyhl rom48k z80 =
-    -- case 0x2B: HL=(char)(HL-1); time+=2; break;
-    -- case 0x2B: xy=(char)(xy-1); time+=2; break;
-    -- The HL version of this is now in SimpleSingleByte
-    let
-        xy =
-            get_xy_ixiy ixiyhl z80.main
-
-        new_xy =
-            Bitwise.and (xy - 1) 0xFFFF
-
-        new_z80 =
-            set_xy_ixiy new_xy ixiyhl z80.main
-    in
-    --{ z80 | main = new_z80 } |> add_cpu_time 2
-    MainRegsWithPcAndCpuTime new_z80 z80.pc (z80.env.time |> addCpuTimeTime 2)
 
 
 inc_l : IXIY -> Z80ROM -> Z80 -> Z80Delta
