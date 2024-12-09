@@ -12,6 +12,8 @@ type Z80Change
     | FlagsWithDRegister IntWithFlags
     | FlagsWithERegister FlagRegisters Int
     | HLRegister Int
+    | IXRegister Int
+    | IYRegister Int
     | FlagsWithHLRegister FlagRegisters Int CpuTimeIncrement
     | FlagsWithIXRegister FlagRegisters Int CpuTimeIncrement
     | FlagsWithIYRegister FlagRegisters Int CpuTimeIncrement
@@ -71,6 +73,20 @@ applyZ80Change change z80 =
                     z80.main
             in
             { z80 | main = { main | hl = int } }
+
+        IXRegister int ->
+            let
+                main =
+                    z80.main
+            in
+            { z80 | main = { main | ix = int } }
+
+        IYRegister int ->
+            let
+                main =
+                    z80.main
+            in
+            { z80 | main = { main | iy = int } }
 
         FlagsWithHLRegister flagRegisters int time ->
             let
