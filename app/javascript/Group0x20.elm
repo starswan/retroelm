@@ -3,7 +3,7 @@ module Group0x20 exposing (..)
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeAndPc, addCpuTimeTime, increment0)
 import Dict exposing (Dict)
-import Utils exposing (char, shiftLeftBy8, shiftRightBy8)
+import Utils exposing (shiftLeftBy8)
 import Z80Delta exposing (Z80Delta(..))
 import Z80Env exposing (mem16)
 import Z80Flags exposing (add16, dec, inc)
@@ -14,8 +14,7 @@ import Z80Types exposing (IXIY, IXIYHL, Z80, get_xy_ixiy, imm16, imm8, set_xy, s
 miniDict20 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
 miniDict20 =
     Dict.fromList
-        [  ( 0x26, ld_h_n )
-        , ( 0x29, add_hl_hl )
+        [ ( 0x29, add_hl_hl )
         , ( 0x2B, dec_hl )
         , ( 0x2C, inc_l )
         , ( 0x2D, dec_l )

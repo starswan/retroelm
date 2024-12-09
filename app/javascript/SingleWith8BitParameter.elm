@@ -3,20 +3,23 @@ module SingleWith8BitParameter exposing (..)
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeIncrement, increment3)
 import Dict exposing (Dict)
+import PCIncrement exposing (MediumPCIncrement(..), PCIncrement(..))
 import Utils exposing (byte, shiftLeftBy8)
 import Z80Flags exposing (FlagRegisters, adc, sbc, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
 import Z80Types exposing (MainWithIndexRegisters, Z80)
 
 
-singleWith8BitParam : Dict Int (Int -> Single8BitChange)
+singleWith8BitParam : Dict Int ((Int -> Single8BitChange), MediumPCIncrement)
 singleWith8BitParam =
     Dict.fromList
-        [ ( 0x06, ld_b_n )
-        , ( 0x0E, ld_c_n )
-        , ( 0x16, ld_d_n )
-        , ( 0x1E, ld_e_n )
-        , ( 0x26, ld_h_n )
-        , ( 0x2E, ld_l_n )
+        [ ( 0x06, (ld_b_n, IncreaseByTwo) )
+        , ( 0x0E, (ld_c_n, IncreaseByTwo) )
+        , ( 0x16, (ld_d_n, IncreaseByTwo) )
+        , ( 0x1E, (ld_e_n, IncreaseByTwo) )
+        , ( 0x26, (ld_h_n, IncreaseByTwo) )
+        , ( 0xDD26, (ld_ix_h_n, IncreaseByThree) )
+        , ( 0xFD26, (ld_iy_h_n, IncreaseByThree) )
+        , ( 0x2E, (ld_l_n, IncreaseByTwo) )
         ]
 
 
@@ -54,6 +57,8 @@ type Single8BitChange
     | NewDRegister Int
     | NewERegister Int
     | NewHRegister Int
+    | NewIXHRegister Int
+    | NewIYHRegister Int
     | NewLRegister Int
 
 
@@ -85,6 +90,12 @@ applySimple8BitChange change z80_main =
 
         NewHRegister int ->
             { z80_main | hl = Bitwise.or (int |> shiftLeftBy8) (Bitwise.and z80_main.hl 0xFF) }
+
+        NewIXHRegister int ->
+            { z80_main | ix = Bitwise.or (int |> shiftLeftBy8) (Bitwise.and z80_main.ix 0xFF) }
+
+        NewIYHRegister int ->
+            { z80_main | iy = Bitwise.or (int |> shiftLeftBy8) (Bitwise.and z80_main.iy 0xFF) }
 
         NewLRegister int ->
             { z80_main | hl = Bitwise.or int (Bitwise.and z80_main.hl 0xFF00) }
@@ -121,6 +132,20 @@ ld_h_n param =
     -- case 0x26: HL=HL&0xFF|imm8()<<8; break;
     -- case 0x26: xy=xy&0xFF|imm8()<<8; break;
     NewHRegister param
+
+
+ld_ix_h_n : Int -> Single8BitChange
+ld_ix_h_n param =
+    -- case 0x26: HL=HL&0xFF|imm8()<<8; break;
+    -- case 0x26: xy=xy&0xFF|imm8()<<8; break;
+    NewIXHRegister param
+
+
+ld_iy_h_n : Int -> Single8BitChange
+ld_iy_h_n param =
+    -- case 0x26: HL=HL&0xFF|imm8()<<8; break;
+    -- case 0x26: xy=xy&0xFF|imm8()<<8; break;
+    NewIYHRegister param
 
 
 ld_l_n : Int -> Single8BitChange

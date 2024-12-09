@@ -11,6 +11,7 @@ import Group0x30 exposing (delta_dict_lite_30)
 import Group0xE0 exposing (delta_dict_lite_E0)
 import Group0xF0 exposing (list0255, lt40_array, xYDict)
 import Loop
+import PCIncrement exposing (MediumPCIncrement(..))
 import SimpleFlagOps exposing (singleByteFlags)
 import SimpleSingleByte exposing (singleByteMainRegs)
 import SingleByteWithEnv exposing (singleByteZ80Env)
@@ -453,12 +454,18 @@ singleByte ctime instr_code tmp_z80 rom48k =
                            Just (NoParamsDelta ctime f)
                        Nothing ->
                            case singleWith8BitParam |> Dict.get instr_code of
-                               Just f ->
+                               Just (f, pcInc) ->
                                    let
-                                      param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ctime rom48k tmp_z80.env.ram
+                                      param = case pcInc of
+                                          IncreaseByTwo ->
+                                                mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ctime rom48k tmp_z80.env.ram
+
+                                          IncreaseByThree ->
+                                                mem (Bitwise.and (tmp_z80.pc + 2) 0xFFFF) ctime rom48k tmp_z80.env.ram
+
                                    in
                                    -- duplicate of code in imm8 - add 3 to the cpu_time
-                                   Just (Simple8BitDelta (param.time |> addCpuTimeTime 3) (f param.value))
+                                   Just (Simple8BitDelta pcInc (param.time |> addCpuTimeTime 3) (f param.value))
                                Nothing ->
                                    case singleByteMainRegs  |> Dict.get instr_code of
                                         Just (mainRegFunc, t) ->  Just (RegisterChangeDelta t ctime (mainRegFunc tmp_z80.main))

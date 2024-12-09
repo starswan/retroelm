@@ -2,7 +2,7 @@ module Z80Execute exposing (..)
 
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeIncrement(..), addCpuTimeTime, addCpuTimeTimeInc, cpuTimeIncrement4)
-import PCIncrement exposing (PCIncrement(..), TriplePCIncrement(..))
+import PCIncrement exposing (MediumPCIncrement(..), PCIncrement(..), TriplePCIncrement(..))
 import RegisterChange exposing (RegisterChange, RegisterChangeApplied(..), applyRegisterChange)
 import SingleByteWithEnv exposing (SingleByteEnvChange(..), applyEnvChangeDelta)
 import SingleEnvWithMain exposing (SingleEnvMainChange, applySingleEnvMainChange)
@@ -25,7 +25,7 @@ type DeltaWithChanges
     | PureDelta PCIncrement CpuTimeCTime Z80Change
     | FlagDelta PCIncrement CpuTimeCTime FlagChange
     | RegisterChangeDelta PCIncrement CpuTimeCTime RegisterChange
-    | Simple8BitDelta CpuTimeCTime Single8BitChange
+    | Simple8BitDelta MediumPCIncrement CpuTimeCTime Single8BitChange
     | DoubleWithRegistersDelta CpuTimeCTime DoubleWithRegisterChange
     | JumpChangeDelta CpuTimeCTime JumpChange
     | NoParamsDelta CpuTimeCTime NoParamChange
@@ -51,8 +51,8 @@ apply_delta z80 rom48k z80delta =
         RegisterChangeDelta pcInc cpuTimeCTime registerChange ->
             z80 |> applyRegisterDelta pcInc cpuTimeCTime registerChange rom48k
 
-        Simple8BitDelta cpuTimeCTime single8BitChange ->
-            z80 |> applySimple8BitDelta cpuTimeCTime single8BitChange
+        Simple8BitDelta pcInc cpuTimeCTime single8BitChange ->
+            z80 |> applySimple8BitDelta pcInc cpuTimeCTime single8BitChange
 
         DoubleWithRegistersDelta cpuTimeCTime doubleWithRegisterChange ->
             z80 |> applyDoubleWithRegistersDelta cpuTimeCTime doubleWithRegisterChange
@@ -171,8 +171,8 @@ applyDoubleWithRegistersDelta cpu_time z80changeData tmp_z80 =
             }
 
 
-applySimple8BitDelta : CpuTimeCTime -> Single8BitChange -> Z80 -> Z80
-applySimple8BitDelta cpu_time z80changeData tmp_z80 =
+applySimple8BitDelta : MediumPCIncrement -> CpuTimeCTime -> Single8BitChange -> Z80 -> Z80
+applySimple8BitDelta pcInc cpu_time z80changeData tmp_z80 =
     let
         interrupts =
             tmp_z80.interrupts
@@ -184,7 +184,14 @@ applySimple8BitDelta cpu_time z80changeData tmp_z80 =
             { tmp_z80 | env = { env | time = cpu_time }, interrupts = { interrupts | r = interrupts.r + 1 } }
 
         new_pc =
-            Bitwise.and (z80.pc + 2) 0xFFFF
+            case pcInc of
+
+                IncreaseByTwo ->
+                    Bitwise.and (z80.pc + 2) 0xFFFF
+
+
+                IncreaseByThree ->
+                    Bitwise.and (z80.pc + 3) 0xFFFF
 
         main =
             z80.main |> applySimple8BitChange z80changeData
