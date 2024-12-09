@@ -9,17 +9,19 @@ import Z80Flags exposing (FlagRegisters, adc, sbc, z80_add, z80_and, z80_cp, z80
 import Z80Types exposing (MainWithIndexRegisters, Z80)
 
 
-singleWith8BitParam : Dict Int ((Int -> Single8BitChange), MediumPCIncrement)
+singleWith8BitParam : Dict Int ( Int -> Single8BitChange, MediumPCIncrement )
 singleWith8BitParam =
     Dict.fromList
-        [ ( 0x06, (ld_b_n, IncreaseByTwo) )
-        , ( 0x0E, (ld_c_n, IncreaseByTwo) )
-        , ( 0x16, (ld_d_n, IncreaseByTwo) )
-        , ( 0x1E, (ld_e_n, IncreaseByTwo) )
-        , ( 0x26, (ld_h_n, IncreaseByTwo) )
-        , ( 0xDD26, (ld_ix_h_n, IncreaseByThree) )
-        , ( 0xFD26, (ld_iy_h_n, IncreaseByThree) )
-        , ( 0x2E, (ld_l_n, IncreaseByTwo) )
+        [ ( 0x06, ( ld_b_n, IncreaseByTwo ) )
+        , ( 0x0E, ( ld_c_n, IncreaseByTwo ) )
+        , ( 0x16, ( ld_d_n, IncreaseByTwo ) )
+        , ( 0x1E, ( ld_e_n, IncreaseByTwo ) )
+        , ( 0x26, ( ld_h_n, IncreaseByTwo ) )
+        , ( 0xDD26, ( ld_ix_h_n, IncreaseByThree ) )
+        , ( 0xFD26, ( ld_iy_h_n, IncreaseByThree ) )
+        , ( 0x2E, ( ld_l_n, IncreaseByTwo ) )
+        , ( 0xDD2E, ( ld_ix_l_n, IncreaseByThree ) )
+        , ( 0xFD2E, ( ld_iy_l_n, IncreaseByThree ) )
         ]
 
 
@@ -60,6 +62,8 @@ type Single8BitChange
     | NewIXHRegister Int
     | NewIYHRegister Int
     | NewLRegister Int
+    | NewIXLRegister Int
+    | NewIYLRegister Int
 
 
 type DoubleWithRegisterChange
@@ -99,6 +103,12 @@ applySimple8BitChange change z80_main =
 
         NewLRegister int ->
             { z80_main | hl = Bitwise.or int (Bitwise.and z80_main.hl 0xFF00) }
+
+        NewIXLRegister int ->
+            { z80_main | ix = Bitwise.or int (Bitwise.and z80_main.ix 0xFF00) }
+
+        NewIYLRegister int ->
+            { z80_main | iy = Bitwise.or int (Bitwise.and z80_main.iy 0xFF00) }
 
 
 ld_b_n : Int -> Single8BitChange
@@ -152,6 +162,18 @@ ld_l_n : Int -> Single8BitChange
 ld_l_n param =
     -- case 0x2E: HL=HL&0xFF00|imm8(); break;
     NewLRegister param
+
+
+ld_ix_l_n : Int -> Single8BitChange
+ld_ix_l_n param =
+    -- case 0x2E: xy=xy&0xFF00|imm8(); break;
+    NewIXLRegister param
+
+
+ld_iy_l_n : Int -> Single8BitChange
+ld_iy_l_n param =
+    -- case 0x2E: xy=xy&0xFF00|imm8(); break;
+    NewIYLRegister param
 
 
 djnz : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
