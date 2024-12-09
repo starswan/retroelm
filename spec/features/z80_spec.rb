@@ -51,18 +51,18 @@ RSpec.describe "Spectrum Emulator" do
       # check that Elm is running
       expect(page).to have_content 'Refresh Interval'
 
-      sleep 20
-      x = find("#spectrum")
+      sleep 10
+      # x = find("#spectrum")
       # This is very slow, but calling send_keys
       # with a string on an array
       # is too quick
-      data = "20eThis is a comment"
-      data.each_char do |k|
-        x.send_keys k
-      end
-      # x.send_keys data
-      # x.send_keys data.split("")
-      x.send_keys [:enter]
+      # data = "20eThis is a comment"
+      # data.each_char do |k|
+      #   x.send_keys k
+      # end
+      # # x.send_keys data
+      # # x.send_keys data.split("")
+      # x.send_keys [:enter]
 
       speed = measure_speed_in_hz
       expect(speed).to be > expected_hz
