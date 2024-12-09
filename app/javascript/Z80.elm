@@ -422,12 +422,17 @@ execute_delta rom48k tmp_z80 =
                                JumpChangeDelta (param.time |> addCpuTimeTime 3) (f param.value tmp_z80.flags)
                            Nothing ->
                                case doubleWithRegisters |> Dict.get instrCode of
-                                   Just f ->
+                                   Just (f, pcInc) ->
                                        let
-                                          param = mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) instrTime rom48k tmp_z80.env.ram
+                                          param = case pcInc of
+                                              IncreaseByTwo ->
+                                                  mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) instrTime rom48k tmp_z80.env.ram
+
+                                              IncreaseByThree ->
+                                                  mem (Bitwise.and (tmp_z80.pc + 2) 0xFFFF) instrTime rom48k tmp_z80.env.ram
                                        in
                                        -- duplicate of code in imm8 - add 3 to the cpu_time
-                                       DoubleWithRegistersDelta (param.time |> addCpuTimeTime 3) (f tmp_z80.main param.value)
+                                       DoubleWithRegistersDelta pcInc (param.time |> addCpuTimeTime 3) (f tmp_z80.main param.value)
                                    Nothing ->
                                       case singleByte instrTime instrCode tmp_z80 rom48k of
                                           Just deltaThing -> deltaThing

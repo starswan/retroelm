@@ -16,20 +16,20 @@ singleWith8BitParam =
         , ( 0x0E, ( ld_c_n, IncreaseByTwo ) )
         , ( 0x16, ( ld_d_n, IncreaseByTwo ) )
         , ( 0x1E, ( ld_e_n, IncreaseByTwo ) )
+        ]
+
+
+doubleWithRegisters : Dict Int ((MainWithIndexRegisters -> Int -> DoubleWithRegisterChange), MediumPCIncrement)
+doubleWithRegisters =
+    Dict.fromList
+        [ ( 0x10, (djnz, IncreaseByTwo) )
+        , ( 0x36, (ld_indirect_hl_n, IncreaseByTwo) )
         , ( 0x26, ( ld_h_n, IncreaseByTwo ) )
         , ( 0xDD26, ( ld_ix_h_n, IncreaseByThree ) )
         , ( 0xFD26, ( ld_iy_h_n, IncreaseByThree ) )
         , ( 0x2E, ( ld_l_n, IncreaseByTwo ) )
         , ( 0xDD2E, ( ld_ix_l_n, IncreaseByThree ) )
         , ( 0xFD2E, ( ld_iy_l_n, IncreaseByThree ) )
-        ]
-
-
-doubleWithRegisters : Dict Int (MainWithIndexRegisters -> Int -> DoubleWithRegisterChange)
-doubleWithRegisters =
-    Dict.fromList
-        [ ( 0x10, djnz )
-        , ( 0x36, ld_indirect_hl_n )
         ]
 
 
@@ -58,17 +58,14 @@ type Single8BitChange
     | NewCRegister Int
     | NewDRegister Int
     | NewERegister Int
-    | NewHRegister Int
-    | NewIXHRegister Int
-    | NewIYHRegister Int
-    | NewLRegister Int
-    | NewIXLRegister Int
-    | NewIYLRegister Int
 
 
 type DoubleWithRegisterChange
     = RelativeJumpWithTimeOffset Single8BitChange (Maybe Int) Int
     | DoubleRegChangeStoreIndirect Int Int CpuTimeIncrement
+    | NewHLRegisterValue Int
+    | NewIXRegisterValue Int
+    | NewIYRegisterValue Int
 
 
 type JumpChange
@@ -91,25 +88,6 @@ applySimple8BitChange change z80_main =
 
         NewERegister int ->
             { z80_main | e = int }
-
-        NewHRegister int ->
-            { z80_main | hl = Bitwise.or (int |> shiftLeftBy8) (Bitwise.and z80_main.hl 0xFF) }
-
-        NewIXHRegister int ->
-            { z80_main | ix = Bitwise.or (int |> shiftLeftBy8) (Bitwise.and z80_main.ix 0xFF) }
-
-        NewIYHRegister int ->
-            { z80_main | iy = Bitwise.or (int |> shiftLeftBy8) (Bitwise.and z80_main.iy 0xFF) }
-
-        NewLRegister int ->
-            { z80_main | hl = Bitwise.or int (Bitwise.and z80_main.hl 0xFF00) }
-
-        NewIXLRegister int ->
-            { z80_main | ix = Bitwise.or int (Bitwise.and z80_main.ix 0xFF00) }
-
-        NewIYLRegister int ->
-            { z80_main | iy = Bitwise.or int (Bitwise.and z80_main.iy 0xFF00) }
-
 
 ld_b_n : Int -> Single8BitChange
 ld_b_n param =
@@ -137,43 +115,39 @@ ld_e_n param =
     NewERegister param
 
 
-ld_h_n : Int -> Single8BitChange
-ld_h_n param =
+ld_h_n : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
+ld_h_n z80_main param =
     -- case 0x26: HL=HL&0xFF|imm8()<<8; break;
+    Bitwise.or (param |> shiftLeftBy8) (Bitwise.and z80_main.hl 0xFF) |> NewHLRegisterValue
+
+ld_ix_h_n : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
+ld_ix_h_n z80_main param =
     -- case 0x26: xy=xy&0xFF|imm8()<<8; break;
-    NewHRegister param
+    Bitwise.or (param |> shiftLeftBy8) (Bitwise.and z80_main.ix 0xFF) |> NewIXRegisterValue
 
 
-ld_ix_h_n : Int -> Single8BitChange
-ld_ix_h_n param =
-    -- case 0x26: HL=HL&0xFF|imm8()<<8; break;
+ld_iy_h_n : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
+ld_iy_h_n z80_main param =
     -- case 0x26: xy=xy&0xFF|imm8()<<8; break;
-    NewIXHRegister param
+    Bitwise.or (param |> shiftLeftBy8) (Bitwise.and z80_main.iy 0xFF) |> NewIYRegisterValue
 
 
-ld_iy_h_n : Int -> Single8BitChange
-ld_iy_h_n param =
-    -- case 0x26: HL=HL&0xFF|imm8()<<8; break;
-    -- case 0x26: xy=xy&0xFF|imm8()<<8; break;
-    NewIYHRegister param
-
-
-ld_l_n : Int -> Single8BitChange
-ld_l_n param =
+ld_l_n : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
+ld_l_n z80_main param =
     -- case 0x2E: HL=HL&0xFF00|imm8(); break;
-    NewLRegister param
+    Bitwise.or param (Bitwise.and z80_main.hl 0xFF00) |> NewHLRegisterValue
 
 
-ld_ix_l_n : Int -> Single8BitChange
-ld_ix_l_n param =
+ld_ix_l_n : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
+ld_ix_l_n z80_main param =
     -- case 0x2E: xy=xy&0xFF00|imm8(); break;
-    NewIXLRegister param
+    Bitwise.or param (Bitwise.and z80_main.ix 0xFF00) |> NewIXRegisterValue
 
 
-ld_iy_l_n : Int -> Single8BitChange
-ld_iy_l_n param =
+ld_iy_l_n : MainWithIndexRegisters ->  Int -> DoubleWithRegisterChange
+ld_iy_l_n z80_main param =
     -- case 0x2E: xy=xy&0xFF00|imm8(); break;
-    NewIYLRegister param
+    Bitwise.or param (Bitwise.and z80_main.iy 0xFF00) |> NewIYRegisterValue
 
 
 djnz : MainWithIndexRegisters -> Int -> DoubleWithRegisterChange
