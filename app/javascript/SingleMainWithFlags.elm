@@ -42,6 +42,8 @@ singleByteMainAndFlagRegisters =
         , ( 0xDD2C, ( inc_ix_l, IncrementByTwo ) )
         , ( 0xFD2C, ( inc_iy_l, IncrementByTwo ) )
         , ( 0x2D, ( dec_l, IncrementByOne ) )
+        , ( 0xDD2D, ( dec_ix_l, IncrementByTwo ) )
+        , ( 0xFD2D, ( dec_iy_l, IncrementByTwo ) )
         , ( 0x77, ( ld_indirect_hl_a, IncrementByOne ) )
         , ( 0x80, ( add_a_b, IncrementByOne ) )
         , ( 0x81, ( add_a_c, IncrementByOne ) )
@@ -346,7 +348,7 @@ inc_l z80_main z80_flags =
         new_xy =
             Bitwise.or h l.value
     in
-    HLRegister new_xy
+    HLRegister new_xy l.flags
 
 inc_ix_l : MainWithIndexRegisters -> FlagRegisters -> Z80Change
 inc_ix_l z80_main z80_flags =
@@ -362,7 +364,7 @@ inc_ix_l z80_main z80_flags =
         new_xy =
             Bitwise.or h l.value
     in
-    IXRegister new_xy
+    IXRegister new_xy l.flags
 
 inc_iy_l : MainWithIndexRegisters -> FlagRegisters -> Z80Change
 inc_iy_l z80_main z80_flags =
@@ -378,7 +380,7 @@ inc_iy_l z80_main z80_flags =
         new_xy =
             Bitwise.or h l.value
     in
-    IYRegister new_xy
+    IYRegister new_xy l.flags
 
 
 dec_l : MainWithIndexRegisters -> FlagRegisters -> Z80Change
@@ -395,7 +397,39 @@ dec_l z80_main z80_flags =
         new_xy =
             Bitwise.or h l.value
     in
-    HLRegister new_xy
+    HLRegister new_xy l.flags
+
+dec_ix_l : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+dec_ix_l z80_main z80_flags =
+    -- case 0x2D: HL=HL&0xFF00|dec(HL&0xFF); break;
+    -- case 0x2D: xy=xy&0xFF00|dec(xy&0xFF); break;
+    let
+        h =
+            Bitwise.and z80_main.ix 0xFF00
+
+        l =
+            dec (Bitwise.and z80_main.ix 0xFF) z80_flags
+
+        new_xy =
+            Bitwise.or h l.value
+    in
+    IXRegister new_xy l.flags
+
+dec_iy_l : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+dec_iy_l z80_main z80_flags =
+    -- case 0x2D: HL=HL&0xFF00|dec(HL&0xFF); break;
+    -- case 0x2D: xy=xy&0xFF00|dec(xy&0xFF); break;
+    let
+        h =
+            Bitwise.and z80_main.iy 0xFF00
+
+        l =
+            dec (Bitwise.and z80_main.iy 0xFF) z80_flags
+
+        new_xy =
+            Bitwise.or h l.value
+    in
+    IYRegister new_xy l.flags
 
 
 add_hl_hl : MainWithIndexRegisters -> FlagRegisters -> Z80Change
