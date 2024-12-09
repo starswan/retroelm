@@ -11,8 +11,12 @@ type Z80Change
     | FlagsWithCRegister IntWithFlags
     | FlagsWithDRegister IntWithFlags
     | FlagsWithERegister FlagRegisters Int
-    | HLRegister Int
+    | HLRegister Int FlagRegisters
+    | IXRegister Int FlagRegisters
+    | IYRegister Int FlagRegisters
     | FlagsWithHLRegister FlagRegisters Int CpuTimeIncrement
+    | FlagsWithIXRegister FlagRegisters Int CpuTimeIncrement
+    | FlagsWithIYRegister FlagRegisters Int CpuTimeIncrement
     | Z80RegisterB Int
     | Z80RegisterC Int
     | Z80ChangeFlags FlagRegisters
@@ -63,12 +67,26 @@ applyZ80Change change z80 =
             in
             { z80 | flags = flagRegisters, main = { main | e = int } }
 
-        HLRegister int ->
+        HLRegister int flags ->
             let
                 main =
                     z80.main
             in
-            { z80 | main = { main | hl = int } }
+            { z80 | main = { main | hl = int }, flags = flags }
+
+        IXRegister int flags ->
+            let
+                main =
+                    z80.main
+            in
+            { z80 | main = { main | ix = int }, flags = flags }
+
+        IYRegister int flags  ->
+            let
+                main =
+                    z80.main
+            in
+            { z80 | main = { main | iy = int }, flags = flags }
 
         FlagsWithHLRegister flagRegisters int time ->
             let
@@ -103,3 +121,23 @@ applyZ80Change change z80 =
                     z80.env |> setMem addr int |> addCpuTimeEnvInc time
             in
             { z80 | env = env }
+
+        FlagsWithIXRegister flagRegisters int cpuTimeIncrement ->
+            let
+                main =
+                    z80.main
+
+                env =
+                    z80.env |> addCpuTimeEnvInc cpuTimeIncrement
+            in
+            { z80 | env = env, flags = flagRegisters, main = { main | ix = int } }
+
+        FlagsWithIYRegister flagRegisters int cpuTimeIncrement ->
+            let
+                main =
+                    z80.main
+
+                env =
+                    z80.env |> addCpuTimeEnvInc cpuTimeIncrement
+            in
+            { z80 | env = env, flags = flagRegisters, main = { main | iy = int } }

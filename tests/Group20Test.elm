@@ -160,7 +160,51 @@ suite =
                         mem_value =
                             new_z80.env |> mem16 0x5577 z80rom
                     in
-                    Expect.equal ( addr + 3, 0x5D9F ) ( new_z80.pc, mem_value.value )
+                    ( new_z80.pc, mem_value.value ) |> Expect.equal ( addr + 3, 0x5D9F )
+            ,test "0xDD 22 LD (nn), IX" <|
+                \_ ->
+                    let
+                        new_env =
+                            z80env
+                                |> setMem addr 0xDD
+                                |> setMem (addr + 1) 0x22
+                                |> setMem (addr + 2) 0x77
+                                |> setMem (addr + 3) 0x55
+
+                        new_z80 =
+                            execute_instruction z80rom
+                                { z80
+                                    | env = new_env
+                                    , main = { z80main | ix = 0x5D9F }
+                                    , flags = { flags | a = 0x39 }
+                                }
+
+                        mem_value =
+                            new_z80.env |> mem16 0x5577 z80rom
+                    in
+                    Expect.equal ( addr + 4, 0x5D9F ) ( new_z80.pc, mem_value.value )
+            ,test "0xFD 22 LD (nn), IY" <|
+                \_ ->
+                    let
+                        new_env =
+                            z80env
+                                |> setMem addr 0xFD
+                                |> setMem (addr + 1) 0x22
+                                |> setMem (addr + 2) 0x77
+                                |> setMem (addr + 3) 0x55
+
+                        new_z80 =
+                            execute_instruction z80rom
+                                { z80
+                                    | env = new_env
+                                    , main = { z80main | iy = 0x5D9F }
+                                    , flags = { flags | a = 0x39 }
+                                }
+
+                        mem_value =
+                            new_z80.env |> mem16 0x5577 z80rom
+                    in
+                    Expect.equal ( addr + 4, 0x5D9F ) ( new_z80.pc, mem_value.value )
             ]
         , describe "16 bit Increment"
             [ test "0x23 INC HL" <|
