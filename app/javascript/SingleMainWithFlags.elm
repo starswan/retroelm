@@ -36,6 +36,8 @@ singleByteMainAndFlagRegisters =
         , ( 0xDD25, ( dec_h_ix, IncrementByTwo ) )
         , ( 0xFD25, ( dec_h_iy, IncrementByTwo ) )
         , ( 0x29, ( add_hl_hl, IncrementByOne ) )
+        , ( 0xDD29, ( add_ix_ix, IncrementByTwo ) )
+        , ( 0xFD29, ( add_iy_iy, IncrementByTwo ) )
         , ( 0x2C, ( inc_l, IncrementByOne ) )
         , ( 0x2D, ( dec_l, IncrementByOne ) )
         , ( 0x77, ( ld_indirect_hl_a, IncrementByOne ) )
@@ -257,6 +259,7 @@ inc_h z80_main z80_flags =
     in
     FlagsWithHLRegister value.flags new_xy increment0
 
+
 inc_h_ix : MainWithIndexRegisters -> FlagRegisters -> Z80Change
 inc_h_ix z80_main z80_flags =
     -- case 0x24: HL=HL&0xFF|inc(HL>>>8)<<8; break;
@@ -269,6 +272,7 @@ inc_h_ix z80_main z80_flags =
             Bitwise.or (Bitwise.and z80_main.ix 0xFF) (shiftLeftBy8 value.value)
     in
     FlagsWithIXRegister value.flags new_xy increment0
+
 
 inc_h_iy : MainWithIndexRegisters -> FlagRegisters -> Z80Change
 inc_h_iy z80_main z80_flags =
@@ -297,6 +301,7 @@ dec_h z80_main z80_flags =
     in
     FlagsWithHLRegister value.flags new_xy increment0
 
+
 dec_h_ix : MainWithIndexRegisters -> FlagRegisters -> Z80Change
 dec_h_ix z80_main z80_flags =
     -- case 0x25: HL=HL&0xFF|dec(HL>>>8)<<8; break;
@@ -309,6 +314,7 @@ dec_h_ix z80_main z80_flags =
             Bitwise.or (Bitwise.and z80_main.ix 0xFF) (shiftLeftBy8 value.value)
     in
     FlagsWithIXRegister value.flags new_xy increment0
+
 
 dec_h_iy : MainWithIndexRegisters -> FlagRegisters -> Z80Change
 dec_h_iy z80_main z80_flags =
@@ -361,13 +367,34 @@ dec_l z80_main z80_flags =
 add_hl_hl : MainWithIndexRegisters -> FlagRegisters -> Z80Change
 add_hl_hl z80_main z80_flags =
     -- case 0x29: HL=add16(HL,HL); break;
-    -- case 0x29: xy=add16(xy,xy); break;
     let
         new_xy =
             add16 z80_main.hl z80_main.hl z80_flags
     in
     --{ z80 | main = new_z80, flags = new_xy.flags } |> add_cpu_time new_xy.time
     FlagsWithHLRegister new_xy.flags new_xy.value new_xy.time
+
+
+add_ix_ix : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+add_ix_ix z80_main z80_flags =
+    -- case 0x29: xy=add16(xy,xy); break;
+    let
+        new_xy =
+            add16 z80_main.ix z80_main.ix z80_flags
+    in
+    --{ z80 | main = new_z80, flags = new_xy.flags } |> add_cpu_time new_xy.time
+    FlagsWithIXRegister new_xy.flags new_xy.value new_xy.time
+
+
+add_iy_iy : MainWithIndexRegisters -> FlagRegisters -> Z80Change
+add_iy_iy z80_main z80_flags =
+    -- case 0x29: xy=add16(xy,xy); break;
+    let
+        new_xy =
+            add16 z80_main.iy z80_main.iy z80_flags
+    in
+    --{ z80 | main = new_z80, flags = new_xy.flags } |> add_cpu_time new_xy.time
+    FlagsWithIYRegister new_xy.flags new_xy.value new_xy.time
 
 
 add_hl_bc : MainWithIndexRegisters -> FlagRegisters -> Z80Change
@@ -396,6 +423,7 @@ add_ix_bc z80_main z80_flags =
             add16 xy (get_bc z80_main) z80_flags
     in
     FlagsWithIXRegister new_xy.flags new_xy.value new_xy.time
+
 
 add_iy_bc : MainWithIndexRegisters -> FlagRegisters -> Z80Change
 add_iy_bc z80_main z80_flags =
@@ -777,7 +805,8 @@ add_ix_de z80_main z80_flags =
             add16 xy (get_de z80_main) z80_flags
     in
     --{ z80 | main = new_z80, flags = new_xy.flags} |> add_cpu_time new_xy.time
-   FlagsWithIXRegister new_xy.flags new_xy.value new_xy.time
+    FlagsWithIXRegister new_xy.flags new_xy.value new_xy.time
+
 
 add_iy_de : MainWithIndexRegisters -> FlagRegisters -> Z80Change
 add_iy_de z80_main z80_flags =
@@ -791,7 +820,7 @@ add_iy_de z80_main z80_flags =
             add16 xy (get_de z80_main) z80_flags
     in
     --{ z80 | main = new_z80, flags = new_xy.flags} |> add_cpu_time new_xy.time
-   FlagsWithIYRegister new_xy.flags new_xy.value new_xy.time
+    FlagsWithIYRegister new_xy.flags new_xy.value new_xy.time
 
 
 ld_indirect_bc_a : MainWithIndexRegisters -> FlagRegisters -> Z80Change

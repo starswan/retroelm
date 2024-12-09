@@ -14,8 +14,7 @@ import Z80Types exposing (IXIY, IXIYHL, Z80, get_xy_ixiy, imm16, imm8, set_xy, s
 miniDict20 : Dict Int (IXIY -> Z80ROM -> Z80 -> Z80Delta)
 miniDict20 =
     Dict.fromList
-        [ ( 0x29, add_hl_hl )
-        , ( 0x2B, dec_hl )
+        [ ( 0x2B, dec_hl )
         , ( 0x2C, inc_l )
         , ( 0x2D, dec_l )
         , ( 0x2E, ld_l_n )
@@ -27,46 +26,6 @@ delta_dict_20 =
     Dict.fromList
         [ ( 0x2A, ld_hl_indirect_nn ) -- needs triple with env
         ]
-
-
-ld_h_n : IXIY -> Z80ROM -> Z80 -> Z80Delta
-ld_h_n ixiyhl rom48k z80 =
-    -- case 0x26: HL=HL&0xFF|imm8()<<8; break;
-    -- case 0x26: xy=xy&0xFF|imm8()<<8; break;
-    let
-        value =
-            imm8 z80.pc z80.env.time rom48k z80.env.ram
-
-        --new_z80 = { z80 | env = value.env, pc = value.pc }
-        xy =
-            get_xy_ixiy ixiyhl z80.main
-
-        new_xy =
-            Bitwise.or (Bitwise.and xy 0xFF) (shiftLeftBy8 value.value)
-
-        main =
-            set_xy_ixiy new_xy ixiyhl z80.main
-    in
-    --{ new_z80 | main = main }
-    MainRegsWithPcAndCpuTime main value.pc value.time
-
-
-add_hl_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
-add_hl_hl ixiyhl rom48k z80 =
-    -- case 0x29: HL=add16(HL,HL); break;
-    -- case 0x29: xy=add16(xy,xy); break;
-    let
-        xy =
-            get_xy_ixiy ixiyhl z80.main
-
-        new_xy =
-            add16 xy xy z80.flags
-
-        new_z80 =
-            set_xy_ixiy new_xy.value ixiyhl z80.main
-    in
-    --{ z80 | main = new_z80, flags = new_xy.flags } |> add_cpu_time new_xy.time
-    FlagsWithPCMainAndTime new_xy.flags z80.pc new_z80 new_xy.time
 
 
 ld_hl_indirect_nn : IXIYHL -> Z80ROM -> Z80 -> Z80Delta
