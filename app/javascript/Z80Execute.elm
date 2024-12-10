@@ -2,22 +2,23 @@ module Z80Execute exposing (..)
 
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeIncrement(..), addCpuTimeTime, addCpuTimeTimeInc, cpuTimeIncrement4)
+import Dict
 import PCIncrement exposing (MediumPCIncrement(..), PCIncrement(..), TriplePCIncrement(..))
 import RegisterChange exposing (RegisterChange, RegisterChangeApplied(..), applyRegisterChange)
 import SingleByteWithEnv exposing (SingleByteEnvChange(..), applyEnvChangeDelta)
 import SingleEnvWithMain exposing (SingleEnvMainChange, applySingleEnvMainChange)
 import SingleNoParams exposing (NoParamChange(..), applyNoParamsDelta)
-import SingleWith8BitParameter exposing (DoubleWithRegisterChange(..), JumpChange(..), Single8BitChange, applySimple8BitChange)
-import TripleByte exposing (TripleByteChange(..))
-import TripleWithFlags exposing (TripleWithFlagsChange(..))
-import TripleWithMain exposing (TripleMainChange, applyTripleMainChange)
+import SingleWith8BitParameter exposing (DoubleWithRegisterChange(..), JumpChange(..), Single8BitChange, applySimple8BitChange, doubleWithRegisters, maybeRelativeJump)
+import TripleByte exposing (TripleByteChange(..), tripleByteWith16BitParam)
+import TripleWithFlags exposing (TripleWithFlagsChange(..), triple16WithFlags)
+import TripleWithMain exposing (TripleMainChange, applyTripleMainChange, tripleMainRegs)
 import Utils exposing (shiftLeftBy8)
 import Z80Change exposing (FlagChange(..), Z80Change, applyZ80Change)
 import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..), applyDeltaWithChanges)
-import Z80Env exposing (addCpuTimeEnvInc, mem, mem16, setMem, z80_pop, z80_push)
+import Z80Env exposing (Z80Env, addCpuTimeEnvInc, mem, mem16, setMem, z80_pop, z80_push)
 import Z80Flags exposing (FlagRegisters, IntWithFlags, dec, inc, shifter0, shifter1, shifter2, shifter3, shifter4, shifter5, shifter6, shifter7)
 import Z80Rom exposing (Z80ROM)
-import Z80Types exposing (IXIYHL(..), Z80, set_bc_main, set_de_main)
+import Z80Types exposing (IXIYHL(..), MainWithIndexRegisters, Z80, set_bc_main, set_de_main)
 
 
 type DeltaWithChanges
@@ -133,12 +134,13 @@ applyDoubleWithRegistersDelta pc_inc cpu_time z80changeData z80 =
         old_env =
             z80.env
 
-        new_pc = case pc_inc of
-            IncreaseByTwo -> z80.pc + 2
+        new_pc =
+            case pc_inc of
+                IncreaseByTwo ->
+                    z80.pc + 2
 
-
-            IncreaseByThree -> z80.pc + 3
-
+                IncreaseByThree ->
+                    z80.pc + 3
     in
     case z80changeData of
         RelativeJumpWithTimeOffset single8BitChange maybeInt timeOffset ->
@@ -149,7 +151,7 @@ applyDoubleWithRegistersDelta pc_inc cpu_time z80changeData z80 =
                             Bitwise.and (new_pc + jump) 0xFFFF
 
                         Nothing ->
-                            Bitwise.and (new_pc) 0xFFFF
+                            Bitwise.and new_pc 0xFFFF
 
                 main =
                     z80.main |> applySimple8BitChange single8BitChange
@@ -164,7 +166,7 @@ applyDoubleWithRegistersDelta pc_inc cpu_time z80changeData z80 =
         DoubleRegChangeStoreIndirect addr value cpuTimeIncrement ->
             let
                 pc =
-                    Bitwise.and (new_pc) 0xFFFF
+                    Bitwise.and new_pc 0xFFFF
 
                 env_1 =
                     { old_env | time = cpu_time } |> setMem addr value
@@ -178,12 +180,13 @@ applyDoubleWithRegistersDelta pc_inc cpu_time z80changeData z80 =
         NewHLRegisterValue int ->
             let
                 pc =
-                    Bitwise.and (new_pc) 0xFFFF
+                    Bitwise.and new_pc 0xFFFF
 
                 env_1 =
                     { old_env | time = cpu_time }
 
-                main = z80.main
+                main =
+                    z80.main
             in
             { z80
                 | pc = pc
@@ -191,15 +194,17 @@ applyDoubleWithRegistersDelta pc_inc cpu_time z80changeData z80 =
                 , main = { main | hl = int }
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
+
         NewIXRegisterValue int ->
             let
                 pc =
-                    Bitwise.and (new_pc) 0xFFFF
+                    Bitwise.and new_pc 0xFFFF
 
                 env_1 =
                     { old_env | time = cpu_time }
 
-                main = z80.main
+                main =
+                    z80.main
             in
             { z80
                 | pc = pc
@@ -207,15 +212,17 @@ applyDoubleWithRegistersDelta pc_inc cpu_time z80changeData z80 =
                 , main = { main | ix = int }
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
+
         NewIYRegisterValue int ->
             let
                 pc =
-                    Bitwise.and (new_pc) 0xFFFF
+                    Bitwise.and new_pc 0xFFFF
 
                 env_1 =
                     { old_env | time = cpu_time }
 
-                main = z80.main
+                main =
+                    z80.main
             in
             { z80
                 | pc = pc
@@ -223,7 +230,6 @@ applyDoubleWithRegistersDelta pc_inc cpu_time z80changeData z80 =
                 , main = { main | iy = int }
                 , interrupts = { interrupts | r = interrupts.r + 1 }
             }
-
 
 
 applySimple8BitDelta : MediumPCIncrement -> CpuTimeCTime -> Single8BitChange -> Z80 -> Z80
@@ -696,3 +702,5 @@ applyTripleFlagChange cpu_time z80changeData z80 =
 
         AbsoluteCall int ->
             z80 |> z80_call int cpu_time
+
+
