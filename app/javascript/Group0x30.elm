@@ -45,13 +45,19 @@ inc_indirect_hl ixiyhl rom48k z80 =
             z80.env
 
         cpuTimeAndValue =
-            mem cpuTimePcAndValue.value cpuTimePcAndValue.time rom48k env_1.ram
+            mem cpuTimePcAndValue.address cpuTimePcAndValue.time rom48k env_1.ram
 
         valueWithFlags =
             z80.flags |> inc cpuTimeAndValue.value
 
         new_env =
-            { env_1 | time = cpuTimeAndValue.time |> addCpuTimeTime 4 } |> setMem cpuTimePcAndValue.value valueWithFlags.value
+            { env_1 | time = cpuTimeAndValue.time |> addCpuTimeTime 4 } |> setMem cpuTimePcAndValue.address valueWithFlags.value
+
+        --case cpuTimePcAndValue.value of
+        --  ROMAddress int ->
+        --    { env_1 | time = cpuTimeAndValue.time |> addCpuTimeTime 4 }
+        --  RAMAddress ramAdddress ->
+        --    { env_1 | time = cpuTimeAndValue.time |> addCpuTimeTime 4 } |> setMem ramAdddress valueWithFlags.value
 
         --case cpuTimePcAndValue.value of
         --  ROMAddress int ->
@@ -73,7 +79,7 @@ dec_indirect_hl ixiyhl rom48k z80 =
 
         --z80_1 = { z80 | pc = a.pc }
         value =
-            mem a.value z80.env.time rom48k z80.env.ram
+            mem a.address z80.env.time rom48k z80.env.ram
 
         env_1 =
             z80.env
@@ -82,7 +88,7 @@ dec_indirect_hl ixiyhl rom48k z80 =
             z80.flags |> dec value.value
 
         new_env =
-            { env_1 | time = value.time } |> addCpuTimeEnv 4 |> setMem a.value v.value
+            { env_1 | time = value.time } |> addCpuTimeEnv 4 |> setMem a.address v.value
 
         --case a.value of
         --  ROMAddress int ->
@@ -107,17 +113,17 @@ ld_indirect_hl_n ixiyhl rom48k z80 =
             get_xy_ixiy ixiyhl z80.main
 
         mempc =
-            mem (z80.pc |> toInt) z80.env.time rom48k z80.env.ram
+            mem (z80.pc) z80.env.time rom48k z80.env.ram
 
         env_1 =
             z80.env
 
         a =
-            xy |> addIndexOffset mempc.value |> toInt
+            xy |> addIndexOffset mempc.value
 
         v =
             --mem (char (z80.pc + 1)) (mempc.time |> addCpuTimeTime 3) rom48k env_1.ram
-            mem (z80.pc |> incrementBy1 |> toInt) (mempc.time |> addCpuTimeTime 3) rom48k env_1.ram
+            mem (z80.pc |> incrementBy1) (mempc.time |> addCpuTimeTime 3) rom48k env_1.ram
 
         z80_2 =
             { env_1 | time = v.time |> addCpuTimeTime 5 }
@@ -171,6 +177,6 @@ ld_a_indirect_nn rom48k z80 =
             z80 |> imm16 rom48k
 
         mem_value =
-            mem v.value z80.env.time rom48k z80.env.ram
+            mem v.address z80.env.time rom48k z80.env.ram
     in
     CpuTimeWithFlagsAndPc (mem_value.time |> addCpuTimeTime 3) { z80_flags | a = mem_value.value } v.pc

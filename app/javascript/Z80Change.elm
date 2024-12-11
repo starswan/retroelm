@@ -1,7 +1,7 @@
 module Z80Change exposing (..)
 
 import CpuTimeCTime exposing (CpuTimeIncrement)
-import Z80Address exposing (Z80Address, toInt)
+import Z80Address exposing (Z80Address)
 import Z80Env exposing (addCpuTimeEnvInc, setMem)
 import Z80Flags exposing (FlagRegisters, IntWithFlags)
 import Z80Types exposing (Z80)
@@ -119,7 +119,7 @@ applyZ80Change change z80 =
         Z80ChangeSetIndirect addr int time ->
             let
                 env =
-                    z80.env |> setMem (addr |> toInt) int |> addCpuTimeEnvInc time
+                    z80.env |> setMem (addr) int |> addCpuTimeEnvInc time
             in
             { z80 | env = env }
 
