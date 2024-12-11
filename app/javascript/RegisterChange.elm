@@ -3,6 +3,7 @@ module RegisterChange exposing (..)
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeIncrement)
 import Utils exposing (shiftLeftBy8)
+import Z80Address exposing (Z80Address, fromInt, lower8Bits, top8BitsWithoutShift)
 import Z80Flags exposing (FlagRegisters)
 import Z80Types exposing (MainWithIndexRegisters, Z80, set_de_main)
 
@@ -14,49 +15,49 @@ type RegisterChange
     | ChangeRegisterDE Int Int CpuTimeIncrement
     | ChangeRegisterEWithTime Int CpuTimeIncrement
     | ChangeRegisterE Int
-    | ChangeRegisterHL Int CpuTimeIncrement
-    | ChangeRegisterIX Int CpuTimeIncrement
-    | ChangeRegisterIY Int CpuTimeIncrement
+    | ChangeRegisterHL Z80Address CpuTimeIncrement
+    | ChangeRegisterIX Z80Address CpuTimeIncrement
+    | ChangeRegisterIY Z80Address CpuTimeIncrement
     | ChangeRegisterD Int
     | ChangeRegisterA Int
     | ChangeRegisterC Int
     | ChangeRegisterH Int
     | ChangeRegisterL Int
-    | PushedValue Int
-    | RegChangeNewSP Int CpuTimeIncrement
-    | IncrementIndirect Int CpuTimeIncrement
-    | DecrementIndirect Int CpuTimeIncrement
-    | RegisterChangeJump Int
-    | SetIndirect Int Int CpuTimeIncrement
-    | ChangeRegisterDEAndHL Int Int
-    | Shifter0 Int CpuTimeIncrement
-    | Shifter1 Int CpuTimeIncrement
-    | Shifter2 Int CpuTimeIncrement
-    | Shifter3 Int CpuTimeIncrement
-    | Shifter4 Int CpuTimeIncrement
-    | Shifter5 Int CpuTimeIncrement
-    | Shifter6 Int CpuTimeIncrement
-    | Shifter7 Int CpuTimeIncrement
+    | PushedValue Z80Address
+    | RegChangeNewSP Z80Address CpuTimeIncrement
+    | IncrementIndirect Z80Address CpuTimeIncrement
+    | DecrementIndirect Z80Address CpuTimeIncrement
+    | RegisterChangeJump Z80Address
+    | SetIndirect Z80Address Int CpuTimeIncrement
+    | ChangeRegisterDEAndHL Int Z80Address
+    | Shifter0 Z80Address CpuTimeIncrement
+    | Shifter1 Z80Address CpuTimeIncrement
+    | Shifter2 Z80Address CpuTimeIncrement
+    | Shifter3 Z80Address CpuTimeIncrement
+    | Shifter4 Z80Address CpuTimeIncrement
+    | Shifter5 Z80Address CpuTimeIncrement
+    | Shifter6 Z80Address CpuTimeIncrement
+    | Shifter7 Z80Address CpuTimeIncrement
 
 
 type RegisterChangeApplied
     = MainRegsApplied MainWithIndexRegisters
     | MainRegsWithTimeApplied MainWithIndexRegisters CpuTimeIncrement
     | FlagRegsApplied FlagRegisters
-    | PushedValueApplied Int
-    | NewSPApplied Int CpuTimeIncrement
-    | IncrementIndirectApplied Int CpuTimeIncrement
-    | DecrementIndirectApplied Int CpuTimeIncrement
-    | JumpApplied Int
-    | SetIndirectApplied Int Int CpuTimeIncrement
-    | Shifter0Applied Int CpuTimeIncrement
-    | Shifter1Applied Int CpuTimeIncrement
-    | Shifter2Applied Int CpuTimeIncrement
-    | Shifter3Applied Int CpuTimeIncrement
-    | Shifter4Applied Int CpuTimeIncrement
-    | Shifter5Applied Int CpuTimeIncrement
-    | Shifter6Applied Int CpuTimeIncrement
-    | Shifter7Applied Int CpuTimeIncrement
+    | PushedValueApplied Z80Address
+    | NewSPApplied Z80Address CpuTimeIncrement
+    | IncrementIndirectApplied Z80Address CpuTimeIncrement
+    | DecrementIndirectApplied Z80Address CpuTimeIncrement
+    | JumpApplied Z80Address
+    | SetIndirectApplied Z80Address Int CpuTimeIncrement
+    | Shifter0Applied Z80Address CpuTimeIncrement
+    | Shifter1Applied Z80Address CpuTimeIncrement
+    | Shifter2Applied Z80Address CpuTimeIncrement
+    | Shifter3Applied Z80Address CpuTimeIncrement
+    | Shifter4Applied Z80Address CpuTimeIncrement
+    | Shifter5Applied Z80Address CpuTimeIncrement
+    | Shifter6Applied Z80Address CpuTimeIncrement
+    | Shifter7Applied Z80Address CpuTimeIncrement
 
 
 applyRegisterChange : RegisterChange -> FlagRegisters -> MainWithIndexRegisters -> RegisterChangeApplied
@@ -99,10 +100,12 @@ applyRegisterChange change z80_flags main =
             MainRegsApplied { main | c = int }
 
         ChangeRegisterH int ->
-            MainRegsApplied { main | hl = Bitwise.or (Bitwise.and main.hl 0xFF) (shiftLeftBy8 int) }
+            --MainRegsApplied { main | hl = Bitwise.or (Bitwise.and main.hl 0xFF) (shiftLeftBy8 int) }
+            MainRegsApplied { main | hl = Bitwise.or (lower8Bits main.hl) (shiftLeftBy8 int) |> fromInt }
 
         ChangeRegisterL int ->
-            MainRegsApplied { main | hl = Bitwise.or (Bitwise.and main.hl 0xFF00) int }
+            --MainRegsApplied { main | hl = Bitwise.or (Bitwise.and main.hl 0xFF00) int }
+            MainRegsApplied { main | hl = Bitwise.or (top8BitsWithoutShift main.hl) int |> fromInt }
 
         PushedValue int ->
             PushedValueApplied int
