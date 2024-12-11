@@ -390,7 +390,7 @@ execute_delta ct rom48k z80 =
    in
    case tripleMain of
        Just delta ->
-           delta
+           SwapZ80 delta
        Nothing ->
            let
                triple16Flags = z80 |> parseTriple16Flags instrCode rom48k paramOffset

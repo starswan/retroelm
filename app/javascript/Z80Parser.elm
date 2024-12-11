@@ -3,27 +3,30 @@ module Z80Parser exposing (..)
 import Bitwise
 import CpuTimeCTime exposing (CpuTimeCTime, addCpuTimeTime)
 import Dict
-import PCIncrement exposing (MediumPCIncrement(..))
+import PCIncrement exposing (MediumPCIncrement(..), TriplePCIncrement)
 import SingleWith8BitParameter exposing (doubleWithRegisters, maybeRelativeJump)
 import TripleByte exposing (tripleByteWith16BitParam)
 import TripleWithFlags exposing (triple16WithFlags)
-import TripleWithMain exposing (tripleMainRegs)
+import TripleWithMain exposing (TripleMainChange, applyTripleMainChange, tripleMainRegs)
 import Z80Env exposing (mem, mem16)
 import Z80Execute exposing (DeltaWithChanges(..))
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (Z80)
 
 
-parseTripleMain : Int -> Z80ROM -> Int -> Z80 -> Maybe DeltaWithChanges
+parseTripleMain : Int -> Z80ROM -> Int -> Z80 -> Maybe Z80
 parseTripleMain instrCode rom48k paramOffset z80 =
     case tripleMainRegs |> Dict.get instrCode of
         Just ( f, pcInc ) ->
             let
                 doubleParam =
                     z80.env |> mem16 (Bitwise.and (z80.pc + paramOffset) 0xFFFF) rom48k
+
+                -- duplicate of code in imm16 - add 6 to the cpu_time
+                x =
+                    z80 |> applyTripleMainChange (doubleParam.time |> addCpuTimeTime 6) pcInc (f doubleParam.value z80.main)
             in
-            -- duplicate of code in imm16 - add 6 to the cpu_time
-            Just (TripleMainDelta (doubleParam.time |> addCpuTimeTime 6) pcInc (f doubleParam.value z80.main))
+            Just x
 
         Nothing ->
             Nothing

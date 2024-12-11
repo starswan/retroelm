@@ -34,7 +34,7 @@ type DeltaWithChanges
     | SingleEnvDelta CpuTimeCTime SingleByteEnvChange
     | TripleFlagDelta CpuTimeCTime TripleWithFlagsChange
     | MainWithEnvDelta PCIncrement SingleEnvMainChange
-    | TripleMainDelta CpuTimeCTime TriplePCIncrement TripleMainChange
+    | SwapZ80 Z80
 
 
 apply_delta : Z80 -> Z80ROM -> DeltaWithChanges -> Z80
@@ -76,8 +76,10 @@ apply_delta z80 rom48k z80delta =
         MainWithEnvDelta pcInc singleEnvMainChange ->
             z80 |> applySingleEnvMainChange pcInc singleEnvMainChange
 
-        TripleMainDelta cpuTimeCTime triplePCIncrement tripleMainChange ->
-            z80 |> applyTripleMainChange cpuTimeCTime triplePCIncrement tripleMainChange
+        SwapZ80 new_z80 -> new_z80
+
+        --TripleMainDelta cpuTimeCTime triplePCIncrement tripleMainChange ->
+        --    z80 |> applyTripleMainChange cpuTimeCTime triplePCIncrement tripleMainChange
 
 
 applyJumpChangeDelta : CpuTimeCTime -> JumpChange -> Z80 -> Z80
