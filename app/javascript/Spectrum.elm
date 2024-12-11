@@ -6,15 +6,16 @@ import Dict
 import Keyboard exposing (KeyEvent, Keyboard, update_keyboard)
 import SingleNoParams exposing (ex_af)
 import Tapfile exposing (Tapfile)
-import Utils exposing (char)
+import Utils exposing (char, shiftRightBy8)
 import Vector8
 import Z80 exposing (execute, get_ei, interrupt)
+import Z80Address exposing (incrementBy2, toInt)
 import Z80Debug exposing (debugLog)
 import Z80Env exposing (mem, mem16, reset_cpu_time)
 import Z80Flags exposing (c_FC, c_FZ, get_flags, set_flags)
 import Z80Rom exposing (Z80ROM, make_spectrum_rom)
 import Z80Tape exposing (Z80Tape)
-import Z80Types exposing (IXIYHL(..), Z80, get_de, get_h, get_l)
+import Z80Types exposing (IXIYHL(..), Z80, get_de, get_l)
 
 
 type alias Audio =
@@ -1002,7 +1003,7 @@ checkLoad spectrum =
             spectrum.cpu
 
         pc1 =
-            cpu.pc
+            cpu.pc |> toInt
     in
     if (cpu |> get_ei) || pc1 < 0x056B || pc1 > 0x0604 then
         Nothing
@@ -1016,10 +1017,12 @@ checkLoad spectrum =
                 if pc1 >= 0x05E3 then
                     let
                         ( pc2, sp2 ) =
-                            ( cpu.env |> mem16 sp1 spectrum.rom48k |> .value, char sp1 + 2 )
+                            --( cpu.env |> mem16 sp1 spectrum.rom48k |> .value, char sp1 + 2 )
+                            ( cpu.env |> mem16 (sp1 |> toInt) spectrum.rom48k |> .value, sp1 |> incrementBy2 )
                     in
                     if pc2 == 0x05E6 then
-                        ( cpu.env |> mem16 sp2 spectrum.rom48k |> .value, char sp2 + 2 )
+                        --( cpu.env |> mem16 sp2 spectrum.rom48k |> .value, char sp2 + 2 )
+                        ( cpu.env |> mem16 (sp2 |> toInt) spectrum.rom48k |> .value, sp2 |> incrementBy2 )
 
                     else
                         ( pc2, sp2 )
@@ -1128,7 +1131,7 @@ doLoad cpu z80rom tape =
                 tape.tapePos
 
             h0 =
-                cpu.main |> get_h HL
+                cpu.main.hl |> toInt |> shiftRightBy8
 
             h1 =
                 if p.position == 0 then
@@ -1145,7 +1148,17 @@ doLoad cpu z80rom tape =
                                 aTapfile.block.dataLength
 
                             startState =
-                                { p = tape.tapePos.position, ix = cpu.main.ix, de = cpu.main |> get_de, h = h1, l = cpu.main |> get_l HL, a = cpu.flags.a, f = cpu.flags |> get_flags, rf = -1, data = Dict.empty, break = False }
+                                { p = tape.tapePos.position
+                                , ix = cpu.main.ix |> toInt
+                                , de = cpu.main |> get_de
+                                , h = h1
+                                , l = cpu.main |> get_l HL
+                                , a = cpu.flags.a
+                                , f = cpu.flags |> get_flags
+                                , rf = -1
+                                , data = Dict.empty
+                                , break = False
+                                }
 
                             new_data =
                                 --		for(;;) {

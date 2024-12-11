@@ -2,20 +2,21 @@ module TripleByte exposing (..)
 
 import Dict exposing (Dict)
 import PCIncrement exposing (PCIncrement(..), TriplePCIncrement(..))
+import Z80Address exposing (Z80Address, fromInt)
 
 
 type TripleByteChange
     = NewBCRegister Int
     | NewDERegister Int
-    | NewHLRegister Int
+    | NewHLRegister Z80Address
     | NewHLIndirect Int
-    | NewIXRegister Int
+    | NewIXRegister Z80Address
     | NewIXIndirect Int
-    | NewIYRegister Int
+    | NewIYRegister Z80Address
     | NewIYIndirect Int
-    | NewSPRegister Int
-    | NewPCRegister Int
-    | CallImmediate Int
+    | NewSPRegister Z80Address
+    | NewPCRegister Z80Address
+    | CallImmediate Z80Address
 
 
 tripleByteWith16BitParam : Dict Int ( Int -> TripleByteChange, TriplePCIncrement )
@@ -51,39 +52,39 @@ ld_hl_nn : Int -> TripleByteChange
 ld_hl_nn param16 =
     -- case 0x21: HL=imm16(); break;
     -- case 0x21: xy=imm16(); break;
-    NewHLRegister param16
+    NewHLRegister (param16 |> fromInt)
 
 
 ld_ix_nn : Int -> TripleByteChange
 ld_ix_nn param16 =
     -- case 0x21: HL=imm16(); break;
     -- case 0x21: xy=imm16(); break;
-    NewIXRegister param16
+    NewIXRegister (param16 |> fromInt)
 
 
 ld_iy_nn : Int -> TripleByteChange
 ld_iy_nn param16 =
     -- case 0x21: HL=imm16(); break;
     -- case 0x21: xy=imm16(); break;
-    NewIYRegister param16
+    NewIYRegister (param16 |> fromInt)
 
 
 ld_sp_nn : Int -> TripleByteChange
 ld_sp_nn param16 =
     -- case 0x31: SP=imm16(); break;
-    NewSPRegister param16
+    NewSPRegister (param16 |> fromInt)
 
 
 jp_nn : Int -> TripleByteChange
 jp_nn param16 =
     -- case 0xC3: MP=PC=imm16(); break;
-    NewPCRegister param16
+    NewPCRegister (param16 |> fromInt)
 
 
 call_0xCD : Int -> TripleByteChange
 call_0xCD param16 =
     -- case 0xCD: v=imm16(); push(PC); MP=PC=v; break;
-    CallImmediate param16
+    CallImmediate (param16 |> fromInt)
 
 
 ld_hl_indirect_nn : Int -> TripleByteChange

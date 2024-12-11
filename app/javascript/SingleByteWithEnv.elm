@@ -3,12 +3,13 @@ module SingleByteWithEnv exposing (..)
 import Bitwise exposing (shiftRightBy)
 import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeIncrement(..), addCpuTimeTimeInc, cpuTimeIncrement4, increment2)
 import Dict exposing (Dict)
+import Z80Address exposing (Z80Address, decrement, incrementBy1)
 import Z80Env exposing (Z80Env, c_TIME_LIMIT)
 import Z80Types exposing (Z80)
 
 
 type SingleByteEnvChange
-    = NewSPValue Int CpuTimeIncrement
+    = NewSPValue Z80Address CpuTimeIncrement
     | AddToInterrupts Int CpuTimeIncrement
 
 
@@ -28,7 +29,8 @@ applyEnvChangeDelta cpu_time z80changeData z80 =
             z80.interrupts
 
         new_pc =
-            Bitwise.and (z80.pc + 1) 0xFFFF
+            --Bitwise.and (z80.pc + 1) 0xFFFF
+            z80.pc |> incrementBy1
 
         env =
             z80.env
@@ -56,7 +58,8 @@ inc_sp z80_env =
     --    new_sp =
     --        Bitwise.and (z80.env.sp + 1) 0xFFFF
     --in
-    NewSPValue (Bitwise.and (z80_env.sp + 1) 0xFFFF) increment2
+    --NewSPValue (Bitwise.and (z80_env.sp + 1) 0xFFFF) increment2
+    NewSPValue (z80_env.sp |> incrementBy1) increment2
 
 
 dec_sp : Z80Env -> SingleByteEnvChange
@@ -66,7 +69,8 @@ dec_sp z80_env =
     --    new_sp =
     --        Bitwise.and (z80.env.sp - 1) 0xFFFF
     --in
-    NewSPValue (Bitwise.and (z80_env.sp - 1) 0xFFFF) increment2
+    --NewSPValue (Bitwise.and (z80_env.sp - 1) 0xFFFF) increment2
+    NewSPValue (z80_env.sp |> decrement) increment2
 
 
 execute_0x76_halt : Z80Env -> SingleByteEnvChange

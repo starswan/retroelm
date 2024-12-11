@@ -1,6 +1,7 @@
 module Z80Delta exposing (..)
 
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimeIncrement, addCpuTimeTime, addCpuTimeTimeInc)
+import Z80Address exposing (Z80Address)
 import Z80Env exposing (Z80Env, addCpuTimeEnv, setMem, setMem16, z80_push)
 import Z80Flags exposing (FlagRegisters, f_szh0n0p)
 import Z80Types exposing (IXIYHL(..), InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, set408bit)
@@ -8,37 +9,38 @@ import Z80Types exposing (IXIYHL(..), InterruptRegisters, MainRegisters, MainWit
 
 type Z80Delta
     = Whole Z80
-    | MainRegsWithPcAndCpuTime MainWithIndexRegisters Int CpuTimeCTime
-    | FlagsWithPCMainAndTime FlagRegisters Int MainWithIndexRegisters CpuTimeIncrement
+    | MainRegsWithPcAndCpuTime MainWithIndexRegisters Z80Address CpuTimeCTime
+    | FlagsWithPCMainAndTime FlagRegisters Z80Address MainWithIndexRegisters CpuTimeIncrement
     | FlagsWithMainAndTime FlagRegisters MainWithIndexRegisters Int
-    | FlagsWithPCMainAndCpuTime FlagRegisters Int MainWithIndexRegisters CpuTimeCTime
+    | FlagsWithPCMainAndCpuTime FlagRegisters Z80Address MainWithIndexRegisters CpuTimeCTime
     | FlagRegs FlagRegisters
     | MainRegs MainWithIndexRegisters
-    | MainRegsWithPc MainWithIndexRegisters Int
+    | MainRegsWithPc MainWithIndexRegisters Z80Address
     | CpuTimeWithFlags CpuTimeCTime FlagRegisters
-    | EnvWithFlagsAndPc Z80Env FlagRegisters Int
-    | CpuTimeWithFlagsAndPc CpuTimeCTime FlagRegisters Int
+    | EnvWithFlagsAndPc Z80Env FlagRegisters Z80Address
+    | CpuTimeWithFlagsAndPc CpuTimeCTime FlagRegisters Z80Address
     | MainRegsWithEnv MainWithIndexRegisters Z80Env
-    | SpAndCpuTime Int Int
-    | EnvWithPc Z80Env Int
-    | CpuTimeWithSpAndPc CpuTimeCTime Int Int
-    | OnlyPc Int
-    | FlagsWithPcAndTime FlagRegisters Int CpuTimeCTime
+    | SpAndCpuTime Z80Address Int
+    | EnvWithPc Z80Env Z80Address
+    | CpuTimeWithSpAndPc CpuTimeCTime Z80Address Z80Address
+    | OnlyPc Z80Address
+    | FlagsWithPcAndTime FlagRegisters Z80Address CpuTimeCTime
     | InterruptsWithCpuTime InterruptRegisters CpuTimeCTime
-    | MainRegsWithSpPcAndTime MainWithIndexRegisters Int Int CpuTimeCTime
-    | MainRegsWithEnvAndPc MainWithIndexRegisters Z80Env Int
-    | PushWithCpuTimeAndPc Int CpuTimeCTime Int
+    | MainRegsWithSpPcAndTime MainWithIndexRegisters Z80Address Z80Address CpuTimeCTime
+    | MainRegsWithEnvAndPc MainWithIndexRegisters Z80Env Z80Address
+    | PushWithCpuTimeAndPc Z80Address CpuTimeCTime Z80Address
     | SetMem8WithTime Int Int Int
-    | SetMem16WithTimeAndPc Int Int Int Int
-    | SetMem8WithCpuTimeIncrementAndPc Int Int CpuTimeCTime Int Int
-    | PcTimeSet408Bit Int CpuTimeCTime Int Int
+    | SetMem16WithTimeAndPc Int Int Int Z80Address
+    | SetMem8WithCpuTimeIncrementAndPc Int Int CpuTimeCTime Int Z80Address
+      --| PcTimeFlagsSet408Bit Z80Address CpuTimeCTime FlagRegisters Int Int
+    | PcTimeSet408Bit Z80Address CpuTimeCTime Int Int
     | Fszh0n0pTimeDeltaSet408Bit Int Int Int
 
 
 type alias DeltaWithChangesData =
     { delta : Z80Delta
     , interrupts : InterruptRegisters
-    , pc : Int
+    , pc : Z80Address
     , time : CpuTimeCTime
     }
 

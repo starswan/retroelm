@@ -1,7 +1,7 @@
 module Tapfile exposing (..)
 
 import Bytes exposing (Bytes, Endianness(..), width)
-import Bytes.Decode exposing (Decoder, Step(..), andThen, fail, loop, map, map2, map3, map4, map5, string, succeed, unsignedInt16, unsignedInt8)
+import Bytes.Decode exposing (Decoder, Step(..), andThen, fail, loop, map, map3, map4, map5, string, succeed, unsignedInt16, unsignedInt8)
 import Utils exposing (toPlainHexString2)
 import Z80Debug exposing (debugLog)
 
