@@ -401,7 +401,11 @@ execute_delta rom48k tmp_z80 =
           Just f ->
                  let
                     --doubleParam = tmp_z80.env |> mem16 (Bitwise.and (tmp_z80.pc + paramOffset) 0xFFFF) rom48k
-                    doubleParam = tmp_z80.env |> mem16 (tmp_z80.pc |> incrementBy1 |> toInt) rom48k
+                     doubleParam = case paramOffset of
+                         IncrementByOne ->
+                                    tmp_z80.env |> mem16 (tmp_z80.pc |> incrementBy1 |> toInt) rom48k
+                         IncrementByTwo ->
+                                    tmp_z80.env |> mem16 (tmp_z80.pc |> incrementBy2 |> toInt) rom48k
                 in
                 -- duplicate of code in imm16 - add 6 to the cpu_time
                 TripleFlagDelta (doubleParam.time |> addCpuTimeTime 6) (f doubleParam.value tmp_z80.flags)
