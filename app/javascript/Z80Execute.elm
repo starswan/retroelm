@@ -30,12 +30,10 @@ type DeltaWithChanges
     | DoubleWithRegistersDelta MediumPCIncrement CpuTimeCTime DoubleWithRegisterChange
     | JumpChangeDelta CpuTimeCTime JumpChange
     | NoParamsDelta CpuTimeCTime NoParamChange
-    | TripleChangeDelta TriplePCIncrement CpuTimeCTime TripleByteChange
     | SingleEnvDelta CpuTimeCTime SingleByteEnvChange
-    | TripleFlagDelta CpuTimeCTime TripleWithFlagsChange
     | MainWithEnvDelta PCIncrement SingleEnvMainChange
-    | SwapZ80 Z80
 
+type ExecuteResult = Z80DeltaChange DeltaWithChanges | Z80Result Z80
 
 apply_delta : Z80 -> Z80ROM -> DeltaWithChanges -> Z80
 apply_delta z80 rom48k z80delta =
@@ -64,22 +62,11 @@ apply_delta z80 rom48k z80delta =
         NoParamsDelta cpuTimeCTime noParamChange ->
             z80 |> applyNoParamsDelta cpuTimeCTime noParamChange rom48k
 
-        TripleChangeDelta pcIncrement cpuTimeCTime tripleByteChange ->
-            z80 |> applyTripleChangeDelta rom48k pcIncrement cpuTimeCTime tripleByteChange
-
         SingleEnvDelta cpuTimeCTime singleByteEnvChange ->
             z80 |> applyEnvChangeDelta cpuTimeCTime singleByteEnvChange
 
-        TripleFlagDelta cpuTimeCTime tripleWithFlagsChange ->
-            z80 |> applyTripleFlagChange cpuTimeCTime tripleWithFlagsChange
-
         MainWithEnvDelta pcInc singleEnvMainChange ->
             z80 |> applySingleEnvMainChange pcInc singleEnvMainChange
-
-        SwapZ80 new_z80 -> new_z80
-
-        --TripleMainDelta cpuTimeCTime triplePCIncrement tripleMainChange ->
-        --    z80 |> applyTripleMainChange cpuTimeCTime triplePCIncrement tripleMainChange
 
 
 applyJumpChangeDelta : CpuTimeCTime -> JumpChange -> Z80 -> Z80
