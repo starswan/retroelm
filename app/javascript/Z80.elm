@@ -10,6 +10,7 @@ import Dict exposing (Dict)
 import Group0x30 exposing (delta_dict_lite_30)
 import Group0xE0 exposing (delta_dict_lite_E0)
 import Group0xF0 exposing (list0255, lt40_array, xYDict)
+import List.Extra exposing (findMap)
 import Loop
 import PCIncrement exposing (MediumPCIncrement(..))
 import SimpleFlagOps exposing (singleByteFlags)
@@ -386,43 +387,33 @@ execute_delta ct rom48k z80 =
                                             (Bitwise.or 0xFD00 param.value, param.time, 2)
                                     _ ->
                                         (ct.value,ct.time, 1)
-      tripleMain = z80 |> parseTripleMain instrCode rom48k paramOffset
+      tripleMain = parseTripleMain instrCode rom48k paramOffset
+      triple16Flags = parseTriple16Flags instrCode rom48k paramOffset
+      triple16Param = parseTriple16Param instrCode rom48k paramOffset
+
+      result = findMap (\f -> z80 |> f) [tripleMain, triple16Flags, triple16Param]
    in
-   case tripleMain of
+   case result of
        Just delta ->
            Z80Result delta
        Nothing ->
-           let
-               triple16Flags = z80 |> parseTriple16Flags instrCode rom48k paramOffset
-           in
-           case triple16Flags of
-               Just delta16 ->
-                   Z80Result delta16
-               Nothing ->
-                   let
-                       triplr16Param = z80 |> parseTriple16Param instrCode rom48k paramOffset
-                   in
-                   case triplr16Param of
-                      Just deltaParam16 ->
-                          Z80Result deltaParam16
+          let
+              relJump = z80 |> parseRelativeJump instrCode rom48k instrTime
+          in
+          case relJump of
+              Just jumper ->
+                Z80DeltaChange jumper
+              Nothing ->
+                  let
+                      doubler = z80 |>  parseDoubleWithRegs instrCode rom48k instrTime
+                  in
+                  case doubler of
+                      Just adoubler ->
+                          Z80DeltaChange adoubler
                       Nothing ->
-                          let
-                              relJump = z80 |> parseRelativeJump instrCode rom48k instrTime
-                          in
-                          case relJump of
-                              Just jumper ->
-                                Z80DeltaChange jumper
-                              Nothing ->
-                                  let
-                                      doubler = z80 |>  parseDoubleWithRegs instrCode rom48k instrTime
-                                  in
-                                  case doubler of
-                                      Just adoubler ->
-                                          Z80DeltaChange adoubler
-                                      Nothing ->
-                                          case singleByte instrTime instrCode z80 rom48k of
-                                              Just deltaThing -> Z80DeltaChange deltaThing
-                                              Nothing -> Z80DeltaChange (oldDelta ct interrupts z80 rom48k)
+                          case singleByte instrTime instrCode z80 rom48k of
+                              Just deltaThing -> Z80DeltaChange deltaThing
+                              Nothing -> Z80DeltaChange (oldDelta ct interrupts z80 rom48k)
 -- case 0xD4: call((Ff&0x100)==0); break;
 -- case 0xE4: call((flags()&FP)==0); break;
 -- case 0xEC: call((flags()&FP)!=0); break;
@@ -431,14 +422,14 @@ execute_delta ct rom48k z80 =
 -- case 0xF3: IFF=0; break;
 
 singleByte: CpuTimeCTime -> Int -> Z80 -> Z80ROM -> Maybe DeltaWithChanges
-singleByte ctime instr_code tmp_z80 rom48k =
+singleByte ctime instr_code z80 rom48k =
     case singleEnvMainRegs |> Dict.get instr_code of
         Just (f, pcInc) ->
-            Just (MainWithEnvDelta  pcInc (f tmp_z80.main rom48k tmp_z80.env))
+            Just (MainWithEnvDelta  pcInc (f z80.main rom48k z80.env))
         Nothing ->
             case singleByteZ80Env |> Dict.get instr_code of
                 Just f ->
-                   Just (SingleEnvDelta ctime (f tmp_z80.env))
+                   Just (SingleEnvDelta ctime (f z80.env))
                 Nothing ->
                    case singleWithNoParam |> Dict.get instr_code of
                        Just f ->
@@ -449,23 +440,23 @@ singleByte ctime instr_code tmp_z80 rom48k =
                                    let
                                       param = case pcInc of
                                           IncreaseByTwo ->
-                                                mem (Bitwise.and (tmp_z80.pc + 1) 0xFFFF) ctime rom48k tmp_z80.env.ram
+                                                mem (Bitwise.and (z80.pc + 1) 0xFFFF) ctime rom48k z80.env.ram
 
                                           IncreaseByThree ->
-                                                mem (Bitwise.and (tmp_z80.pc + 2) 0xFFFF) ctime rom48k tmp_z80.env.ram
+                                                mem (Bitwise.and (z80.pc + 2) 0xFFFF) ctime rom48k z80.env.ram
 
                                    in
                                    -- duplicate of code in imm8 - add 3 to the cpu_time
                                    Just (Simple8BitDelta pcInc (param.time |> addCpuTimeTime 3) (f param.value))
                                Nothing ->
                                    case singleByteMainRegs  |> Dict.get instr_code of
-                                        Just (mainRegFunc, t) ->  Just (RegisterChangeDelta t ctime (mainRegFunc tmp_z80.main))
+                                        Just (mainRegFunc, t) ->  Just (RegisterChangeDelta t ctime (mainRegFunc z80.main))
                                         Nothing ->
                                             case singleByteFlags |> Dict.get instr_code of
-                                                Just (flagFunc, t) -> Just (FlagDelta t ctime (flagFunc tmp_z80.flags))
+                                                Just (flagFunc, t) -> Just (FlagDelta t ctime (flagFunc z80.flags))
                                                 Nothing ->
                                                   case singleByteMainAndFlagRegisters |> Dict.get instr_code of
-                                                      Just (f, pcInc) -> Just (PureDelta pcInc ctime (f tmp_z80.main tmp_z80.flags))
+                                                      Just (f, pcInc) -> Just (PureDelta pcInc ctime (f z80.main z80.flags))
                                                       Nothing -> Nothing
 
 

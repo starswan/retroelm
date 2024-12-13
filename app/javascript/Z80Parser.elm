@@ -28,11 +28,6 @@ parseTripleMain instrCode rom48k paramOffset z80 =
         Nothing ->
             Nothing
 
-    --| TripleFlagDelta CpuTimeCTime TripleWithFlagsChange
-    --    TripleFlagDelta cpuTimeCTime tripleWithFlagsChange ->
-    --        z80 |> applyTripleFlagChange cpuTimeCTime tripleWithFlagsChange
-
-
 
 parseTriple16Flags : Int -> Z80ROM -> Int -> Z80 -> Maybe Z80
 parseTriple16Flags instrCode rom48k paramOffset z80 =
@@ -47,6 +42,7 @@ parseTriple16Flags instrCode rom48k paramOffset z80 =
 
         Nothing ->
             Nothing
+
 
 parseTriple16Param : Int -> Z80ROM -> Int -> Z80 -> Maybe Z80
 parseTriple16Param instrCode rom48k paramOffset z80 =
