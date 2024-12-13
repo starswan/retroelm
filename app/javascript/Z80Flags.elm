@@ -1,7 +1,7 @@
 module Z80Flags exposing (..)
 
 import Bitwise exposing (complement, shiftLeftBy, shiftRightBy)
-import CpuTimeCTime exposing (CpuTimeIncrement, increment7)
+import TransformTypes exposing (InstructionDuration(..))
 import Utils exposing (shiftLeftBy1, shiftLeftBy8, shiftRightBy1, shiftRightBy8)
 
 
@@ -23,7 +23,7 @@ type alias IntWithFlags =
 type alias IntWithFlagsAndTime =
     { value : Int
     , flags : FlagRegisters
-    , time : CpuTimeIncrement
+    , time : InstructionDuration
     }
 
 
@@ -653,7 +653,7 @@ add16 a b main_flags =
         new_flags =
             { main_flags | ff = ff, fa = fa, fb = fb }
     in
-    IntWithFlagsAndTime (Bitwise.and r 0xFFFF) new_flags increment7
+    IntWithFlagsAndTime (Bitwise.and r 0xFFFF) new_flags SevenTStates
 
 
 

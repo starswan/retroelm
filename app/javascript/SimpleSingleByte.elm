@@ -1,11 +1,14 @@
 module SimpleSingleByte exposing (..)
 
 import Bitwise
-import CpuTimeCTime exposing (CpuTimeIncrement(..), increment3, increment7)
+import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeIncrement(..), increment3, increment7)
 import Dict exposing (Dict)
 import PCIncrement exposing (PCIncrement(..))
 import RegisterChange exposing (RegisterChange(..))
 import Utils exposing (shiftRightBy8)
+import Z80Execute exposing (applyRegisterDelta)
+import Z80Rom exposing (Z80ROM)
+import Z80Transform exposing (Z80Transform)
 import Z80Types exposing (IXIYHL(..), MainRegisters, MainWithIndexRegisters, Z80, get_bc, get_de)
 
 
@@ -28,12 +31,20 @@ singleByteMainRegs =
         , ( 0x42, ( ld_b_d, IncrementByOne ) )
         , ( 0x43, ( ld_b_e, IncrementByOne ) )
         , ( 0x44, ( ld_b_h, IncrementByOne ) )
+        , ( 0xDD44, ( ld_b_ix_h, IncrementByTwo ) )
+        , ( 0xFD44, ( ld_b_iy_h, IncrementByTwo ) )
         , ( 0x45, ( ld_b_l, IncrementByOne ) )
+        , ( 0xDD45, ( ld_b_ix_l, IncrementByTwo ) )
+        , ( 0xFD45, ( ld_b_iy_l, IncrementByTwo ) )
         , ( 0x48, ( ld_c_b, IncrementByOne ) )
         , ( 0x4A, ( ld_c_d, IncrementByOne ) )
         , ( 0x4B, ( ld_c_e, IncrementByOne ) )
         , ( 0x4C, ( ld_c_h, IncrementByOne ) )
+        , ( 0xDD4C, ( ld_c_ix_h, IncrementByTwo ) )
+        , ( 0xFD4C, ( ld_c_iy_h, IncrementByTwo ) )
         , ( 0x4D, ( ld_c_l, IncrementByOne ) )
+        , ( 0xDD4D, ( ld_c_ix_l, IncrementByTwo ) )
+        , ( 0xFD4D, ( ld_c_iy_l, IncrementByTwo ) )
         , ( 0x50, ( ld_d_b, IncrementByOne ) )
         , ( 0x51, ( ld_d_c, IncrementByOne ) )
         , ( 0x53, ( ld_d_e, IncrementByOne ) )
@@ -81,6 +92,16 @@ singleByteMainRegs =
         , ( 0xCB36, ( sll_indirect_hl, IncrementByTwo ) )
         , ( 0xCB3E, ( srl_indirect_hl, IncrementByTwo ) )
         ]
+
+
+parseSingleByte : CpuTimeCTime -> Int -> Z80ROM -> Z80 -> Maybe Z80Transform
+parseSingleByte instrTime instrCode _ z80 =
+    case singleByteMainRegs |> Dict.get instrCode of
+        Just ( mainRegFunc, pcInc ) ->
+            Just (z80 |> applyRegisterDelta pcInc instrTime (mainRegFunc z80.main))
+
+        Nothing ->
+            Nothing
 
 
 inc_bc : MainWithIndexRegisters -> RegisterChange
@@ -214,12 +235,71 @@ ld_b_h z80_main =
     ChangeRegisterB (shiftRightBy8 z80_main.hl)
 
 
+ld_b_ix_h : MainWithIndexRegisters -> RegisterChange
+ld_b_ix_h z80_main =
+    -- case 0x44: B=HL>>>8; break;
+    -- case 0x44: B=xy>>>8; break;
+    --z80 |> set_b (get_h ixiyhl z80.main)
+    ChangeRegisterB (shiftRightBy8 z80_main.ix)
+
+ld_c_ix_h : MainWithIndexRegisters -> RegisterChange
+ld_c_ix_h z80_main =
+    -- case 0x44: B=HL>>>8; break;
+    -- case 0x44: B=xy>>>8; break;
+    --z80 |> set_b (get_h ixiyhl z80.main)
+    ChangeRegisterC (shiftRightBy8 z80_main.ix)
+
+
+ld_b_iy_h : MainWithIndexRegisters -> RegisterChange
+ld_b_iy_h z80_main =
+    -- case 0x44: B=HL>>>8; break;
+    -- case 0x44: B=xy>>>8; break;
+    --z80 |> set_b (get_h ixiyhl z80.main)
+    ChangeRegisterB (shiftRightBy8 z80_main.iy)
+
+ld_c_iy_h : MainWithIndexRegisters -> RegisterChange
+ld_c_iy_h z80_main =
+    -- case 0x44: B=HL>>>8; break;
+    -- case 0x44: B=xy>>>8; break;
+    --z80 |> set_b (get_h ixiyhl z80.main)
+    ChangeRegisterC (shiftRightBy8 z80_main.iy)
+
+
 ld_b_l : MainWithIndexRegisters -> RegisterChange
 ld_b_l z80_main =
     -- case 0x45: B=HL&0xFF; break;
     -- case 0x45: B=xy&0xFF; break;
     --  z80 |> set_b (get_l ixiyhl z80.main)
     ChangeRegisterB (Bitwise.and z80_main.hl 0xFF)
+
+
+ld_b_ix_l : MainWithIndexRegisters -> RegisterChange
+ld_b_ix_l z80_main =
+    -- case 0x45: B=HL&0xFF; break;
+    -- case 0x45: B=xy&0xFF; break;
+    --  z80 |> set_b (get_l ixiyhl z80.main)
+    ChangeRegisterB (Bitwise.and z80_main.ix 0xFF)
+
+ld_c_ix_l : MainWithIndexRegisters -> RegisterChange
+ld_c_ix_l z80_main =
+    -- case 0x45: B=HL&0xFF; break;
+    -- case 0x45: B=xy&0xFF; break;
+    --  z80 |> set_b (get_l ixiyhl z80.main)
+    ChangeRegisterC (Bitwise.and z80_main.ix 0xFF)
+
+ld_b_iy_l : MainWithIndexRegisters -> RegisterChange
+ld_b_iy_l z80_main =
+    -- case 0x45: B=HL&0xFF; break;
+    -- case 0x45: B=xy&0xFF; break;
+    --  z80 |> set_b (get_l ixiyhl z80.main)
+    ChangeRegisterB (Bitwise.and z80_main.iy 0xFF)
+
+ld_c_iy_l : MainWithIndexRegisters -> RegisterChange
+ld_c_iy_l z80_main =
+    -- case 0x45: B=HL&0xFF; break;
+    -- case 0x45: B=xy&0xFF; break;
+    --  z80 |> set_b (get_l ixiyhl z80.main)
+    ChangeRegisterC (Bitwise.and z80_main.iy 0xFF)
 
 
 ld_c_b : MainWithIndexRegisters -> RegisterChange

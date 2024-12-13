@@ -1,12 +1,16 @@
 module SimpleFlagOps exposing (..)
 
 import Bitwise exposing (complement)
-import CpuTimeCTime exposing (CpuTimeIncrement(..))
+import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeIncrement(..))
 import Dict exposing (Dict)
 import PCIncrement exposing (PCIncrement(..))
 import Utils exposing (shiftRightBy8)
 import Z80Change exposing (FlagChange(..))
+import Z80Execute exposing (applyFlagDelta)
 import Z80Flags exposing (BitTest(..), FlagRegisters, IntWithFlags, adc, c_FP, c_FS, cpl, daa, dec, get_af, get_flags, inc, rot, sbc, scf_ccf, shifter0, shifter1, shifter2, shifter3, shifter4, shifter5, shifter6, shifter7, testBit, z80_add, z80_cp, z80_or, z80_sub, z80_xor)
+import Z80Rom exposing (Z80ROM)
+import Z80Transform exposing (Z80Transform)
+import Z80Types exposing (Z80)
 
 
 singleByteFlags : Dict Int ( FlagRegisters -> FlagChange, PCIncrement )
@@ -62,6 +66,23 @@ singleByteFlags =
         , ( 0xCB77, ( \z80_flags -> z80_flags |> testBit Bit_6 z80_flags.a |> OnlyFlags, IncrementByTwo ) )
         , ( 0xCB7F, ( \z80_flags -> z80_flags |> testBit Bit_7 z80_flags.a |> OnlyFlags, IncrementByTwo ) )
         ]
+
+parseSingleByteWithFlags : CpuTimeCTime -> Int -> Z80ROM -> Z80 -> Maybe Z80Transform
+parseSingleByteWithFlags instrTime instrCode rom48k z80 =
+   case singleByteFlags |> Dict.get instrCode of
+      --Just (flagFunc, t) -> Just (FlagDelta t instrTime (flagFunc z80.flags))
+      Just (flagFunc, t) ->
+        Just (z80 |> applyFlagDelta t instrTime (flagFunc z80.flags) rom48k)
+          --| FlagDelta PCIncrement CpuTimeCTime FlagChange
+          --    FlagDelta pcInc cpuTimeCTime flagRegisters ->
+          --        z80 |> applyFlagDelta pcInc cpuTimeCTime flagRegisters rom48k
+
+    --case singleByteMainRegs |> Dict.get instrCode of
+    --    Just ( mainRegFunc, pcInc ) ->
+    --        Just (z80 |> applyRegisterDelta pcInc instrTime (mainRegFunc z80.main))
+
+      Nothing ->
+            Nothing
 
 
 rlca : FlagRegisters -> FlagChange
