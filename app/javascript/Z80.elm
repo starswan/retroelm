@@ -26,7 +26,7 @@ import Z80Delta exposing (DeltaWithChangesData, Z80Delta(..))
 import Z80Env exposing (Z80Env, addCpuTimeEnv, c_TIME_LIMIT, m1, mem, mem16, z80_push, z80env_constructor)
 import Z80Execute exposing (DeltaWithChanges(..), ExecuteResult(..), apply_delta)
 import Z80Flags exposing (FlagRegisters, IntWithFlags)
-import Z80Parser exposing (parseDoubleWithRegs, parseRelativeJump, parseTriple16Flags, parseTriple16Param, parseTripleMain)
+import Z80Parser exposing (parseDoubleWithRegs, parseRelativeJump, parseSingle, parseSingleEnv, parseSingleEnvMain, parseSingleWithParam, parseTriple16Flags, parseTriple16Param, parseTripleMain)
 import Z80Rom exposing (Z80ROM)
 import Z80Types exposing (IXIY(..), IXIYHL(..), IntWithFlagsTimeAndPC, InterruptRegisters, MainRegisters, MainWithIndexRegisters, Z80, add_cpu_time, inc_pc)
 
@@ -398,22 +398,22 @@ execute_delta ct rom48k z80 =
            Z80Result delta
        Nothing ->
           let
-              relJump = z80 |> parseRelativeJump instrCode rom48k instrTime
+              relJump = parseRelativeJump instrCode rom48k instrTime
+              doubler = parseDoubleWithRegs instrCode rom48k instrTime
+              singleEnvMain = parseSingleEnvMain instrCode rom48k
+              singleEnv = parseSingleEnv instrCode instrTime
+              single = parseSingle instrCode instrTime
+              withParam = parseSingleWithParam instrCode instrTime rom48k
+
+              deltaChange = findMap (\f -> z80 |> f) [relJump, doubler, singleEnvMain, singleEnv, single, withParam]
           in
-          case relJump of
+          case deltaChange of
               Just jumper ->
-                Z80DeltaChange jumper
+                  Z80DeltaChange jumper
               Nothing ->
-                  let
-                      doubler = z80 |>  parseDoubleWithRegs instrCode rom48k instrTime
-                  in
-                  case doubler of
-                      Just adoubler ->
-                          Z80DeltaChange adoubler
-                      Nothing ->
-                          case singleByte instrTime instrCode z80 rom48k of
-                              Just deltaThing -> Z80DeltaChange deltaThing
-                              Nothing -> Z80DeltaChange (oldDelta ct interrupts z80 rom48k)
+                  case singleByte instrTime instrCode z80 of
+                      Just deltaThing -> Z80DeltaChange deltaThing
+                      Nothing -> Z80DeltaChange (oldDelta ct interrupts z80 rom48k)
 -- case 0xD4: call((Ff&0x100)==0); break;
 -- case 0xE4: call((flags()&FP)==0); break;
 -- case 0xEC: call((flags()&FP)!=0); break;
@@ -421,43 +421,17 @@ execute_delta ct rom48k z80 =
 -- case 0xFC: call((Ff&FS)!=0); break;
 -- case 0xF3: IFF=0; break;
 
-singleByte: CpuTimeCTime -> Int -> Z80 -> Z80ROM -> Maybe DeltaWithChanges
-singleByte ctime instr_code z80 rom48k =
-    case singleEnvMainRegs |> Dict.get instr_code of
-        Just (f, pcInc) ->
-            Just (MainWithEnvDelta  pcInc (f z80.main rom48k z80.env))
+singleByte: CpuTimeCTime -> Int -> Z80 -> Maybe DeltaWithChanges
+singleByte ctime instr_code z80 =
+   case singleByteMainRegs  |> Dict.get instr_code of
+        Just (mainRegFunc, t) ->  Just (RegisterChangeDelta t ctime (mainRegFunc z80.main))
         Nothing ->
-            case singleByteZ80Env |> Dict.get instr_code of
-                Just f ->
-                   Just (SingleEnvDelta ctime (f z80.env))
+            case singleByteFlags |> Dict.get instr_code of
+                Just (flagFunc, t) -> Just (FlagDelta t ctime (flagFunc z80.flags))
                 Nothing ->
-                   case singleWithNoParam |> Dict.get instr_code of
-                       Just f ->
-                           Just (NoParamsDelta ctime f)
-                       Nothing ->
-                           case singleWith8BitParam |> Dict.get instr_code of
-                               Just (f, pcInc) ->
-                                   let
-                                      param = case pcInc of
-                                          IncreaseByTwo ->
-                                                mem (Bitwise.and (z80.pc + 1) 0xFFFF) ctime rom48k z80.env.ram
-
-                                          IncreaseByThree ->
-                                                mem (Bitwise.and (z80.pc + 2) 0xFFFF) ctime rom48k z80.env.ram
-
-                                   in
-                                   -- duplicate of code in imm8 - add 3 to the cpu_time
-                                   Just (Simple8BitDelta pcInc (param.time |> addCpuTimeTime 3) (f param.value))
-                               Nothing ->
-                                   case singleByteMainRegs  |> Dict.get instr_code of
-                                        Just (mainRegFunc, t) ->  Just (RegisterChangeDelta t ctime (mainRegFunc z80.main))
-                                        Nothing ->
-                                            case singleByteFlags |> Dict.get instr_code of
-                                                Just (flagFunc, t) -> Just (FlagDelta t ctime (flagFunc z80.flags))
-                                                Nothing ->
-                                                  case singleByteMainAndFlagRegisters |> Dict.get instr_code of
-                                                      Just (f, pcInc) -> Just (PureDelta pcInc ctime (f z80.main z80.flags))
-                                                      Nothing -> Nothing
+                  case singleByteMainAndFlagRegisters |> Dict.get instr_code of
+                      Just (f, pcInc) -> Just (PureDelta pcInc ctime (f z80.main z80.flags))
+                      Nothing -> Nothing
 
 
 oldDelta: CpuTimeAndValue -> InterruptRegisters -> Z80 -> Z80ROM -> DeltaWithChanges

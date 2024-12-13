@@ -4,7 +4,10 @@ import Bitwise
 import CpuTimeCTime exposing (CpuTimeCTime, addCpuTimeTime)
 import Dict
 import PCIncrement exposing (MediumPCIncrement(..), TriplePCIncrement)
-import SingleWith8BitParameter exposing (doubleWithRegisters, maybeRelativeJump)
+import SingleByteWithEnv exposing (singleByteZ80Env)
+import SingleEnvWithMain exposing (singleEnvMainRegs)
+import SingleNoParams exposing (singleWithNoParam)
+import SingleWith8BitParameter exposing (doubleWithRegisters, maybeRelativeJump, singleWith8BitParam)
 import TripleByte exposing (tripleByteWith16BitParam)
 import TripleWithFlags exposing (triple16WithFlags)
 import TripleWithMain exposing (TripleMainChange, applyTripleMainChange, tripleMainRegs)
@@ -90,6 +93,56 @@ parseDoubleWithRegs instrCode rom48k instrTime z80 =
             in
             -- duplicate of code in imm8 - add 3 to the cpu_time
             Just (DoubleWithRegistersDelta pcInc (param.time |> addCpuTimeTime 3) (f z80.main param.value))
+
+        Nothing ->
+            Nothing
+
+
+parseSingleEnvMain : Int -> Z80ROM -> Z80 -> Maybe DeltaWithChanges
+parseSingleEnvMain instr_code rom48k z80 =
+    case singleEnvMainRegs |> Dict.get instr_code of
+        Just ( f, pcInc ) ->
+            Just (MainWithEnvDelta pcInc (f z80.main rom48k z80.env))
+
+        Nothing ->
+            Nothing
+
+
+parseSingleEnv : Int -> CpuTimeCTime -> Z80 -> Maybe DeltaWithChanges
+parseSingleEnv instr_code ctime z80 =
+    case singleByteZ80Env |> Dict.get instr_code of
+        Just f ->
+            Just (SingleEnvDelta ctime (f z80.env))
+
+        Nothing ->
+            Nothing
+
+
+parseSingle : Int -> CpuTimeCTime -> Z80 -> Maybe DeltaWithChanges
+parseSingle instr_code ctime z80 =
+    case singleWithNoParam |> Dict.get instr_code of
+        Just f ->
+            Just (NoParamsDelta ctime f)
+
+        Nothing ->
+            Nothing
+
+
+parseSingleWithParam : Int -> CpuTimeCTime -> Z80ROM -> Z80 -> Maybe DeltaWithChanges
+parseSingleWithParam instr_code ctime rom48k z80 =
+    case singleWith8BitParam |> Dict.get instr_code of
+        Just ( f, pcInc ) ->
+            let
+                param =
+                    case pcInc of
+                        IncreaseByTwo ->
+                            mem (Bitwise.and (z80.pc + 1) 0xFFFF) ctime rom48k z80.env.ram
+
+                        IncreaseByThree ->
+                            mem (Bitwise.and (z80.pc + 2) 0xFFFF) ctime rom48k z80.env.ram
+            in
+            -- duplicate of code in imm8 - add 3 to the cpu_time
+            Just (Simple8BitDelta pcInc (param.time |> addCpuTimeTime 3) (f param.value))
 
         Nothing ->
             Nothing
