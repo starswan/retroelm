@@ -24,8 +24,8 @@ tripleMainRegs =
 applyTripleMainChange : CpuTimeCTime -> TriplePCIncrement -> TripleMainChange -> Z80 -> Z80
 applyTripleMainChange time pcInc z80changeData z80 =
     let
-        interrupts =
-            z80.interrupts
+        --interrupts =
+        --    z80.interrupts
 
         env =
             z80.env
@@ -47,7 +47,7 @@ applyTripleMainChange time pcInc z80changeData z80 =
             { z80
                 | pc = new_pc
                 , env = env1
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
 

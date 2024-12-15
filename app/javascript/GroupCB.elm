@@ -88,7 +88,7 @@ group_cb rom48k tmp_z80 =
     --		switch(c & 0xC7) {
     let
         new_r =
-            Bitwise.and (tmp_z80.interrupts.r + 1) 0x7F
+            Bitwise.and (tmp_z80.r + 1) 0x7F
 
         ir_or_r =
             Bitwise.or tmp_z80.interrupts.ir new_r

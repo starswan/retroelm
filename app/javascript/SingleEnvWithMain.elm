@@ -47,8 +47,8 @@ singleEnvMainRegs =
 applySingleEnvMainChange : PCIncrement -> SingleEnvMainChange -> Z80 -> Z80
 applySingleEnvMainChange pcInc z80changeData z80 =
     let
-        interrupts =
-            z80.interrupts
+        --interrupts =
+        --    z80.interrupts
 
         env =
             z80.env
@@ -74,7 +74,7 @@ applySingleEnvMainChange pcInc z80changeData z80 =
                 | pc = new_pc
                 , flags = { flags | a = int }
                 , env = env1
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
         SingleEnvNewBRegister int cpuTimeCTime ->
@@ -89,7 +89,7 @@ applySingleEnvMainChange pcInc z80changeData z80 =
                 | pc = new_pc
                 , main = { main | b = int }
                 , env = env1
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
         SingleEnvNewCRegister int cpuTimeCTime ->
@@ -104,7 +104,7 @@ applySingleEnvMainChange pcInc z80changeData z80 =
                 | pc = new_pc
                 , main = { main | c = int }
                 , env = env1
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
         SingleEnvNewDRegister int cpuTimeCTime ->
@@ -119,7 +119,7 @@ applySingleEnvMainChange pcInc z80changeData z80 =
                 | pc = new_pc
                 , main = { main | d = int }
                 , env = env1
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
         SingleEnvNewERegister int cpuTimeCTime ->
@@ -134,7 +134,7 @@ applySingleEnvMainChange pcInc z80changeData z80 =
                 | pc = new_pc
                 , main = { main | e = int }
                 , env = env1
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
         SingleEnvNewHLRegister int cpuTimeCTime ->
@@ -149,7 +149,7 @@ applySingleEnvMainChange pcInc z80changeData z80 =
                 | pc = new_pc
                 , main = { main | hl = int }
                 , env = env1
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
         SingleBitTest bitTest intwithTime ->
@@ -157,7 +157,7 @@ applySingleEnvMainChange pcInc z80changeData z80 =
                 | pc = new_pc
                 , env = { env | time = intwithTime.time }
                 , flags = z80.flags |> testBit bitTest intwithTime.value
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
 

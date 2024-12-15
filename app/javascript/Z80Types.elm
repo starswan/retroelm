@@ -31,7 +31,6 @@ type alias MainWithIndexRegisters =
 
 type alias InterruptRegisters =
     { ir : Int
-    , r : Int
     , --mp:  Int, -- /* MEMPTR, the hidden register emulated according to memptr_eng.txt */
       iff : Int
     , iM : Int
@@ -46,6 +45,7 @@ type alias Z80 =
     , flags : FlagRegisters
     , alt_main : MainRegisters
     , alt_flags : FlagRegisters
+    , r : Int
     , interrupts : InterruptRegisters
 
     --, time_limit : Int
