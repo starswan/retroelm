@@ -80,8 +80,8 @@ singleWithNoParam =
 applyNoParamsDelta : CpuTimeCTime -> NoParamChange -> Z80ROM -> Z80 -> Z80
 applyNoParamsDelta cpu_time z80changeData rom48k z80 =
     let
-        interrupts =
-            z80.interrupts
+        --interrupts =
+        --    z80.interrupts
 
         old_env =
             z80.env
@@ -94,7 +94,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             { z80
                 | pc = pc
                 , env = { old_env | time = cpu_time |> addCpuTimeTime 4 }
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
         PopBC ->
@@ -113,7 +113,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
                 | pc = pc
                 , main = z80.main |> set_bc_main v.value
                 , env = { env1 | time = v.time, sp = v.sp }
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
         PopHL ->
@@ -131,7 +131,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
                 | pc = pc
                 , main = { main | hl = v.value }
                 , env = { env1 | time = v.time, sp = v.sp }
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
         DisableInterrupts ->
@@ -142,7 +142,8 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             in
             { z80
                 | pc = pc
-                , interrupts = { ints | r = interrupts.r + 1 }
+                , interrupts = ints,
+                r = z80.r + 1
             }
 
         EnableInterrupts ->
@@ -153,7 +154,8 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             in
             { z80
                 | pc = pc
-                , interrupts = { ints | r = interrupts.r + 1 }
+                , interrupts = ints,
+                 r = z80.r + 1
             }
 
         ExAfAfDash ->
@@ -162,7 +164,10 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
                 new_z80 =
                     z80 |> ex_af
             in
-            { new_z80 | pc = pc, interrupts = { interrupts | r = interrupts.r + 1 } }
+            { new_z80
+                | pc = pc
+                , r = z80.r + 1
+            }
 
         Exx ->
             -- case 0xD9: exx(); break;
@@ -175,7 +180,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             in
             { z80
                 | pc = pc
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
                 , main = { main | b = alt.b, c = alt.c, d = alt.d, e = alt.e, hl = alt.hl }
                 , alt_main = { alt | b = main.b, c = main.c, d = main.d, e = main.e, hl = main.hl }
             }
@@ -193,7 +198,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
                 | pc = pc
                 , flags = set_af v.value
                 , env = { env1 | time = v.time, sp = v.sp }
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
         PopDE ->
@@ -209,7 +214,7 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
                 | pc = pc
                 , main = z80.main |> set_de_main v.value
                 , env = { env1 | time = v.time, sp = v.sp }
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
         Rst00 ->
@@ -259,15 +264,15 @@ applyNoParamsDelta cpu_time z80changeData rom48k z80 =
             { z80
                 | env = { old_env | time = a.time, sp = a.sp }
                 , pc = a.value
-                , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
             }
 
 
 rst : Int -> CpuTimeCTime -> Z80 -> Z80
 rst value cpu_time z80 =
     let
-        interrupts =
-            z80.interrupts
+        --interrupts =
+        --    z80.interrupts
 
         old_env =
             z80.env
@@ -278,7 +283,7 @@ rst value cpu_time z80 =
     { z80
         | pc = value - 199
         , env = { old_env | time = cpu_time } |> z80_push pc
-        , interrupts = { interrupts | r = interrupts.r + 1 }
+                , r = z80.r + 1
     }
 
 

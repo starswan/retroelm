@@ -36,10 +36,10 @@ constructor =
         alternate = MainRegisters 0 0 0 0 0
         main_flags = FlagRegisters 0 0 0 0 0
         alt_flags = FlagRegisters 0 0 0 0 0
-        interrupts = InterruptRegisters 0 0 0 0 False
+        interrupts = InterruptRegisters 0 0 0 False
     in
         --Z80 z80env_constructor 0 main main_flags alternate alt_flags interrupts (c_FRSTART + c_FRTIME)
-        Z80 z80env_constructor 0 main main_flags alternate alt_flags interrupts
+        Z80 z80env_constructor 0 main main_flags alternate alt_flags 0 interrupts
 --	int a() {return A;}
 --get_a: Z80 -> Int
 --get_a z80 =
@@ -264,7 +264,7 @@ z80_halt z80 =
       n = shiftRightBy 2 (c_TIME_LIMIT - z80.env.time.cpu_time + 3)
       z80_1 = if n > 0 then
                  -- turns out env.halt(n, r) just returns n...?
-                 { z80 | interrupts = { interrupts | r = interrupts.r + n } } |> add_cpu_time (4 * n)
+                 { z80 | r = z80.r + n } |> add_cpu_time (4 * n)
               else
                  z80
     in
@@ -473,7 +473,7 @@ oldDelta: CpuTimeAndValue -> InterruptRegisters -> Z80 -> Z80ROM -> DeltaWithCha
 oldDelta c interrupts tmp_z80 rom48k =
   let
      env = tmp_z80.env
-     old_z80 = { tmp_z80 | env = { env | time = c.time }, interrupts = { interrupts | r = interrupts.r + 1 } }
+     old_z80 = { tmp_z80 | env = { env | time = c.time }, r = tmp_z80.r + 1 }
      new_pc = Bitwise.and (old_z80.pc + 1) 0xFFFF
      z80 = { old_z80 | pc = new_pc } |> add_cpu_time 4
      new_time = z80.env.time
@@ -487,25 +487,25 @@ oldDelta c interrupts tmp_z80 rom48k =
   --       in
   --       OldDeltaWithChanges (DeltaWithChangesData delta interrupts new_pc new_time)
   --       )
- case z80 |> execute_ltC0 c.value rom48k of
-   Just z80delta -> OldDeltaWithChanges (DeltaWithChangesData z80delta interrupts new_pc new_time)
-   Nothing ->
+  case z80 |> execute_ltC0 c.value rom48k of
+    Just z80delta -> OldDeltaWithChanges (DeltaWithChangesData z80delta interrupts new_pc new_time)
+    Nothing ->
         --case c.value of
             --0xDD -> DeltaWithChanges (group_xy IXIY_IX z80) interrupts new_pc new_time
             --0xFD -> DeltaWithChanges (group_xy IXIY_IY z80) interrupts new_pc new_time
             --0xED -> DeltaWithChanges (Whole (group_ed z80)) interrupts new_pc new_time
             --0xCD -> DeltaWithChanges (execute_0xCD z80) interrupts new_pc new_time
             --_ ->
-     let
-       delta = debugTodo "execute" (c.value |> toHexString) z80  |> Whole
-     in
-       OldDeltaWithChanges (DeltaWithChangesData delta interrupts new_pc new_time)
+       let
+         delta = debugTodo "execute" (c.value |> toHexString) z80  |> Whole
+       in
+         OldDeltaWithChanges (DeltaWithChangesData delta interrupts new_pc new_time)
 
 
 execute_instruction: Z80ROM -> Z80 -> Z80
 execute_instruction rom48k z80 =
    let
-        ct = z80.env |> m1 z80.pc (Bitwise.or z80.interrupts.ir (Bitwise.and z80.interrupts.r 0x7F)) rom48k
+        ct = z80.env |> m1 z80.pc (Bitwise.or z80.interrupts.ir (Bitwise.and z80.r 0x7F)) rom48k
         result = z80 |> execute_delta ct rom48k
    in
    case result of
@@ -557,10 +557,10 @@ execute rom48k z80 =
 group_xy: IXIY -> Z80ROM -> Z80 -> Z80Delta
 group_xy ixiy rom48k old_z80 =
   let
-    c = old_z80.env |> m1 old_z80.pc (or old_z80.interrupts.ir (and old_z80.interrupts.r 0x7F)) rom48k
-    intr = old_z80.interrupts
+    c = old_z80.env |> m1 old_z80.pc (or old_z80.interrupts.ir (and old_z80.r 0x7F)) rom48k
+    --intr = old_z80.interrupts
     env = old_z80.env
-    z80_1 = { old_z80 | env = { env | time = c.time }, interrupts = { intr | r = intr.r + 1 } }
+    z80_1 = { old_z80 | env = { env | time = c.time }, r = old_z80.r + 1 }
     new_pc = z80_1 |> inc_pc
     z80 = { z80_1 | pc = new_pc } |> add_cpu_time 4
 

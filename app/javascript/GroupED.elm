@@ -390,17 +390,17 @@ execute_ED70 _ z80 =
 group_ed : Z80ROM -> Z80 -> Z80Delta
 group_ed rom48k z80_0 =
     let
-        ints =
-            z80_0.interrupts
+        --ints =
+        --    z80_0.interrupts
 
         c =
-            z80.env |> m1 z80_0.pc (Bitwise.or z80_0.interrupts.ir (Bitwise.and z80_0.interrupts.r 0x7F)) rom48k
+            z80.env |> m1 z80_0.pc (Bitwise.or z80_0.interrupts.ir (Bitwise.and z80_0.r 0x7F)) rom48k
 
         new_r =
-            z80_0.interrupts.r + 1
+            z80_0.r + 1
 
         old_z80 =
-            { z80_0 | interrupts = { ints | r = new_r } }
+            { z80_0 | r = new_r }
 
         new_pc =
             old_z80 |> inc_pc
