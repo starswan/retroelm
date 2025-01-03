@@ -2,7 +2,7 @@
   "name": "retroelm",
   "private": true,
   "dependencies": {
-    "@rails/ujs": "7.0.8",
+    "@rails/ujs": "7.1.501",
     "elm": "^0.19.1-6",
     "esbuild": "^0.15.18"
   },
