@@ -5,6 +5,7 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
 gem "base64"
 gem "bigdecimal"
+gem "drb"
 gem "mutex_m"
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
