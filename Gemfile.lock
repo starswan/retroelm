@@ -68,8 +68,9 @@ GEM
       tzinfo (~> 2.0)
     addressable (2.8.6)
       public_suffix (>= 2.0.2, < 6.0)
+    base64 (0.2.0)
     bcrypt_pbkdf (1.1.0)
-    bindex (0.8.1)
+    bigdecimal (3.1.5)
     builder (3.3.0)
     byebug (11.1.3)
     capistrano (2.15.11)
@@ -100,6 +101,8 @@ GEM
     date (3.4.0)
     diff-lcs (1.4.4)
     docile (1.3.2)
+    drb (2.2.0)
+      ruby2_keywords
     ed25519 (1.2.4)
     erubi (1.13.1)
     factory_bot (6.5.0)
@@ -169,6 +172,7 @@ GEM
     method_source (1.1.0)
     mini_mime (1.1.5)
     minitest (5.25.4)
+    mutex_m (0.3.0)
     mysql2 (0.5.3)
     nenv (0.3.0)
     net-http (0.6.0)
@@ -267,6 +271,7 @@ GEM
       rspec-mocks (~> 3.10)
       rspec-support (~> 3.10)
     rspec-support (3.10.2)
+    ruby2_keywords (0.0.5)
     rubyzip (2.3.2)
     rvm-capistrano (1.5.6)
       capistrano (~> 2.15.4)
@@ -300,11 +305,6 @@ GEM
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     uri (1.0.2)
-    web-console (4.2.1)
-      actionview (>= 6.0.0)
-      activemodel (>= 6.0.0)
-      bindex (>= 0.4.0)
-      railties (>= 6.0.0)
     webrick (1.8.2)
     websocket-driver (0.7.6)
       websocket-extensions (>= 0.1.0)
@@ -317,13 +317,16 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  base64
   bcrypt_pbkdf
+  bigdecimal
   byebug
   capistrano
   capistrano-ext
   capistrano-rails
   capybara
   cuprite
+  drb
   ed25519
   factory_bot_rails
   faraday (>= 2)
@@ -332,8 +335,8 @@ DEPENDENCIES
   guard-rspec
   jbuilder (~> 2.7)
   jsbundling-rails (~> 1.3)
-  listen (~> 3.9)
   matrix
+  mutex_m
   mysql2
   net-smtp
   nokogiri (< 1.19)
@@ -349,7 +352,6 @@ DEPENDENCIES
   simplecov
   sqlite3 (~> 1.4)
   tzinfo-data
-  web-console (>= 3.3.0)
 
 BUNDLED WITH
    2.3.27
