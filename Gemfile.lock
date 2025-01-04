@@ -71,7 +71,6 @@ GEM
     base64 (0.2.0)
     bcrypt_pbkdf (1.1.0)
     bigdecimal (3.1.5)
-    bindex (0.8.1)
     builder (3.3.0)
     byebug (11.1.3)
     capistrano (2.15.11)
@@ -171,6 +170,7 @@ GEM
     method_source (1.1.0)
     mini_mime (1.1.5)
     minitest (5.25.4)
+    mutex_m (0.3.0)
     mysql2 (0.5.3)
     nenv (0.3.0)
     net-http (0.6.0)
@@ -302,11 +302,6 @@ GEM
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     uri (1.0.2)
-    web-console (4.2.1)
-      actionview (>= 6.0.0)
-      activemodel (>= 6.0.0)
-      bindex (>= 0.4.0)
-      railties (>= 6.0.0)
     webrick (1.8.2)
     websocket-driver (0.7.6)
       websocket-extensions (>= 0.1.0)
@@ -336,8 +331,8 @@ DEPENDENCIES
   guard-rspec
   jbuilder (~> 2.7)
   jsbundling-rails (~> 1.3)
-  listen (~> 3.9)
   matrix
+  mutex_m
   mysql2
   net-smtp
   nokogiri (< 1.19)
@@ -353,7 +348,6 @@ DEPENDENCIES
   simplecov
   sqlite3 (~> 1.4)
   tzinfo-data
-  web-console (>= 3.3.0)
 
 BUNDLED WITH
    2.3.27
