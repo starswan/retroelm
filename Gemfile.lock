@@ -68,6 +68,7 @@ GEM
       tzinfo (~> 2.0)
     addressable (2.8.6)
       public_suffix (>= 2.0.2, < 6.0)
+    base64 (0.2.0)
     bcrypt_pbkdf (1.1.0)
     bindex (0.8.1)
     builder (3.3.0)
@@ -317,6 +318,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  base64
   bcrypt_pbkdf
   byebug
   capistrano
