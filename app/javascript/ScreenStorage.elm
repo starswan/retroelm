@@ -3,19 +3,28 @@ module ScreenStorage exposing (..)
 -- Convert row index into start row data location
 
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
+import List.Extra exposing (zip)
+import Vector24 exposing (Vector24)
+import Vector32 exposing (Vector32)
 import Z80Memory exposing (Z80Memory, getMemValue)
 
 
 range07 =
-    List.range 0 7
+    --    List.range 0 7
+    --    Vector8.from8 Vector24.Index0 Vector24.Index1 Vector24.Index2 Vector24.Index3 Vector24.Index4 Vector24.Index5 Vector24.Index6 Vector24.Index7
+    [ Vector24.Index0, Vector24.Index1, Vector24.Index2, Vector24.Index3, Vector24.Index4, Vector24.Index5, Vector24.Index6, Vector24.Index7 ]
 
 
 range8_15 =
-    List.range 8 15
+    --List.range 8 15
+    --Vector8.from8 Vector24.Index8 Vector24.Index9 Vector24.Index10 Vector24.Index11 Vector24.Index12 Vector24.Index13 Vector24.Index14 Vector24.Index15
+    [ Vector24.Index8, Vector24.Index9, Vector24.Index10, Vector24.Index11, Vector24.Index12, Vector24.Index13, Vector24.Index14, Vector24.Index15 ]
 
 
 range16_23 =
-    List.range 16 23
+    --List.range 16 23
+    --Vector8.from8 Vector24.Index16 Vector24.Index17 Vector24.Index18 Vector24.Index19 Vector24.Index20 Vector24.Index21 Vector24.Index22 Vector24.Index23
+    [ Vector24.Index16, Vector24.Index17, Vector24.Index18, Vector24.Index19, Vector24.Index20, Vector24.Index21, Vector24.Index22, Vector24.Index23 ]
 
 
 bank0_attr_indexes =
@@ -29,21 +38,14 @@ bank1_attr_indexes =
 bank2_attr_indexes =
     range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23
 
-
+-- 192 mappings of screen index to attribute data index
 attr_indexes =
     bank0_attr_indexes ++ bank1_attr_indexes ++ bank2_attr_indexes
 
 
---dataOffsets =
---    range0_191 |> List.map calcDataOffset
-
-
---range0_191 =
---    List.range 0 191
-
-
 type alias Z80Screen =
-    { screen : Z80Memory
+    { data : Z80Memory
+    , attrs : Vector24 (Vector32 Int)
     , border : Int
 
     --flash: Int,
@@ -67,19 +69,19 @@ type alias RawScreenData =
 constructor : Z80Screen
 constructor =
     let
-        --for(int i=6144;i<6912;i++) ram[i] = 070; // white
         screen_data =
-            List.repeat 6144 0
+            List.repeat 6144 0 |> Z80Memory.constructor
+
+        --for(int i=6144;i<6912;i++) ram[i] = 070; // white
+        --attributes =
+        --    List.repeat 768 0x38 |> Z80Memory.constructor
+        attr_line =
+            Vector32.repeat 0x38
 
         attributes =
-            List.repeat 768 0x38
-
-        -- white
-        screen =
-            List.concat [ screen_data, attributes ] |> Z80Memory.constructor
+            Vector24.repeat attr_line
     in
-    --Z80Screen screen 7 0 0 0 0 0
-    Z80Screen screen 7
+    Z80Screen screen_data attributes 7
 
 
 calcDataOffset : Int -> Int
@@ -104,46 +106,105 @@ screenOffsets =
 range031 =
     List.range 0 31
 
-mapScreen : ( Int, Int ) -> Z80Screen -> Int -> RawScreenData
-mapScreen ( row_index, attr_index ) z80_screen index =
-    let
-        row_offset =
-            row_index * 32
 
-        attr_offset =
-            0x1800 + (attr_index * 32)
 
-        data =
-            getScreenValue (row_offset + index) z80_screen
-
-        colour =
-            getScreenValue (attr_offset + index) z80_screen
-    in
-    { colour = colour, data = data }
+--mapScreen : ( Int, Int ) -> Z80Screen -> Int -> RawScreenData
+--mapScreen ( row_index, attr_index ) z80_screen index =
+--    let
+--        --row_offset =
+--        --    row_index * 32
+--        --
+--        --attr_offset =
+--        --    attr_index * 32
+--        data =
+--            z80_screen.data |> getMemValue (row_index * 32 + index)
+--
+--        colour =
+--            z80_screen.attrs |> getMemValue (attr_index * 32 + index)
+--    in
+--    { colour = colour, data = data }
 
 
 setScreenValue : Int -> Int -> Z80Screen -> Z80Screen
-setScreenValue addr value z80s =
-    let
-        z80screen =
-            z80s |> refresh_screen
-    in
-    { z80screen | screen = z80screen.screen |> Z80Memory.setMemValue addr value }
+setScreenValue addr value z80screen =
+    --let
+    --    z80screen =
+    --        z80s |> refresh_screen
+    --in
+    if addr < 0x1800 then
+        { z80screen | data = z80screen.data |> Z80Memory.setMemValue addr value }
+
+    else
+        let
+            offset =
+                addr - 0x1800
+
+            row =
+                offset // 32 |> Vector24.intToIndex |> Maybe.withDefault Vector24.Index0
+
+            oldrow =
+                z80screen.attrs |> Vector24.get row
+
+            col =
+                offset |> remainderBy 32 |> Vector32.intToIndex |> Maybe.withDefault Vector32.Index0
+
+            new_row =
+                oldrow |> Vector32.set col value
+        in
+        --{ z80screen | attrs = z80screen.attrs |> Z80Memory.setMemValue (addr - 0x1800) value }
+        { z80screen | attrs = z80screen.attrs |> Vector24.set row new_row }
 
 
 getScreenValue : Int -> Z80Screen -> Int
 getScreenValue addr screen =
-    screen.screen |> getMemValue addr
+    if addr < 0x1800 then
+        screen.data |> getMemValue addr
+
+    else
+        --screen.attrs |> getMemValue (addr - 0x1800)
+        let
+            offset =
+                addr - 0x1800
+
+            row =
+                offset // 32 |> Vector24.intToIndex |> Maybe.withDefault Vector24.Index0
+
+            oldrow =
+                screen.attrs |> Vector24.get row
+
+            col =
+                offset |> remainderBy 32 |> Vector32.intToIndex |> Maybe.withDefault Vector32.Index0
+        in
+        oldrow |> Vector32.get col
 
 
 rawScreenData : Z80Screen -> List (List RawScreenData)
 rawScreenData z80_screen =
     screenOffsets
         |> List.map
-            (\line_num ->
-                range031 |> List.map (mapScreen line_num z80_screen)
+            (\( row_index, attr_index ) ->
+                --let
+                --    x =
+                --        range031 |> List.map (mapScreen row_column z80_screen)
+                --in
+                --x
+                let
+                    data_row =
+                        range031 |> List.map (\index -> z80_screen.data |> getMemValue (row_index * 32 + index))
+
+                    --attr_row =
+                    --    range031 |> List.map (\index -> z80_screen.attrs |> getMemValue (attr_index * 32 + index))
+                    attr_row =
+                        z80_screen.attrs |> Vector24.get attr_index |> Vector32.toList
+
+                    rows =
+                        zip data_row attr_row
+                in
+                rows |> List.map (\( data, attr ) -> { colour = attr, data = data })
             )
 
-refresh_screen : Z80Screen -> Z80Screen
-refresh_screen z80env =
-    z80env
+
+
+--refresh_screen : Z80Screen -> Z80Screen
+--refresh_screen z80env =
+--    z80env
