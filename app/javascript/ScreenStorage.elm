@@ -103,17 +103,16 @@ range031 =
 mapScreen : ( Int, Int ) -> Z80Screen -> Int -> RawScreenData
 mapScreen ( row_index, attr_index ) z80_screen index =
     let
-        row_offset =
-            row_index * 32
-
-        attr_offset =
-            attr_index * 32
-
+        --row_offset =
+        --    row_index * 32
+        --
+        --attr_offset =
+        --    attr_index * 32
         data =
-            z80_screen.data |> getMemValue (row_offset + index)
+            z80_screen.data |> getMemValue (row_index * 32 + index)
 
         colour =
-            z80_screen.attrs |> getMemValue (attr_offset + index)
+            z80_screen.attrs |> getMemValue (attr_index * 32 + index)
     in
     { colour = colour, data = data }
 
@@ -144,8 +143,8 @@ rawScreenData : Z80Screen -> List (List RawScreenData)
 rawScreenData z80_screen =
     screenOffsets
         |> List.map
-            (\line_num ->
-                range031 |> List.map (mapScreen line_num z80_screen)
+            (\row_column ->
+                range031 |> List.map (mapScreen row_column z80_screen)
             )
 
 
