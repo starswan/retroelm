@@ -67,19 +67,13 @@ type alias RawScreenData =
 constructor : Z80Screen
 constructor =
     let
-        --for(int i=6144;i<6912;i++) ram[i] = 070; // white
         screen_data =
             List.repeat 6144 0 |> Z80Memory.constructor
 
+        --for(int i=6144;i<6912;i++) ram[i] = 070; // white
         attributes =
             List.repeat 768 0x38 |> Z80Memory.constructor
-
-        -- white
-        --screen =
-        --    List.concat [ screen_data, attributes ] |> Z80Memory.constructor
     in
-    --Z80Screen screen 7 0 0 0 0 0
-    --Z80Screen screen 7
     Z80Screen screen_data attributes 7
 
 
@@ -115,19 +109,21 @@ mapScreen ( row_index, attr_index ) z80_screen index =
         attr_offset =
             attr_index * 32
 
-        data = z80_screen.data |> getMemValue (row_offset + index)
+        data =
+            z80_screen.data |> getMemValue (row_offset + index)
 
-        colour = z80_screen.attrs |> getMemValue (attr_offset + index)
+        colour =
+            z80_screen.attrs |> getMemValue (attr_offset + index)
     in
     { colour = colour, data = data }
 
 
 setScreenValue : Int -> Int -> Z80Screen -> Z80Screen
-setScreenValue addr value z80s =
-    let
-        z80screen =
-            z80s |> refresh_screen
-    in
+setScreenValue addr value z80screen =
+    --let
+    --    z80screen =
+    --        z80s |> refresh_screen
+    --in
     if addr < 0x1800 then
         { z80screen | data = z80screen.data |> Z80Memory.setMemValue addr value }
 
@@ -153,6 +149,7 @@ rawScreenData z80_screen =
             )
 
 
-refresh_screen : Z80Screen -> Z80Screen
-refresh_screen z80env =
-    z80env
+
+--refresh_screen : Z80Screen -> Z80Screen
+--refresh_screen z80env =
+--    z80env
