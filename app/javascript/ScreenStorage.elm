@@ -34,16 +34,16 @@ attr_indexes =
     bank0_attr_indexes ++ bank1_attr_indexes ++ bank2_attr_indexes
 
 
+
 --dataOffsets =
 --    range0_191 |> List.map calcDataOffset
-
-
 --range0_191 =
 --    List.range 0 191
 
 
 type alias Z80Screen =
-    { screen : Z80Memory
+    { data : Z80Memory
+    , attrs : Z80Memory
     , border : Int
 
     --flash: Int,
@@ -69,17 +69,18 @@ constructor =
     let
         --for(int i=6144;i<6912;i++) ram[i] = 070; // white
         screen_data =
-            List.repeat 6144 0
+            List.repeat 6144 0 |> Z80Memory.constructor
 
         attributes =
-            List.repeat 768 0x38
+            List.repeat 768 0x38 |> Z80Memory.constructor
 
         -- white
-        screen =
-            List.concat [ screen_data, attributes ] |> Z80Memory.constructor
+        --screen =
+        --    List.concat [ screen_data, attributes ] |> Z80Memory.constructor
     in
     --Z80Screen screen 7 0 0 0 0 0
-    Z80Screen screen 7
+    --Z80Screen screen 7
+    Z80Screen screen_data attributes 7
 
 
 calcDataOffset : Int -> Int
@@ -103,6 +104,7 @@ screenOffsets =
 
 range031 =
     List.range 0 31
+
 
 mapScreen : ( Int, Int ) -> Z80Screen -> Int -> RawScreenData
 mapScreen ( row_index, attr_index ) z80_screen index =
@@ -128,12 +130,20 @@ setScreenValue addr value z80s =
         z80screen =
             z80s |> refresh_screen
     in
-    { z80screen | screen = z80screen.screen |> Z80Memory.setMemValue addr value }
+    if addr < 0x1800 then
+        { z80screen | data = z80screen.data |> Z80Memory.setMemValue addr value }
+
+    else
+        { z80screen | attrs = z80screen.attrs |> Z80Memory.setMemValue (addr - 0x1800) value }
 
 
 getScreenValue : Int -> Z80Screen -> Int
 getScreenValue addr screen =
-    screen.screen |> getMemValue addr
+    if addr < 0x1800 then
+        screen.data |> getMemValue addr
+
+    else
+        screen.attrs |> getMemValue (addr - 0x1800)
 
 
 rawScreenData : Z80Screen -> List (List RawScreenData)
@@ -143,6 +153,7 @@ rawScreenData z80_screen =
             (\line_num ->
                 range031 |> List.map (mapScreen line_num z80_screen)
             )
+
 
 refresh_screen : Z80Screen -> Z80Screen
 refresh_screen z80env =
