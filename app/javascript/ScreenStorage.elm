@@ -204,7 +204,7 @@ rawScreenData z80_screen =
                         z80_screen.attrs |> Vector24.get attr_index
 
                     --rows =
-                    --    Vector32.map2 data_row attr_row
+                    --    List.extra.zip data_row attr_row
                 in
                 --rows |> List.map (\( data, attr ) -> { colour = attr, data = data })
                 Vector32.map2 (\data attr -> { colour = attr, data = data }) data_row attr_row
