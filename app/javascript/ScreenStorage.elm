@@ -3,6 +3,7 @@ module ScreenStorage exposing (..)
 -- Convert row index into start row data location
 
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
+import List.Extra exposing (zip)
 import Z80Memory exposing (Z80Memory, getMemValue)
 
 
@@ -100,21 +101,22 @@ range031 =
     List.range 0 31
 
 
-mapScreen : ( Int, Int ) -> Z80Screen -> Int -> RawScreenData
-mapScreen ( row_index, attr_index ) z80_screen index =
-    let
-        --row_offset =
-        --    row_index * 32
-        --
-        --attr_offset =
-        --    attr_index * 32
-        data =
-            z80_screen.data |> getMemValue (row_index * 32 + index)
 
-        colour =
-            z80_screen.attrs |> getMemValue (attr_index * 32 + index)
-    in
-    { colour = colour, data = data }
+--mapScreen : ( Int, Int ) -> Z80Screen -> Int -> RawScreenData
+--mapScreen ( row_index, attr_index ) z80_screen index =
+--    let
+--        --row_offset =
+--        --    row_index * 32
+--        --
+--        --attr_offset =
+--        --    attr_index * 32
+--        data =
+--            z80_screen.data |> getMemValue (row_index * 32 + index)
+--
+--        colour =
+--            z80_screen.attrs |> getMemValue (attr_index * 32 + index)
+--    in
+--    { colour = colour, data = data }
 
 
 setScreenValue : Int -> Int -> Z80Screen -> Z80Screen
@@ -143,8 +145,23 @@ rawScreenData : Z80Screen -> List (List RawScreenData)
 rawScreenData z80_screen =
     screenOffsets
         |> List.map
-            (\row_column ->
-                range031 |> List.map (mapScreen row_column z80_screen)
+            (\( row_index, attr_index ) ->
+                --let
+                --    x =
+                --        range031 |> List.map (mapScreen row_column z80_screen)
+                --in
+                --x
+                let
+                    data_row =
+                        range031 |> List.map (\index -> z80_screen.data |> getMemValue (row_index * 32 + index))
+
+                    attr_row =
+                        range031 |> List.map (\index -> z80_screen.attrs |> getMemValue (attr_index * 32 + index))
+
+                    rows =
+                        zip data_row attr_row
+                in
+                rows |> List.map (\( data, attr ) -> { colour = attr, data = data })
             )
 
 
