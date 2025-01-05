@@ -113,13 +113,11 @@ mapScreen ( row_index, attr_index ) z80_screen index =
             row_index * 32
 
         attr_offset =
-            0x1800 + (attr_index * 32)
+            attr_index * 32
 
-        data =
-            getScreenValue (row_offset + index) z80_screen
+        data = z80_screen.data |> getMemValue (row_offset + index)
 
-        colour =
-            getScreenValue (attr_offset + index) z80_screen
+        colour = z80_screen.attrs |> getMemValue (attr_offset + index)
     in
     { colour = colour, data = data }
 
