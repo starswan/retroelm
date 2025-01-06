@@ -16,7 +16,7 @@ gem 'sqlite3', '~> 1.4'
 # mysql in production
 gem 'mysql2'
 # Use Passenger as the app server
-gem "passenger", "~> 5.0"
+gem "passenger", "~> 6.0"
 # Use Puma as the app server
 # gem 'puma', '~> 4.1'
 # Use SCSS for stylesheets
