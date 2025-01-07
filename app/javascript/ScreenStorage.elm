@@ -3,7 +3,6 @@ module ScreenStorage exposing (..)
 -- Convert row index into start row data location
 
 import Bitwise exposing (shiftLeftBy, shiftRightBy)
-import List.Extra exposing (zip)
 import Vector24 exposing (Vector24)
 import Vector32 exposing (Vector32)
 import Z80Memory exposing (Z80Memory, getMemValue)
@@ -28,17 +27,24 @@ range16_23 =
 
 
 bank0_attr_indexes =
-    range07 ++ range07 ++ range07 ++ range07 ++ range07 ++ range07 ++ range07 ++ range07
+    --range07 ++ range07 ++ range07 ++ range07 ++ range07 ++ range07 ++ range07 ++ range07
+    List.repeat 8 range07 |> List.concat
 
 
 bank1_attr_indexes =
-    range8_15 ++ range8_15 ++ range8_15 ++ range8_15 ++ range8_15 ++ range8_15 ++ range8_15 ++ range8_15
+    --range8_15 ++ range8_15 ++ range8_15 ++ range8_15 ++ range8_15 ++ range8_15 ++ range8_15 ++ range8_15
+    List.repeat 8 range8_15 |> List.concat
 
 
 bank2_attr_indexes =
-    range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23
+    --range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23 ++ range16_23
+    List.repeat 8 range16_23 |> List.concat
+
+
 
 -- 192 mappings of screen index to attribute data index
+
+
 attr_indexes =
     bank0_attr_indexes ++ bank1_attr_indexes ++ bank2_attr_indexes
 
@@ -178,7 +184,7 @@ getScreenValue addr screen =
         oldrow |> Vector32.get col
 
 
-rawScreenData : Z80Screen -> List (List RawScreenData)
+rawScreenData : Z80Screen -> List (Vector32 RawScreenData)
 rawScreenData z80_screen =
     screenOffsets
         |> List.map
@@ -189,18 +195,117 @@ rawScreenData z80_screen =
                 --in
                 --x
                 let
+                    --data_row =
+                    --    range031 |> List.map (\index -> z80_screen.data |> getMemValue (row_index * 32 + index)) |> Vector32.fromListWithDefault 0 |> Tuple.second
+                    d0 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 0)
+
+                    d1 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 1)
+
+                    d2 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 2)
+
+                    d3 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 3)
+
+                    d4 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 4)
+
+                    d5 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 5)
+
+                    d6 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 6)
+
+                    d7 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 7)
+
+                    d8 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 8)
+
+                    d9 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 9)
+
+                    d10 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 10)
+
+                    d11 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 11)
+
+                    d12 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 12)
+
+                    d13 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 13)
+
+                    d14 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 14)
+
+                    d15 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 15)
+
+                    d16 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 16)
+
+                    d17 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 17)
+
+                    d18 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 18)
+
+                    d19 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 19)
+
+                    d20 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 20)
+
+                    d21 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 21)
+
+                    d22 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 22)
+
+                    d23 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 23)
+
+                    d24 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 24)
+
+                    d25 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 25)
+
+                    d26 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 26)
+
+                    d27 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 27)
+
+                    d28 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 28)
+
+                    d29 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 29)
+
+                    d30 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 30)
+
+                    d31 =
+                        z80_screen.data |> getMemValue (row_index * 32 + 31)
+
                     data_row =
-                        range031 |> List.map (\index -> z80_screen.data |> getMemValue (row_index * 32 + index))
+                        Vector32.from32 d0 d1 d2 d3 d4 d5 d6 d7 d8 d9 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d30 d31
 
                     --attr_row =
                     --    range031 |> List.map (\index -> z80_screen.attrs |> getMemValue (attr_index * 32 + index))
                     attr_row =
-                        z80_screen.attrs |> Vector24.get attr_index |> Vector32.toList
+                        z80_screen.attrs |> Vector24.get attr_index
 
-                    rows =
-                        zip data_row attr_row
+                    --rows =
+                    --    List.extra.zip data_row attr_row
                 in
-                rows |> List.map (\( data, attr ) -> { colour = attr, data = data })
+                --rows |> List.map (\( data, attr ) -> { colour = attr, data = data })
+                Vector32.map2 (\data attr -> { colour = attr, data = data }) data_row attr_row
             )
 
 

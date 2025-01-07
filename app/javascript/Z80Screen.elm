@@ -145,5 +145,5 @@ screenLines : Z80Screen -> List (List ScreenColourRun)
 screenLines z80_screen =
     z80_screen
         |> rawScreenData
-        |> List.map (\x -> x |> List.foldr foldUp [])
+        |> List.map (\x -> x |> Vector32.foldr foldUp [])
         |> List.map (\x -> x |> List.foldr toDrawn [])
