@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 rake yarn:install
+yarn build
 count=$1
 timings=()
 for i in $(seq $count)

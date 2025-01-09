@@ -20,7 +20,6 @@ miniDict40 =
 
 execute_0x44 : IXIY -> Z80ROM -> Z80 -> Z80Delta
 execute_0x44 ixiyhl rom z80 =
-    -- case 0x44: B=HL>>>8; break;
     -- case 0x44: B=xy>>>8; break;
     --z80 |> set_b (get_h ixiyhl z80.main)
     let
@@ -32,7 +31,6 @@ execute_0x44 ixiyhl rom z80 =
 
 execute_0x45 : IXIY -> Z80ROM -> Z80 -> Z80Delta
 execute_0x45 ixiyhl rom z80 =
-    -- case 0x45: B=HL&0xFF; break;
     -- case 0x45: B=xy&0xFF; break;
     --  z80 |> set_b (get_l ixiyhl z80.main)
     let
@@ -44,7 +42,6 @@ execute_0x45 ixiyhl rom z80 =
 
 ld_b_indirect_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
 ld_b_indirect_hl ixiyhl rom48k z80 =
-    -- case 0x46: B=env.mem(HL); time+=3; break;
     -- case 0x46: B=env.mem(getd(xy)); time+=3; break;
     let
         value =
@@ -76,7 +73,7 @@ ld_c_l ixiyhl rom z80 =
         main =
             z80.main
     in
-    { main | c = get_l_ixiy ixiyhl z80.main } |> MainRegs
+    MainRegsWithPc { main | c = get_l_ixiy ixiyhl z80.main } z80.pc
 
 
 ld_c_indirect_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta
