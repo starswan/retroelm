@@ -304,5 +304,57 @@ suite =
                                 }
                     in
                     Expect.equal ( addr + 2, 0x98 ) ( new_z80.pc, new_z80.main.c )
+            , test "0x4E - LD C,(HL)" <|
+                \_ ->
+                    let
+                        new_env =
+                            z80env
+                                |> setMem addr 0x4E
+                                |> setMem 0x4546 0x78
+
+                        z80_after_01 =
+                            execute_instruction z80rom
+                                { z80
+                                    | env = new_env
+                                    , main = { z80main | b = 0x45, c = 0x46, hl = 0x4546 }
+                                }
+                    in
+                    Expect.equal ( addr + 1, 0x78 ) ( z80_after_01.pc, z80_after_01.main.c )
+            , test "0xDD4E - LD C,(IX+d)" <|
+                \_ ->
+                    let
+                        new_env =
+                            z80env
+                                |> setMem addr 0xDD
+                                |> setMem (addr + 1) 0x4E
+                                |> setMem (addr + 2) 0xFF
+                                |> setMem 0x4546 0x78
+
+                        z80_after_01 =
+                            execute_instruction z80rom
+                                { z80
+                                    | env = new_env
+                                    , main = { z80main | b = 0x45, c = 0x46, ix = 0x4547 }
+                                }
+                    in
+                    Expect.equal ( addr + 3, 0x78 ) ( z80_after_01.pc, z80_after_01.main.c )
+            , test "0xFD4E - LD C,(IY+d)" <|
+                \_ ->
+                    let
+                        new_env =
+                            z80env
+                                |> setMem addr 0xFD
+                                |> setMem (addr + 1) 0x4E
+                                |> setMem (addr + 2) 0x01
+                                |> setMem 0x4546 0x78
+
+                        z80_after_01 =
+                            execute_instruction z80rom
+                                { z80
+                                    | env = new_env
+                                    , main = { z80main | b = 0x45, c = 0x46, iy = 0x4545 }
+                                }
+                    in
+                    Expect.equal ( addr + 3, 0x78 ) ( z80_after_01.pc, z80_after_01.main.c )
             ]
         ]
