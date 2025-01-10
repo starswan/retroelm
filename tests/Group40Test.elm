@@ -49,7 +49,9 @@ suite =
                                 }
                     in
                     Expect.equal ( addr + 1, 0x76 ) ( new_z80.pc, new_z80.main.b )
-            , test "0x44 LD B,H" <|
+            ]
+        , describe "0x44 LD B,H"
+            [ test "LD B,H" <|
                 \_ ->
                     let
                         new_env =
@@ -96,7 +98,9 @@ suite =
                                 }
                     in
                     Expect.equal ( addr + 2, 0x23 ) ( new_z80.pc, new_z80.main.b )
-            , test "0x45 LD B,L" <|
+            ]
+        , describe "0x45 LD B,L"
+            [ test "LD B,L" <|
                 \_ ->
                     let
                         new_env =
@@ -143,7 +147,9 @@ suite =
                                 }
                     in
                     Expect.equal ( addr + 2, 0x98 ) ( new_z80.pc, new_z80.main.b )
-            , test "0x46 - LD B,(HL)" <|
+            ]
+        , describe "0x46 Ld B, (HL)"
+            [ test "LD B,(HL)" <|
                 \_ ->
                     let
                         new_env =
@@ -195,7 +201,9 @@ suite =
                                 }
                     in
                     Expect.equal ( addr + 3, 0x78 ) ( z80_after_01.pc, z80_after_01.main.b )
-            , test "0x48 LD C,B" <|
+            ]
+        , describe "0x48 etc"
+            [ test "0x48 LD C,B" <|
                 \_ ->
                     let
                         new_env =
