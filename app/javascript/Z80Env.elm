@@ -117,7 +117,7 @@ m1 tmp_addr ir rom48k z80env =
                 z80env_time
 
         ctime =
-            if and ir 0xC000 == 0x4000 then
+            if Bitwise.and ir 0xC000 == 0x4000 then
                 z80env_1_time.cpu_time + 4
 
             else
@@ -131,7 +131,7 @@ m1 tmp_addr ir rom48k z80env =
                 -- not implementing IF1 switching for now
                 rom48k |> getROMValue tmp_addr
     in
-    CpuTimeAndValue (CpuTimeCTime z80env_1_time.cpu_time ctime) value
+    CpuTimeAndValue { z80env_1_time | ctime = ctime } value
 
 
 
