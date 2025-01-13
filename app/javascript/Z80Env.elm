@@ -94,7 +94,7 @@ z80env_constructor =
 
 
 m1 : Int -> Int -> Z80ROM -> Z80Env -> CpuTimeAndValue
-m1 tmp_addr ir rom48k z80env =
+m1 addr ir rom48k z80env =
     let
         n =
             z80env.time.cpu_time - z80env.time.ctime
@@ -106,32 +106,32 @@ m1 tmp_addr ir rom48k z80env =
             else
                 z80env.time
 
-        addr =
-            tmp_addr - 0x4000
+        ramAddr =
+            addr - 0x4000
 
         z80env_1_time =
-            if and addr 0xC000 == 0 then
+            if Bitwise.and ramAddr 0xC000 == 0 then
                 z80env_time |> cont1 0
 
             else
                 z80env_time
 
         ctime =
-            if and ir 0xC000 == 0x4000 then
+            if Bitwise.and ir 0xC000 == 0x4000 then
                 z80env_1_time.cpu_time + 4
 
             else
                 c_NOCONT
 
         value =
-            if addr >= 0 then
-                z80env.ram |> getRamValue addr
+            if ramAddr >= 0 then
+                z80env.ram |> getRamValue ramAddr
 
             else
                 -- not implementing IF1 switching for now
-                rom48k |> getROMValue tmp_addr
+                rom48k |> getROMValue addr
     in
-    CpuTimeAndValue (CpuTimeCTime z80env_1_time.cpu_time ctime) value
+    CpuTimeAndValue { z80env_1_time | ctime = ctime } value
 
 
 
