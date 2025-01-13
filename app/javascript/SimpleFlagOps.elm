@@ -1,12 +1,12 @@
 module SimpleFlagOps exposing (..)
 
-import Bitwise
+import Bitwise exposing (complement)
 import CpuTimeCTime exposing (CpuTimeIncrement(..))
 import Dict exposing (Dict)
 import PCIncrement exposing (PCIncrement(..))
 import Utils exposing (shiftRightBy8)
 import Z80Change exposing (FlagChange(..))
-import Z80Flags exposing (BitTest(..), FlagRegisters, IntWithFlags, adc, c_FP, c_FS, cpl, daa, dec, get_af, get_flags, inc, rot, sbc, scf_ccf, shifter0, shifter1, shifter2, shifter3, shifter4, shifter5, shifter6, shifter7, testBit, z80_add, z80_and, z80_cp, z80_or, z80_sub, z80_xor)
+import Z80Flags exposing (BitTest(..), FlagRegisters, IntWithFlags, adc, c_FP, c_FS, cpl, daa, dec, get_af, get_flags, inc, rot, sbc, scf_ccf, shifter0, shifter1, shifter2, shifter3, shifter4, shifter5, shifter6, shifter7, testBit, z80_add, z80_cp, z80_or, z80_sub, z80_xor)
 
 
 singleByteFlags : Dict Int ( FlagRegisters -> FlagChange, PCIncrement )
@@ -218,7 +218,8 @@ and_a : FlagRegisters -> FlagChange
 and_a z80_flags =
     -- case 0xA7: Fa=~(Ff=Fr=A); Fb=0; break;
     -- and a is correct - I guess the above is a faster implementation
-    z80_flags |> z80_and z80_flags.a |> OnlyFlags
+    --z80_flags |> z80_and z80_flags.a |> OnlyFlags
+    OnlyFlags { a = z80_flags.a, ff = z80_flags.a, fr = z80_flags.a, fb = 0, fa = complement z80_flags.a}
 
 
 xor_a : FlagRegisters -> FlagChange
