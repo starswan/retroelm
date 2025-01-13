@@ -93,6 +93,34 @@ spectrumColour value bright =
         Dict.get value spectrumColours |> withDefault White
 
 
+c_UNBRIGHT_BLUE =
+    c_BLUE |> String.replace "FF" c_UNBRIGHT
+
+
+c_UNBRIGHT_RED =
+    c_RED |> String.replace "FF" c_UNBRIGHT
+
+
+c_UNBRIGHT_MAGENTA =
+    c_MAGENTA |> String.replace "FF" c_UNBRIGHT
+
+
+c_UNBRIGHT_GREEN =
+    c_GREEN |> String.replace "FF" c_UNBRIGHT
+
+
+c_UNBRIGHT_CYAN =
+    c_CYAN |> String.replace "FF" c_UNBRIGHT
+
+
+c_UNBRIGHT_YELLOW =
+    c_YELLOW |> String.replace "FF" c_UNBRIGHT
+
+
+c_UNBRIGHT_WHITE =
+    c_WHITE |> String.replace "FF" c_UNBRIGHT
+
+
 colourToString : SpectrumColour -> String
 colourToString colour =
     case colour of
@@ -100,25 +128,25 @@ colourToString colour =
             c_BLACK
 
         Blue ->
-            c_BLUE |> String.replace "FF" c_UNBRIGHT
+            c_UNBRIGHT_BLUE
 
         Red ->
-            c_RED |> String.replace "FF" c_UNBRIGHT
+            c_UNBRIGHT_RED
 
         Magenta ->
-            c_MAGENTA |> String.replace "FF" c_UNBRIGHT
+            c_UNBRIGHT_MAGENTA
 
         Green ->
-            c_GREEN |> String.replace "FF" c_UNBRIGHT
+            c_UNBRIGHT_GREEN
 
         Cyan ->
-            c_CYAN |> String.replace "FF" c_UNBRIGHT
+            c_UNBRIGHT_CYAN
 
         Yellow ->
-            c_YELLOW |> String.replace "FF" c_UNBRIGHT
+            c_UNBRIGHT_YELLOW
 
         White ->
-            c_WHITE |> String.replace "FF" c_UNBRIGHT
+            c_UNBRIGHT_WHITE
 
         BrightBlue ->
             c_BLUE
