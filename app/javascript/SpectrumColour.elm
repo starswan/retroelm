@@ -4,7 +4,7 @@ import Dict
 import Maybe exposing (withDefault)
 
 
-type SpectrumColour
+type SpectrumColourValue
     = Black
     | Blue
     | Red
@@ -20,6 +20,12 @@ type SpectrumColour
     | BrightCyan
     | BrightYellow
     | BrightWhite
+
+
+type alias SpectrumColour =
+    { value : SpectrumColourValue
+    , colour : String
+    }
 
 
 c_BLACK =
@@ -60,37 +66,41 @@ c_UNBRIGHT =
 
 spectrumColours =
     Dict.fromList
-        [ ( 0, Black )
-        , ( 1, Blue )
-        , ( 2, Red )
-        , ( 3, Magenta )
-        , ( 4, Green )
-        , ( 5, Cyan )
-        , ( 6, Yellow )
-        , ( 7, White )
+        [ ( 0, { value = Black, colour = c_BLACK } )
+        , ( 1, { value = Blue, colour = c_UNBRIGHT_BLUE } )
+        , ( 2, { value = Red, colour = c_UNBRIGHT_RED } )
+        , ( 3, { value = Magenta, colour = c_UNBRIGHT_MAGENTA } )
+        , ( 4, { value = Green, colour = c_UNBRIGHT_GREEN } )
+        , ( 5, { value = Cyan, colour = c_UNBRIGHT_CYAN } )
+        , ( 6, { value = Yellow, colour = c_UNBRIGHT_YELLOW } )
+        , ( 7, { value = White, colour = c_UNBRIGHT_WHITE } )
         ]
 
 
 spectrumBrightColours =
     Dict.fromList
-        [ ( 0, Black )
-        , ( 1, BrightBlue )
-        , ( 2, BrightRed )
-        , ( 3, BrightMagenta )
-        , ( 4, BrightGreen )
-        , ( 5, BrightCyan )
-        , ( 6, BrightYellow )
-        , ( 7, BrightWhite )
+        [ ( 0, { value = Black, colour = c_BLACK } )
+        , ( 1, { value = BrightBlue, colour = c_BLUE } )
+        , ( 2, { value = BrightRed, colour = c_RED } )
+        , ( 3, { value = BrightMagenta, colour = c_MAGENTA } )
+        , ( 4, { value = BrightGreen, colour = c_GREEN } )
+        , ( 5, { value = BrightCyan, colour = c_CYAN } )
+        , ( 6, { value = BrightYellow, colour = c_YELLOW } )
+        , ( 7, { value = BrightWhite, colour = c_WHITE } )
         ]
 
 
 spectrumColour : Int -> Bool -> SpectrumColour
 spectrumColour value bright =
-    if bright then
-        Dict.get value spectrumBrightColours |> withDefault BrightWhite
+    let
+        x =
+            if bright then
+                Dict.get value spectrumBrightColours |> withDefault { value = White, colour = c_UNBRIGHT_WHITE }
 
-    else
-        Dict.get value spectrumColours |> withDefault White
+            else
+                Dict.get value spectrumColours |> withDefault { value = White, colour = c_UNBRIGHT_WHITE }
+    in
+    x
 
 
 c_UNBRIGHT_BLUE =
@@ -119,52 +129,3 @@ c_UNBRIGHT_YELLOW =
 
 c_UNBRIGHT_WHITE =
     c_WHITE |> String.replace "FF" c_UNBRIGHT
-
-
-colourToString : SpectrumColour -> String
-colourToString colour =
-    case colour of
-        Black ->
-            c_BLACK
-
-        Blue ->
-            c_UNBRIGHT_BLUE
-
-        Red ->
-            c_UNBRIGHT_RED
-
-        Magenta ->
-            c_UNBRIGHT_MAGENTA
-
-        Green ->
-            c_UNBRIGHT_GREEN
-
-        Cyan ->
-            c_UNBRIGHT_CYAN
-
-        Yellow ->
-            c_UNBRIGHT_YELLOW
-
-        White ->
-            c_UNBRIGHT_WHITE
-
-        BrightBlue ->
-            c_BLUE
-
-        BrightRed ->
-            c_RED
-
-        BrightMagenta ->
-            c_MAGENTA
-
-        BrightGreen ->
-            c_GREEN
-
-        BrightCyan ->
-            c_CYAN
-
-        BrightYellow ->
-            c_YELLOW
-
-        BrightWhite ->
-            c_WHITE

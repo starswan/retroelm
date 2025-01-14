@@ -24,7 +24,7 @@ import MessageHandler exposing (array_decoder, bytesToTap)
 import Params exposing (StringPair, valid_params)
 import Qaop exposing (Qaop, pause)
 import Spectrum exposing (Spectrum, frames, loadTapfile, new_tape, set_rom)
-import SpectrumColour exposing (colourToString, spectrumColour)
+import SpectrumColour exposing (spectrumColour)
 import Svg exposing (Svg, line, rect, svg)
 import Svg.Attributes exposing (fill, height, rx, stroke, viewBox, width, x1, x2, y1, y2)
 import Tapfile exposing (Tapfile)
@@ -109,7 +109,7 @@ lineToSvg y_index linedata =
         , y1 (40 + y_index |> String.fromInt)
         , x2 ((48 + linedata.start + linedata.length) |> String.fromInt)
         , y2 (40 + y_index |> String.fromInt)
-        , stroke (linedata.colour |> colourToString)
+        , stroke (linedata.colour |> .colour)
         ]
         []
 
@@ -132,7 +132,7 @@ view model =
 
         -- border colour is never bright
         border_colour =
-            spectrumColour screen.border False |> colourToString
+            spectrumColour screen.border False |> .colour
 
         background =
             [ rect [ height "100%", width "100%", fill border_colour, rx "15" ] [] ]
