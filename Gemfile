@@ -11,7 +11,7 @@ gem "mutex_m"
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 7.0', '< 7.1'
 # Use sqlite3 as the database for Active Record
-gem 'sqlite3', '~> 1.4'
+gem 'sqlite3', '~> 2.5'
 
 # mysql in production
 gem 'mysql2'
