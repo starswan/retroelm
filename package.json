@@ -4,7 +4,7 @@
   "dependencies": {
     "@rails/ujs": "7.0.8",
     "elm": "^0.19.1-6",
-    "esbuild": "^0.15.18"
+    "esbuild": "^0.24.2"
   },
   "overrides": {
     "cross-spawn": ">= 7.0.3"
