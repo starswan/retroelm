@@ -6,6 +6,9 @@
     "elm": "^0.19.1-6",
     "esbuild": "^0.15.18"
   },
+  "overrides": {
+    "cross-spawn": ">= 7.0.3"
+  },
   "version": "0.1.0",
   "devDependencies": {
     "elm-format": "^0.8.7",
