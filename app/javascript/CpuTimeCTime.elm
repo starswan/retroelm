@@ -59,15 +59,31 @@ cpuTimeIncrement4 =
     CpuTimeIncrement 4
 
 
-increment2 =
-    CpuTimeIncrement 2
+cpuTimeIncrement6 =
+    CpuTimeIncrement 6
 
 
-increment0 =
-    CpuTimeIncrement 0
+cpuTimeIncrement8 =
+    CpuTimeIncrement 8
+
+
+cpuTimeIncrement10 =
+    CpuTimeIncrement 10
+
+
+cpuTimeIncrement15 =
+    CpuTimeIncrement 15
+
+
+cpuTimeIncrement11 =
+    CpuTimeIncrement 11
 
 
 
+--increment2 =
+--    CpuTimeIncrement 2
+--increment0 =
+--    CpuTimeIncrement 0
 --	private final void cont1(int t) {
 --		t += cpu.time;
 --		if(t<0 || t>=SCRENDT) return;

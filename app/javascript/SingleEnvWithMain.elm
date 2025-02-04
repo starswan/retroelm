@@ -1,13 +1,15 @@
 module SingleEnvWithMain exposing (..)
 
 import Bitwise
-import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimeIncrement, addCpuTimeTime, addCpuTimeTimeInc, cpuTimeIncrement4, increment3)
+import CpuTimeCTime exposing (CpuTimeAndValue, CpuTimeCTime, CpuTimeIncrement, addCpuTimeTime, addCpuTimeTimeInc, increment3)
 import Dict exposing (Dict)
 import PCIncrement exposing (PCIncrement(..))
+import TransformTypes exposing (InstructionDuration(..))
 import Utils exposing (shiftLeftBy8)
-import Z80Env exposing (Z80Env, addCpuTimeEnvInc, mem)
-import Z80Flags exposing (BitTest(..), testBit)
+import Z80Env exposing (Z80Env, mem)
+import Z80Flags exposing (BitTest(..), FlagRegisters, add16, testBit)
 import Z80Rom exposing (Z80ROM)
+import Z80Transform exposing (ChangeMainFlagsOperation(..), ChangeMainOperation(..), InstructionLength(..), Z80Operation(..), Z80Transform)
 import Z80Types exposing (MainWithIndexRegisters, Z80)
 
 
@@ -19,10 +21,13 @@ type SingleEnvMainChange
     | SingleEnvNewERegister Int CpuTimeCTime
     | SingleEnvNewHLRegister Int CpuTimeCTime
     | SingleBitTest BitTest CpuTimeAndValue
+    | SingleEnvNewHL16BitAdd Int Int CpuTimeCTime
+    | SingleEnvNewIX16BitAdd Int Int CpuTimeCTime
+    | SingleEnvNewIY16BitAdd Int Int CpuTimeCTime
 
 
-singleEnvMainRegs : Dict Int ( MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange, PCIncrement )
-singleEnvMainRegs =
+standardSingleEnvMain : Dict Int ( MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange, PCIncrement )
+standardSingleEnvMain =
     Dict.fromList
         [ ( 0x0A, ( ld_a_indirect_bc, IncrementByOne ) )
         , ( 0x1A, ( ld_a_indirect_de, IncrementByOne ) )
@@ -33,7 +38,25 @@ singleEnvMainRegs =
         , ( 0x66, ( ld_h_indirect_hl, IncrementByOne ) )
         , ( 0x6E, ( ld_l_indirect_hl, IncrementByOne ) )
         , ( 0x7E, ( ld_a_indirect_hl, IncrementByOne ) )
-        , ( 0xCB46, ( bit_0_indirect_hl, IncrementByTwo ) )
+        , ( 0x39, ( add_hl_sp, IncrementByOne ) )
+        ]
+
+ixSingleEnvMain : Dict Int ( MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange, PCIncrement )
+ixSingleEnvMain =
+    Dict.fromList
+        [ ( 0xDD39, ( add_ix_sp, IncrementByTwo ) )
+        ]
+
+iySingleEnvMain : Dict Int ( MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange, PCIncrement )
+iySingleEnvMain =
+    Dict.fromList
+        [ ( 0xFD39, ( add_iy_sp, IncrementByTwo ) )
+        ]
+
+cbSingleEnvMain : Dict Int ( MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange, PCIncrement )
+cbSingleEnvMain =
+    Dict.fromList
+        [ ( 0xCB46, ( bit_0_indirect_hl, IncrementByTwo ) )
         , ( 0xCB4E, ( bit_1_indirect_hl, IncrementByTwo ) )
         , ( 0xCB56, ( bit_2_indirect_hl, IncrementByTwo ) )
         , ( 0xCB5E, ( bit_3_indirect_hl, IncrementByTwo ) )
@@ -44,121 +67,94 @@ singleEnvMainRegs =
         ]
 
 
-applySingleEnvMainChange : PCIncrement -> SingleEnvMainChange -> Z80 -> Z80
-applySingleEnvMainChange pcInc z80changeData z80 =
+parseSingleEnvMain :  Dict Int ( MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange, PCIncrement ) -> CpuTimeCTime -> Int -> Z80ROM -> Z80 -> Maybe Z80Transform
+parseSingleEnvMain operationDict _ instrCode rom48k z80 =
+    case operationDict |> Dict.get instrCode of
+        Just ( f, pcInc ) ->
+            let
+                x =
+                    z80.flags |> applySingleEnvMainChange pcInc (f z80.main rom48k z80.env)
+            in
+            Just x
+
+        Nothing ->
+            Nothing
+
+
+applySingleEnvMainChange : PCIncrement -> SingleEnvMainChange -> FlagRegisters -> Z80Transform
+applySingleEnvMainChange pcInc z80changeData z80_flags =
     let
-        interrupts =
-            z80.interrupts
-
-        env =
-            z80.env
-
+        --interrupts =
+        --    z80.interrupts
+        --env =
+        --    z80.env
         new_pc =
             case pcInc of
                 IncrementByOne ->
-                    Bitwise.and (z80.pc + 1) 0xFFFF
+                    OneByteInstruction
 
+                --Bitwise.and (z80.pc + 1) 0xFFFF
+                --
                 IncrementByTwo ->
-                    Bitwise.and (z80.pc + 2) 0xFFFF
+                    TwoByteInstruction
+
+        --Bitwise.and (z80.pc + 2) 0xFFFF
     in
     case z80changeData of
         SingleEnvNewARegister int cpuTimeCTime ->
-            let
-                env1 =
-                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
-
-                flags =
-                    z80.flags
-            in
-            { z80
-                | pc = new_pc
-                , flags = { flags | a = int }
-                , env = env1
-                , interrupts = { interrupts | r = interrupts.r + 1 }
-            }
+            { pcIncrement = new_pc, time = cpuTimeCTime, timeIncrement = FourTStates, operation = ChangeFlagRegisters { z80_flags | a = int } }
 
         SingleEnvNewBRegister int cpuTimeCTime ->
-            let
-                env1 =
-                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
-
-                main =
-                    z80.main
-            in
-            { z80
-                | pc = new_pc
-                , main = { main | b = int }
-                , env = env1
-                , interrupts = { interrupts | r = interrupts.r + 1 }
-            }
+            { pcIncrement = new_pc, time = cpuTimeCTime, timeIncrement = FourTStates, operation = ChangeMain (ChangeBRegister int) }
 
         SingleEnvNewCRegister int cpuTimeCTime ->
-            let
-                env1 =
-                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
-
-                main =
-                    z80.main
-            in
-            { z80
-                | pc = new_pc
-                , main = { main | c = int }
-                , env = env1
-                , interrupts = { interrupts | r = interrupts.r + 1 }
-            }
+            { pcIncrement = new_pc, time = cpuTimeCTime, timeIncrement = FourTStates, operation = ChangeMain (ChangeCRegister int) }
 
         SingleEnvNewDRegister int cpuTimeCTime ->
-            let
-                env1 =
-                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
-
-                main =
-                    z80.main
-            in
-            { z80
-                | pc = new_pc
-                , main = { main | d = int }
-                , env = env1
-                , interrupts = { interrupts | r = interrupts.r + 1 }
-            }
+            { pcIncrement = new_pc, time = cpuTimeCTime, timeIncrement = FourTStates, operation = ChangeMain (ChangeDRegister int) }
 
         SingleEnvNewERegister int cpuTimeCTime ->
-            let
-                env1 =
-                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
-
-                main =
-                    z80.main
-            in
-            { z80
-                | pc = new_pc
-                , main = { main | e = int }
-                , env = env1
-                , interrupts = { interrupts | r = interrupts.r + 1 }
-            }
+            { pcIncrement = new_pc, time = cpuTimeCTime, timeIncrement = FourTStates, operation = ChangeMain (ChangeERegister int) }
 
         SingleEnvNewHLRegister int cpuTimeCTime ->
-            let
-                env1 =
-                    { env | time = cpuTimeCTime } |> addCpuTimeEnvInc cpuTimeIncrement4
-
-                main =
-                    z80.main
-            in
-            { z80
-                | pc = new_pc
-                , main = { main | hl = int }
-                , env = env1
-                , interrupts = { interrupts | r = interrupts.r + 1 }
-            }
+            { pcIncrement = new_pc, time = cpuTimeCTime, timeIncrement = FourTStates, operation = ChangeMain (ChangeHLRegister int) }
 
         SingleBitTest bitTest intwithTime ->
-            { z80
-                | pc = new_pc
-                , env = { env | time = intwithTime.time }
-                , flags = z80.flags |> testBit bitTest intwithTime.value
-                , interrupts = { interrupts | r = interrupts.r + 1 }
-            }
+            let
+                flags =
+                    z80_flags |> testBit bitTest intwithTime.value
+            in
+            { pcIncrement = new_pc, time = intwithTime.time, timeIncrement = FourTStates, operation = ChangeFlagRegisters flags }
+
+        SingleEnvNewHL16BitAdd hl sp ctime ->
+            let
+                new_xy =
+                    add16 hl sp z80_flags
+
+                --new_time =
+                --    ctime |> addCpuTimeTimeInc new_xy.time
+            in
+            { pcIncrement = new_pc, time = ctime, timeIncrement = ElevenTStates, operation = ChangeMainWithFlags (ChangeMainFlagsHL new_xy.value) new_xy.flags }
+
+        SingleEnvNewIX16BitAdd hl sp ctime ->
+            let
+                new_xy =
+                    add16 hl sp z80_flags
+
+                --new_time =
+                --    ctime |> addCpuTimeTimeInc new_xy.time
+            in
+            { pcIncrement = new_pc, time = ctime, timeIncrement = ElevenTStates, operation = ChangeMainWithFlags (ChangeMainFlagsIX new_xy.value) new_xy.flags }
+
+        SingleEnvNewIY16BitAdd hl sp ctime ->
+            let
+                new_xy =
+                    add16 hl sp z80_flags
+
+                --new_time =
+                --    ctime |> addCpuTimeTimeInc new_xy.time
+            in
+            { pcIncrement = new_pc, time = ctime, timeIncrement = ElevenTStates, operation = ChangeMainWithFlags (ChangeMainFlagsIY new_xy.value) new_xy.flags }
 
 
 ld_a_indirect_bc : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
@@ -360,3 +356,21 @@ bit_7_indirect_hl z80_main rom48k z80_env =
             mem z80_main.hl z80_env.time rom48k z80_env.ram
     in
     SingleBitTest Bit_7 value
+
+
+add_hl_sp : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
+add_hl_sp z80_main rom48k z80_env =
+    --case 0x39: HL=add16(HL,SP); break;
+    SingleEnvNewHL16BitAdd z80_main.hl z80_env.sp z80_env.time
+
+
+add_ix_sp : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
+add_ix_sp z80_main rom48k z80_env =
+    --case 0x39: xy=add16(xy,SP); break;
+    SingleEnvNewIX16BitAdd z80_main.ix z80_env.sp z80_env.time
+
+
+add_iy_sp : MainWithIndexRegisters -> Z80ROM -> Z80Env -> SingleEnvMainChange
+add_iy_sp z80_main rom48k z80_env =
+    --case 0x39: xy=add16(xy,SP); break;
+    SingleEnvNewIY16BitAdd z80_main.iy z80_env.sp z80_env.time

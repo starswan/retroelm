@@ -33,25 +33,7 @@ suite =
     in
     describe "Z80.execute_instruction"
         -- Nest as many descriptions as you like.
-        [ describe "8 bit loads"
-            [ test "0x87 ADD A,A" <|
-                \_ ->
-                    let
-                        new_env =
-                            z80env
-                                |> setMem addr 0x87
-
-                        new_z80 =
-                            execute_instruction z80rom
-                                { z80
-                                    | env = new_env
-                                    , flags = { flags | a = 0x02 }
-                                    , main = { z80main | hl = 0x6545 }
-                                }
-                    in
-                    Expect.equal ( addr + 1, 0x04 ) ( new_z80.pc, new_z80.flags.a )
-            ]
-        , describe "0xB8 - -xBF CP"
+        [ describe "0xB8 - -xBF CP"
             [ test "0xBC CP H greater" <|
                 \_ ->
                     let

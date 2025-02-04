@@ -1,13 +1,12 @@
 module Z80Types exposing (..)
 
-import Bitwise exposing (complement)
+import Bitwise
 import CpuTimeCTime exposing (CpuTimeAndPc, CpuTimeCTime, CpuTimePcAndValue, addCpuTimeTime)
 import Utils exposing (byte, char, shiftLeftBy8, shiftRightBy8)
 import Z80Env exposing (Z80Env, Z80EnvWithPC, addCpuTimeEnv, mem, mem16, setMem)
 import Z80Flags exposing (FlagRegisters)
 import Z80Ram exposing (Z80Ram)
 import Z80Rom exposing (Z80ROM)
-
 
 type alias MainRegisters =
     { b : Int
@@ -299,9 +298,9 @@ l_with_z80 ixiyhl z80 =
     CpuTimePcAndValue z80.env.time z80.pc (Bitwise.and (get_xy ixiyhl z80.main) 0xFF)
 
 
-set_flag_regs : FlagRegisters -> Z80 -> Z80
-set_flag_regs flags z80 =
-    { z80 | flags = flags }
+--set_flag_regs : FlagRegisters -> Z80 -> Z80
+--set_flag_regs flags z80 =
+--    { z80 | flags = flags }
 
 
 set_h : Int -> IXIYHL -> MainWithIndexRegisters -> MainWithIndexRegisters

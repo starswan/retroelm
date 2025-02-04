@@ -26,7 +26,7 @@ ld_d_h ixiyhl rom z80 =
         main =
             z80.main
     in
-    { main | d = get_h_ixiy ixiyhl z80.main } |> MainRegs
+    MainRegsWithPc { main | d = get_h_ixiy ixiyhl z80.main } z80.pc
 
 
 ld_d_l : IXIY -> Z80ROM -> Z80 -> Z80Delta
@@ -37,7 +37,7 @@ ld_d_l ixiyhl rom z80 =
         main =
             z80.main
     in
-    { main | d = get_l_ixiy ixiyhl z80.main } |> MainRegs
+    MainRegsWithPc { main | d = get_l_ixiy ixiyhl z80.main } z80.pc
 
 
 ld_d_indirect_hl : IXIY -> Z80ROM -> Z80 -> Z80Delta

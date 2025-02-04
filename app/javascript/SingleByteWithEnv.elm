@@ -1,14 +1,17 @@
 module SingleByteWithEnv exposing (..)
 
 import Bitwise exposing (shiftRightBy)
-import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeIncrement(..), addCpuTimeTimeInc, cpuTimeIncrement4, increment2)
+import CpuTimeCTime exposing (CpuTimeCTime, CpuTimeIncrement(..))
 import Dict exposing (Dict)
+import TransformTypes exposing (InstructionDuration(..))
 import Z80Env exposing (Z80Env, c_TIME_LIMIT)
+import Z80Rom exposing (Z80ROM)
+import Z80Transform exposing (ChangeEnvOperation(..), InstructionLength(..), Z80Operation(..), Z80Transform)
 import Z80Types exposing (Z80)
 
 
 type SingleByteEnvChange
-    = NewSPValue Int CpuTimeIncrement
+    = NewSPValue Int
     | AddToInterrupts Int CpuTimeIncrement
 
 
@@ -21,32 +24,24 @@ singleByteZ80Env =
         ]
 
 
-applyEnvChangeDelta : CpuTimeCTime -> SingleByteEnvChange -> Z80 -> Z80
-applyEnvChangeDelta cpu_time z80changeData z80 =
-    let
-        interrupts =
-            z80.interrupts
+parseSingleEnv : CpuTimeCTime -> Int -> Z80ROM -> Z80 -> Maybe Z80Transform
+parseSingleEnv instrTime instrCode _ z80 =
+    case singleByteZ80Env |> Dict.get instrCode of
+        Just f ->
+            case f z80.env of
+                NewSPValue int ->
+                    Just { pcIncrement = OneByteInstruction, time = instrTime, timeIncrement = SixTStates, operation = ChangeEnv (ChangeSPRegister int) }
 
-        new_pc =
-            Bitwise.and (z80.pc + 1) 0xFFFF
+                AddToInterrupts int cpuTimeIncrement ->
+                    --{ z80
+                    --    | pc = new_pc
+                    --    , env = { env | time = cpu_time |> addCpuTimeTimeInc cpuTimeIncrement |> addCpuTimeTimeInc cpuTimeIncrement4 }
+                    --    , interrupts = { interrupts | halted = True, r = interrupts.r + int }
+                    --}
+                    Just { pcIncrement = OneByteInstruction, time = instrTime, timeIncrement = FourTStates, operation = ChangeNothing }
 
-        env =
-            z80.env
-    in
-    case z80changeData of
-        NewSPValue int time ->
-            { z80
-                | pc = new_pc
-                , env = { env | time = cpu_time |> addCpuTimeTimeInc time |> addCpuTimeTimeInc cpuTimeIncrement4, sp = int }
-                , interrupts = { interrupts | r = interrupts.r + 1 }
-            }
-
-        AddToInterrupts int cpuTimeIncrement ->
-            { z80
-                | pc = new_pc
-                , env = { env | time = cpu_time |> addCpuTimeTimeInc cpuTimeIncrement |> addCpuTimeTimeInc cpuTimeIncrement4 }
-                , interrupts = { interrupts | halted = True, r = interrupts.r + int }
-            }
+        Nothing ->
+            Nothing
 
 
 inc_sp : Z80Env -> SingleByteEnvChange
@@ -56,7 +51,7 @@ inc_sp z80_env =
     --    new_sp =
     --        Bitwise.and (z80.env.sp + 1) 0xFFFF
     --in
-    NewSPValue (Bitwise.and (z80_env.sp + 1) 0xFFFF) increment2
+    NewSPValue (Bitwise.and (z80_env.sp + 1) 0xFFFF)
 
 
 dec_sp : Z80Env -> SingleByteEnvChange
@@ -66,7 +61,7 @@ dec_sp z80_env =
     --    new_sp =
     --        Bitwise.and (z80.env.sp - 1) 0xFFFF
     --in
-    NewSPValue (Bitwise.and (z80_env.sp - 1) 0xFFFF) increment2
+    NewSPValue (Bitwise.and (z80_env.sp - 1) 0xFFFF)
 
 
 execute_0x76_halt : Z80Env -> SingleByteEnvChange
@@ -99,10 +94,3 @@ execute_0x76_halt z80_env =
     else
         --( interrupts, z80.env.time )
         AddToInterrupts 0 (CpuTimeIncrement 0)
-
-
-
---z80
---in
---{ z80_1 | interrupts = { interrupts | halted = True } }
---InterruptsWithCpuTime { new_interrupts | halted = True } time

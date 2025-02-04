@@ -1,7 +1,14 @@
 module TripleByte exposing (..)
 
+import Bitwise
+import CpuTimeCTime exposing (CpuTimeCTime)
 import Dict exposing (Dict)
 import PCIncrement exposing (PCIncrement(..), TriplePCIncrement(..))
+import TransformTypes exposing (InstructionDuration(..))
+import Z80Env exposing (mem, mem16)
+import Z80Rom exposing (Z80ROM)
+import Z80Transform exposing (ChangeEnvOperation(..), ChangeMainOperation(..), InstructionLength(..), Z80Operation(..), Z80Transform)
+import Z80Types exposing (Z80)
 
 
 type TripleByteChange
@@ -16,23 +23,140 @@ type TripleByteChange
     | NewSPRegister Int
     | NewPCRegister Int
     | CallImmediate Int
+    | NewAIndirect Int
 
 
-tripleByteWith16BitParam : Dict Int ( Int -> TripleByteChange, TriplePCIncrement )
-tripleByteWith16BitParam =
+standardTriple16Bit : Dict Int ( Int -> TripleByteChange, TriplePCIncrement )
+standardTriple16Bit =
     Dict.fromList
         [ ( 0x01, ( ld_bc_nn, IncrementByThree ) )
         , ( 0x11, ( ld_de_nn, IncrementByThree ) )
         , ( 0x21, ( ld_hl_nn, IncrementByThree ) )
-        , ( 0xDD21, ( ld_ix_nn, IncrementByFour ) )
-        , ( 0xFD21, ( ld_iy_nn, IncrementByFour ) )
         , ( 0x2A, ( ld_hl_indirect_nn, IncrementByThree ) )
-        , ( 0xDD2A, ( ld_ix_indirect_nn, IncrementByFour ) )
-        , ( 0xFD2A, ( ld_iy_indirect_nn, IncrementByFour ) )
         , ( 0x31, ( ld_sp_nn, IncrementByThree ) )
         , ( 0xC3, ( jp_nn, IncrementByThree ) )
         , ( 0xCD, ( call_0xCD, IncrementByThree ) )
+        , ( 0x3A, ( ld_a_indirect_nn, IncrementByThree ) )
         ]
+
+ixTriple16Bit : Dict Int ( Int -> TripleByteChange, TriplePCIncrement )
+ixTriple16Bit =
+    Dict.fromList
+        [ ( 0xDD21, ( ld_ix_nn, IncrementByFour ) )
+        , ( 0xDD2A, ( ld_ix_indirect_nn, IncrementByFour ) )
+        ]
+
+iyTriple16Bit : Dict Int ( Int -> TripleByteChange, TriplePCIncrement )
+iyTriple16Bit =
+    Dict.fromList
+        [ ( 0xFD21, ( ld_iy_nn, IncrementByFour ) )
+        , ( 0xFD2A, ( ld_iy_indirect_nn, IncrementByFour ) )
+        ]
+
+cbTriple16Bit : Dict Int ( Int -> TripleByteChange, TriplePCIncrement )
+cbTriple16Bit =
+    Dict.fromList
+        [
+        ]
+
+
+parseTriple16Param : Dict Int ( Int -> TripleByteChange, TriplePCIncrement ) -> Int -> CpuTimeCTime -> Int -> Z80ROM -> Z80 -> Maybe Z80Transform
+parseTriple16Param operationDict paramOffset _ instrCode rom48k z80  =
+    case operationDict |> Dict.get instrCode of
+        Just ( f, pcInc ) ->
+            let
+                doubleParam =
+                    z80.env |> mem16 (Bitwise.and (z80.pc + paramOffset) 0xFFFF) rom48k
+
+                new_pc =
+                    case pcInc of
+                        IncrementByThree ->
+                            --Bitwise.and (z80.pc + 3) 0xFFFF
+                            ThreeByteInstruction
+
+                        IncrementByFour ->
+                            --Bitwise.and (z80.pc + 4) 0xFFFF
+                            FourByteInstruction
+            in
+            case f doubleParam.value of
+                NewBCRegister int ->
+                    Just { pcIncrement = new_pc, time = doubleParam.time, timeIncrement = TenTStates, operation = ChangeMain (ChangeBCRegister int) }
+
+                NewDERegister int ->
+                    Just { pcIncrement = new_pc, time = doubleParam.time, timeIncrement = TenTStates, operation = ChangeMain (ChangeDERegister int) }
+
+                NewHLRegister int ->
+                    Just { pcIncrement = new_pc, time = doubleParam.time, timeIncrement = TenTStates, operation = ChangeMain (ChangeHLRegister int) }
+
+                NewSPRegister int ->
+                    Just { pcIncrement = new_pc, time = doubleParam.time, timeIncrement = TenTStates, operation = ChangeEnv (ChangeSPRegister int) }
+
+                NewPCRegister int ->
+                    Just { pcIncrement = JumpInstruction int, time = doubleParam.time, timeIncrement = TenTStates, operation = ChangeNothing }
+
+                CallImmediate int ->
+                    let
+                        pc_value =
+                            case pcInc of
+                                IncrementByThree ->
+                                    Bitwise.and (z80.pc + 3) 0xFFFF
+
+                                IncrementByFour ->
+                                    Bitwise.and (z80.pc + 4) 0xFFFF
+                    in
+                    Just { pcIncrement = JumpInstruction int, time = doubleParam.time, timeIncrement = TenTStates, operation = ChangeEnv (PushValue pc_value) }
+
+                NewIXRegister int ->
+                    Just { pcIncrement = new_pc, time = doubleParam.time, timeIncrement = TenTStates, operation = ChangeMain (ChangeIXRegister int) }
+
+                NewIYRegister int ->
+                    Just { pcIncrement = new_pc, time = doubleParam.time, timeIncrement = TenTStates, operation = ChangeMain (ChangeIYRegister int) }
+
+                NewHLIndirect int ->
+                    let
+                        env =
+                            z80.env
+
+                        value =
+                            { env | time = doubleParam.time } |> mem16 int rom48k
+                    in
+                    Just { pcIncrement = new_pc, time = value.time, timeIncrement = TenTStates, operation = ChangeMain (ChangeHLRegister value.value) }
+
+                NewIXIndirect int ->
+                    let
+                        env =
+                            z80.env
+
+                        value =
+                            { env | time = doubleParam.time } |> mem16 int rom48k
+                    in
+                    Just { pcIncrement = new_pc, time = value.time, timeIncrement = TenTStates, operation = ChangeMain (ChangeIXRegister value.value) }
+
+                NewIYIndirect int ->
+                    let
+                        env =
+                            z80.env
+
+                        value =
+                            { env | time = doubleParam.time } |> mem16 int rom48k
+                    in
+                    Just { pcIncrement = new_pc, time = value.time, timeIncrement = TenTStates, operation = ChangeMain (ChangeIYRegister value.value) }
+
+                NewAIndirect int ->
+                    let
+                        env =
+                            z80.env
+
+                        value =
+                            mem int doubleParam.time rom48k env.ram
+
+                        flags =
+                            z80.flags
+                    in
+                    Just { pcIncrement = new_pc, time = value.time, timeIncrement = TenTStates, operation = ChangeFlagRegisters { flags | a = value.value } }
+
+        Nothing ->
+            Nothing
 
 
 ld_bc_nn : Int -> TripleByteChange
@@ -102,3 +226,9 @@ ld_iy_indirect_nn : Int -> TripleByteChange
 ld_iy_indirect_nn param16 =
     -- case 0x2A: MP=(v=imm16())+1; xy=env.mem16(v); time+=6; break;
     NewIYIndirect param16
+
+
+ld_a_indirect_nn : Int -> TripleByteChange
+ld_a_indirect_nn param16 =
+    -- case 0x3A: MP=(v=imm16())+1; A=env.mem(v); time+=3; break;
+    NewAIndirect param16

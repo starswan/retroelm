@@ -27,11 +27,8 @@ c_TIME_LIMIT =
 
 
 
--- changing this to an array results in a recursion error in the browser :-(
-
-
 type alias Z80Env =
-    { --rom48k : Z80ROM
+    {
       ram : Z80Ram
     , keyboard : Keyboard
     , time : CpuTimeCTime
