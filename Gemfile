@@ -9,7 +9,7 @@ gem "drb"
 gem "mutex_m"
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '~> 7.0', '< 7.1'
+gem 'rails', '~> 8.0'
 # Use sqlite3 as the database for Active Record
 gem 'sqlite3', '~> 1.4'
 
